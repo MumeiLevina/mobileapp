@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Conversation, ConversationMode } from "@mori/shared";
@@ -8,8 +8,9 @@ import {
   MoriCard,
   MoriText,
   ScreenContainer,
-  Choice,
   ErrorNote,
+  MoriPressable,
+  MoriSegmentedControl,
   SectionHeading,
 } from "../../components/ui";
 import { GardenScene } from "../../features/garden/GardenScene";
@@ -44,16 +45,22 @@ export default function Talk() {
       </MoriButton>
       <GardenScene />
       <MoriText>Bạn muốn cuộc trò chuyện này như thế nào?</MoriText>
-      {(["listen", "understand", "think"] as const).map((m) => (
-        <Choice
-          key={m}
-          title={copy[m]}
-          selected={mode === m}
-          onPress={() => setMode(m)}
-        />
-      ))}
+      <MoriSegmentedControl
+        accessibilityLabel="Cách Mori đồng hành"
+        value={mode}
+        options={(["listen", "understand", "think"] as const).map((value) => ({
+          value,
+          label: copy[value],
+        }))}
+        disabled={start.isPending}
+        onChange={setMode}
+      />
       <ErrorNote error={start.error} />
-      <MoriButton loading={start.isPending} onPress={() => start.mutate()}>
+      <MoriButton
+        loading={start.isPending}
+        loadingLabel="Đang mở cuộc trò chuyện…"
+        onPress={() => start.mutate()}
+      >
         {copy.talkCta}
       </MoriButton>
       <MoriText muted variant="small">
@@ -71,9 +78,13 @@ export default function Talk() {
         </MoriText>
       )}
       {conversations.data?.map((c) => (
-        <Pressable
+        <MoriPressable
           key={c.id}
+          accessibilityRole="button"
+          accessibilityLabel={`${c.title}, ${new Date(c.created_at).toLocaleDateString("vi-VN")}`}
+          guardMs={350}
           onPress={() => router.push(`/conversation/${c.id}`)}
+          style={(pressed) => ({ opacity: pressed ? 0.82 : 1 })}
         >
           <MoriCard>
             <View>
@@ -83,7 +94,7 @@ export default function Talk() {
               </MoriText>
             </View>
           </MoriCard>
-        </Pressable>
+        </MoriPressable>
       ))}
     </ScreenContainer>
   );

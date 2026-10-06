@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   View,
 } from "react-native";
@@ -15,13 +14,15 @@ import {
   ConversationMode,
   Message,
 } from "@mori/shared";
-import { Ionicons } from "@expo/vector-icons";
 import {
   MoriButton,
   MoriText,
   MoriInput,
   MoriCard,
   MoriBottomSheet,
+  MoriConfirmSheet,
+  MoriIconButton,
+  MoriSegmentedControl,
   ScreenContainer,
   ErrorNote,
   styles,
@@ -30,15 +31,14 @@ import { ConversationBubble } from "../../features/conversation/ConversationBubb
 import { request, refresh } from "../../services/api";
 import { newId } from "../../lib/id";
 import { useDraft } from "../../hooks/useDraft";
-import { useTheme } from "../../theme";
 import { useT } from "../../i18n";
 import { privateStorage } from "../../lib/storage";
 import { useSession } from "../../store/session";
 import { registerDraft } from "../../services/cleanup";
+import { interactionFeedback } from "../../services/interaction-feedback";
 import { SelfCareCard } from "../../features/selfcare/SelfCareCard";
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const t = useTheme();
   const copy = useT();
   const draft = useDraft(`chat.${id}`);
   const user = useSession((s) => s.userId);
@@ -73,6 +73,7 @@ export default function ConversationScreen() {
       }),
     onSuccess: async (result) => {
       await draft.clear();
+      void interactionFeedback.success();
       setClientId(newId());
       setCandidate(result.memory);
       setActivity(result.activity);
@@ -124,44 +125,35 @@ export default function ConversationScreen() {
   return (
     <ScreenContainer scroll={false}>
       <View style={[styles.row, { justifyContent: "space-between" }]}>
-        <Pressable
+        <MoriIconButton
+          icon="arrow-back"
           accessibilityLabel={copy.back}
+          disabled={send.isPending}
           onPress={() => router.back()}
-          style={{ padding: 8 }}
-        >
-          <Ionicons name="arrow-back" size={23} color={t.text} />
-        </Pressable>
+        />
         <View style={{ flex: 1 }}>
           <MoriText variant="subtitle">Mori</MoriText>
           <MoriText variant="small" muted>
             AI · Một khoảng lắng nghe
           </MoriText>
         </View>
-        <Pressable
+        <MoriIconButton
+          icon="ellipsis-horizontal"
           accessibilityLabel="Tùy chọn cuộc trò chuyện"
+          disabled={send.isPending || reflect.isPending}
           onPress={() => setEnd(true)}
-          style={{ padding: 10 }}
-        >
-          <Ionicons name="ellipsis-horizontal" size={23} color={t.text} />
-        </Pressable>
+        />
       </View>
-      <View style={{ flexDirection: "row", gap: 5, flexWrap: "wrap" }}>
-        {(["listen", "understand", "think"] as const).map((m) => (
-          <Pressable
-            key={m}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: mode === m }}
-            onPress={() => setMode(m)}
-            style={{
-              padding: 9,
-              borderRadius: 15,
-              backgroundColor: mode === m ? t.soft : "transparent",
-            }}
-          >
-            <MoriText variant="small">{copy[m]}</MoriText>
-          </Pressable>
-        ))}
-      </View>
+      <MoriSegmentedControl
+        accessibilityLabel="Chế độ trò chuyện"
+        value={mode}
+        options={(["listen", "understand", "think"] as const).map((value) => ({
+          value,
+          label: copy[value],
+        }))}
+        disabled={send.isPending}
+        onChange={setMode}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -287,36 +279,30 @@ export default function ConversationScreen() {
             editable={!send.isPending && draft.ready}
             style={{ flex: 1, maxHeight: 150 }}
           />
-          <Pressable
-            accessibilityRole="button"
+          <MoriIconButton
+            icon="arrow-up"
             accessibilityLabel={copy.send}
             disabled={!draft.text.trim() || send.isPending}
+            loading={send.isPending}
+            variant="primary"
             onPress={() => send.mutate()}
-            style={{
-              backgroundColor: t.primary,
-              width: 51,
-              height: 54,
-              borderRadius: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: !draft.text.trim() || send.isPending ? 0.4 : 1,
-            }}
-          >
-            <Ionicons name="arrow-up" size={23} color={t.onPrimary} />
-          </Pressable>
+          />
         </View>
-        <Pressable
+        <MoriButton
+          variant="ghost"
+          size="medium"
           onPress={() => setVoiceNote(!voiceNote)}
-          style={{ paddingVertical: 9 }}
+          disabled={send.isPending}
         >
-          <MoriText muted variant="small">
-            {voiceNote
-              ? "Gửi giọng nói chưa có trong MVP. Bạn có thể nhập văn bản."
-              : "Micro · Sắp có"}
-          </MoriText>
-        </Pressable>
+          {voiceNote
+            ? "Gửi giọng nói chưa có trong MVP. Bạn có thể nhập văn bản."
+            : "Micro · Sắp có"}
+        </MoriButton>
       </KeyboardAvoidingView>
-      <MoriBottomSheet visible={end} onClose={() => setEnd(false)}>
+      <MoriBottomSheet
+        visible={end}
+        onClose={reflect.isPending ? () => undefined : () => setEnd(false)}
+      >
         <View style={styles.stack}>
           <MoriText variant="title">Giữ lại một điều, rồi nghỉ nhé?</MoriText>
           <MoriText muted>
@@ -326,12 +312,14 @@ export default function ConversationScreen() {
           <MoriButton
             loading={reflect.isPending}
             disabled={!data.data?.messages.length}
+            loadingLabel="Đang tạo bản nháp…"
             onPress={() => reflect.mutate()}
           >
             {copy.journalDraft}
           </MoriButton>
           <MoriButton
             secondary
+            disabled={reflect.isPending}
             onPress={() => {
               setEnd(false);
               router.push("/activity/water");
@@ -341,6 +329,7 @@ export default function ConversationScreen() {
           </MoriButton>
           <MoriButton
             secondary
+            disabled={reflect.isPending}
             onPress={() => {
               setEnd(false);
               router.replace("/(tabs)");
@@ -348,28 +337,38 @@ export default function ConversationScreen() {
           >
             Về khu vườn
           </MoriButton>
-          <MoriButton secondary onPress={() => setEnd(false)}>
+          <MoriButton
+            variant="ghost"
+            disabled={reflect.isPending}
+            onPress={() => setEnd(false)}
+          >
             Tiếp tục tâm sự
           </MoriButton>
-          {confirmDelete ? (
-            <>
-              <MoriText>
-                Xóa cuộc trò chuyện này và toàn bộ tin nhắn? Không thể hoàn tác.
-              </MoriText>
-              <MoriButton
-                loading={remove.isPending}
-                onPress={() => remove.mutate()}
-              >
-                Xác nhận xóa
-              </MoriButton>
-            </>
-          ) : (
-            <MoriButton secondary onPress={() => setConfirmDelete(true)}>
-              Xóa cuộc trò chuyện
-            </MoriButton>
-          )}
+          <MoriButton
+            variant="dangerGhost"
+            disabled={reflect.isPending}
+            onPress={() => {
+              setEnd(false);
+              setConfirmDelete(true);
+            }}
+          >
+            Xóa cuộc trò chuyện
+          </MoriButton>
         </View>
       </MoriBottomSheet>
+      <MoriConfirmSheet
+        visible={confirmDelete}
+        title="Xóa cuộc trò chuyện?"
+        description="Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa và không thể khôi phục."
+        confirmLabel="Xóa cuộc trò chuyện"
+        loading={remove.isPending}
+        error={remove.error}
+        onConfirm={() => remove.mutate()}
+        onCancel={() => {
+          setConfirmDelete(false);
+          setEnd(true);
+        }}
+      />
     </ScreenContainer>
   );
 }
