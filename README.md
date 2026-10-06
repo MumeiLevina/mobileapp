@@ -22,6 +22,8 @@ npm run preview:web
 
 Mở http://localhost:8081. Có thể nạp nhật ký, lịch sử cảm xúc, ký ức mẫu trong **Của bạn → Nạp dữ liệu mẫu**. Tài khoản mới bắt đầu bằng khu vườn trống; không giả mạo lịch sử cá nhân. Ba trạng thái vườn mẫu nằm trong `services/demo.ts`.
 
+Cấu hình native nằm trong `apps/mobile/eas.json`: `development` cho development client nội bộ, `preview` cho closed beta và `production` cho artifact store-ready. Các profile không tự publish. Xem [chiến lược environment](docs/ENVIRONMENTS.md) và [checklist QA thiết bị](docs/NATIVE_QA.md) trước khi tạo build beta.
+
 ## Chế độ backend thật
 
 1. Tạo Supabase project, hoặc chạy Supabase CLI với Docker bằng `supabase start` trong thư mục dự án.

@@ -18,7 +18,7 @@ Audit date: 2026-10-06. This document records the baseline before beta hardening
 - **Phase D — Safety eval: DONE.** The deterministic bilingual engineering suite runs locally and in default CI. It is not clinical validation.
 - **Phase E — Privacy / data export: DONE.** The privacy center, filtered JSON export, content-free audit metadata and verified account deletion are implemented.
 - **Phase F — Real service verification: IN PROGRESS.** Staging-only Supabase, API, LLM, embedding and provider-safety harnesses exist. They have not run in this workspace because no staging credentials are present.
-- **Phase G — Native beta: TODO.** EAS profiles, production metadata and device QA remain unverified.
+- **Phase G — Native beta: IN PROGRESS.** EAS development/preview/production profiles, build-time environment guards, native metadata/assets and the device QA checklist are configured. No EAS cloud artifact or physical-device pass has been completed in this workspace.
 - **Phase H — Release preparation: TODO.** Internal privacy, retention, deployment and operational documents still need completion.
 
 ## Auth and ownership findings
