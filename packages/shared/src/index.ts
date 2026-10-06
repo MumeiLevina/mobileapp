@@ -153,9 +153,24 @@ export type Journal = Entity & z.infer<typeof journalSchema>;
 export type Memory = Entity &
   z.infer<typeof memorySchema> & {
     approved_by_user: boolean;
+    approved_at?: string | null;
     confidence: number;
     embedding?: number[] | null;
+    memory_sources?: MemorySource[];
   };
+export type MemorySource = {
+  id: string;
+  source_type:
+    | "manual"
+    | "conversation"
+    | "journal"
+    | "mood"
+    | "weekly_reflection"
+    | "life_map";
+  source_id: string | null;
+  reason: string;
+  created_at: string;
+};
 export type Conversation = Entity & { title: string; mode: ConversationMode };
 export type LifeMapItem = Entity &
   z.infer<typeof lifeMapSchema> & {
@@ -220,7 +235,7 @@ export type ChatResult = {
   crisisResources?: CrisisResource[];
 };
 export type AccountDataExport = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   generatedAt: string;
   data: {
     profile: Record<string, unknown>;
@@ -234,6 +249,7 @@ export type AccountDataExport = {
     weeklyReflections: Record<string, unknown>[];
     notificationPreferences: Record<string, unknown>;
     lifeMapItems: Record<string, unknown>[];
+    memorySources: Record<string, unknown>[];
   };
 };
 export const gardenFromPoints = (points: number): Garden => ({

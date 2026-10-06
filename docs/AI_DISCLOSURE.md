@@ -10,4 +10,6 @@ Ask Mori can send a question and at most 12 relevant excerpts from the user's ap
 
 Memories are optional. Mori may use only active memories the user explicitly approved. Users can review, edit or delete them from the privacy center. A response can still make a mistake; users should not rely on Mori as the sole source of important medical, legal, financial or safety decisions.
 
+The Memory screen shows why a memory exists, its source category and when the user approved it. Conversation-derived candidates remain pending and excluded from retrieval until explicit approval.
+
 This disclosure must appear in onboarding and the published support/privacy material in language appropriate to the target audience. The selected provider/model and relevant subprocessor information must be filled in before release.

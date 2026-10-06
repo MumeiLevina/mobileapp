@@ -11,6 +11,7 @@ import {
   LifeMapItem,
   LifeMapSuggestion,
   Memory,
+  MemorySource,
   Message,
   Mood,
   NotificationPreference,
@@ -33,6 +34,7 @@ type DemoData = {
   moods: Mood[];
   journals: Journal[];
   memories: Memory[];
+  memorySources: (MemorySource & { memory_id: string; user_id: string })[];
   conversations: Conversation[];
   messages: Message[];
   garden: Garden;
@@ -58,6 +60,7 @@ const initial = (): DemoData => ({
   moods: [],
   journals: [],
   memories: [],
+  memorySources: [],
   conversations: [],
   messages: [],
   garden: gardenFromPoints(0),
@@ -77,6 +80,7 @@ async function get() {
     const stored = await AsyncStorage.getItem("mori-demo");
     database = stored ? (JSON.parse(stored) as DemoData) : initial();
     database.lifeMapItems ??= [];
+    database.memorySources ??= [];
   }
   return database;
 }
@@ -139,14 +143,27 @@ export async function demoRequest(
       result = entry;
     }
   } else if (resource === "memories") {
-    if (method === "GET") return db.memories;
+    if (method === "GET")
+      return db.memories.map((memory) => ({
+        ...memory,
+        memory_sources: db.memorySources.filter(
+          (source) => source.memory_id === memory.id,
+        ),
+      }));
     if (method === "DELETE") {
+      const removed = id
+        ? new Set([id])
+        : new Set(db.memories.map((memory) => memory.id));
       db.memories = id ? db.memories.filter((m) => m.id !== id) : [];
+      db.memorySources = db.memorySources.filter(
+        (source) => !removed.has(source.memory_id),
+      );
       result = { ok: true };
     } else if (action === "approve") {
       const memory = db.memories.find((m) => m.id === id);
       if (!memory) throw new Error("Không tìm thấy ký ức.");
       memory.approved_by_user = true;
+      memory.approved_at = new Date().toISOString();
       result = memory;
     } else if (method === "PATCH") {
       const memory = db.memories.find((m) => m.id === id);
@@ -158,9 +175,17 @@ export async function demoRequest(
         ...entity(),
         ...memorySchema.parse(body),
         approved_by_user: true,
+        approved_at: new Date().toISOString(),
         confidence: 1,
       };
       db.memories.unshift(memory);
+      db.memorySources.unshift({
+        ...entity(),
+        memory_id: memory.id,
+        source_type: "manual",
+        source_id: null,
+        reason: "Được bạn trực tiếp thêm vào ký ức của Mori.",
+      });
       result = memory;
     }
   } else if (resource === "conversations") {
@@ -254,9 +279,18 @@ export async function demoRequest(
           content: "Bạn muốn Mori lắng nghe, chỉ đưa lời khuyên khi được hỏi.",
           category: "communication_preference",
           approved_by_user: false,
+          approved_at: null,
           confidence: 1,
         };
         db.memories.unshift(memory);
+        db.memorySources.unshift({
+          ...entity(),
+          memory_id: memory.id,
+          source_type: "conversation",
+          source_id: id,
+          reason:
+            "Bạn đã nói rõ cách Mori nên phản hồi trong cuộc trò chuyện này.",
+        });
       }
       result = {
         message,
@@ -486,7 +520,7 @@ export async function demoRequest(
     } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       generatedAt: new Date().toISOString(),
       data: {
         profile: { ...db.profile },
@@ -505,6 +539,7 @@ export async function demoRequest(
         weeklyReflections: [],
         notificationPreferences: { ...db.notifications },
         lifeMapItems: db.lifeMapItems.map(withoutOwner),
+        memorySources: db.memorySources.map(withoutOwner),
       },
     };
     return accountExport;
@@ -549,13 +584,23 @@ export async function loadDemoSamples() {
       client_id: newId(),
     },
   ];
-  db.memories = [
+  const sampleMemory: Memory = {
+    ...entity(),
+    content: "Bạn thích những khoảng lặng bên cửa sổ.",
+    category: "preference",
+    approved_by_user: true,
+    approved_at: past(2),
+    confidence: 1,
+  };
+  db.memories = [sampleMemory];
+  db.memorySources = [
     {
       ...entity(),
-      content: "Bạn thích những khoảng lặng bên cửa sổ.",
-      category: "preference",
-      approved_by_user: true,
-      confidence: 1,
+      memory_id: sampleMemory.id,
+      source_type: "manual",
+      source_id: null,
+      reason: "Được bạn trực tiếp thêm vào ký ức của Mori.",
+      created_at: past(2),
     },
   ];
   db.garden = gardenFromPoints(12);

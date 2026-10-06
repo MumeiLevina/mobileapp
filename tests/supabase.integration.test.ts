@@ -98,6 +98,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
         content: "synthetic private B",
         category: "preference",
         approved_by_user: true,
+        approved_at: new Date().toISOString(),
       }),
       admin.from("messages").insert({
         user_id: idB,
@@ -183,6 +184,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
     "garden_states",
     "notification_preferences",
     "life_map_items",
+    "memory_sources",
   ])("User A cannot read User B rows from %s", async (table) => {
     await ensureUserASession();
     const result = await userA.from(table).select("*").eq("user_id", idB);
@@ -214,6 +216,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
       "notification_preferences",
       "data_export_audits",
       "life_map_items",
+      "memory_sources",
     ]) {
       const result = await admin
         .from(table)

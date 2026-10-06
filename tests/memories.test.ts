@@ -35,3 +35,33 @@ test("embedding failure prevents insertion of an approved memory", async () => {
   ).rejects.toThrow("embedding unavailable");
   expect(db.insert).not.toHaveBeenCalled();
 });
+
+test("new memories carry source provenance and approval time", async () => {
+  const insert = jest
+    .fn()
+    .mockResolvedValueOnce({ id: "memory" })
+    .mockResolvedValueOnce({ id: "source" });
+  const db = { insert, remove: jest.fn() } as unknown as DatabaseService;
+  const provider = {
+    embed: jest.fn().mockResolvedValue([0]),
+  } as unknown as LLMProvider;
+  await new MemoriesService(db, provider).add("owner", {
+    content: "I prefer quiet mornings",
+    category: "preference",
+  });
+  expect(insert).toHaveBeenNthCalledWith(
+    1,
+    "memories",
+    "owner",
+    expect.objectContaining({
+      approved_by_user: true,
+      approved_at: expect.any(String),
+    }),
+  );
+  expect(insert).toHaveBeenNthCalledWith(2, "memory_sources", "owner", {
+    memory_id: "memory",
+    source_type: "manual",
+    source_id: null,
+    reason: "Được bạn trực tiếp thêm vào ký ức của Mori.",
+  });
+});

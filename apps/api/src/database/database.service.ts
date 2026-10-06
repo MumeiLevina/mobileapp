@@ -117,7 +117,8 @@ export class DatabaseService {
       | "messages"
       | "self_care_sessions"
       | "weekly_reflections"
-      | "life_map_items",
+      | "life_map_items"
+      | "memory_sources",
     user: string,
     columns: string,
   ): Promise<T[]> {
@@ -135,6 +136,18 @@ export class DatabaseService {
       rows.push(...page);
       if (page.length < pageSize) return rows;
     }
+  }
+
+  async listMemoriesWithSources<T>(user: string): Promise<T[]> {
+    const { data, error } = await this.admin
+      .from("memories")
+      .select("*,memory_sources(id,source_type,source_id,reason,created_at)")
+      .eq("user_id", user)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new ServiceUnavailableException();
+    return (data ?? []) as T[];
   }
 
   private withoutOwnership(value: Record<string, unknown>) {

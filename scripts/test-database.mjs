@@ -33,6 +33,12 @@ try {
   await pg.exec(
     await readFile("supabase/migrations/202610070001_life_map.sql", "utf8"),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610070002_memory_provenance.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -54,7 +60,7 @@ try {
     [b, true, "other user"],
   ])
     await pg.query(
-      "insert into memories(user_id,content,category,approved_by_user,embedding) values($1,$2,$3,$4,$5)",
+      "insert into memories(user_id,content,category,approved_by_user,approved_at,embedding) values($1,$2,$3,$4,case when $4 then now() else null end,$5)",
       [user, content, "preference", approved, embedding],
     );
   let matches = await pg.query("select * from match_memories($1,$2,4)", [
@@ -100,6 +106,7 @@ try {
     "conversations",
     "mood_entries",
     "life_map_items",
+    "memory_sources",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -129,6 +136,23 @@ try {
     ),
   );
   console.log("PASS Life Map validates paired provenance fields");
+  const memoryA = (
+    await pg.query(
+      "select id from memories where user_id=$1 order by created_at limit 1",
+      [a],
+    )
+  ).rows[0].id;
+  await pg.query(
+    "insert into memory_sources(user_id,memory_id,source_type,reason) values($1,$2,'manual','Added by owner')",
+    [a, memoryA],
+  );
+  await assert.rejects(
+    pg.query(
+      "insert into memory_sources(user_id,memory_id,source_type,reason) values($1,$2,'manual','Wrong owner')",
+      [b, memoryA],
+    ),
+  );
+  console.log("PASS memory provenance enforces composite ownership");
   await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
   await assert.rejects(
     pg.query(
@@ -250,6 +274,7 @@ try {
     "conversations",
     "data_export_audits",
     "life_map_items",
+    "memory_sources",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

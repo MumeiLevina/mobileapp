@@ -157,6 +157,12 @@ export class AIOrchestratorService {
           category: "communication_preference",
         },
         false,
+        {
+          sourceType: "conversation",
+          sourceId: conversationId,
+          reason:
+            "Bạn đã nói rõ cách Mori nên phản hồi trong cuộc trò chuyện này.",
+        },
       );
     return {
       message: saved[0],

@@ -30,6 +30,8 @@ The privacy center lets a user export a filtered JSON package, manage or delete 
 
 Life Map suggestions are derived only from active memories the user already approved. A suggestion is returned as a preview and is not stored until the user chooses Add. Life Map rows remain private, owner-scoped and are included in account export and deletion.
 
+Each Memory records a short reason, source reference and approval time. Provenance does not copy the raw conversation, journal or mood into a second table. Source ownership is enforced by a composite database foreign key, and provenance follows the Memory through export and deletion.
+
 ## Logs and operational data
 
 Structured logs may contain request ID, route template, HTTP status, latency, provider operation/status/error category, safety-level count and output-guard rejection reason. Logs must not contain raw conversations, journals, memories, authorization headers, access tokens, passwords, service keys or embeddings. No analytics provider is configured.
