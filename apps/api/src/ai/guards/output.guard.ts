@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LLM_PROVIDER, LLMProvider } from "../providers/provider";
 import { MockLLMProvider } from "../providers/mock.provider";
 import { fold } from "../../modules/safety/safety.service";
+import { MetricsService } from "../../observability/metrics.service";
 
 export const SAFE_FALLBACK =
   "Mình đang lắng nghe. Mình chưa thể đưa ra phản hồi phù hợp lúc này. Nếu thấy ổn, bạn có thể nói với một người bạn tin tưởng hoặc thử lại sau một chút.";
@@ -53,14 +54,20 @@ export function lexicalOutputSafe(text: string, hasMemory: boolean): boolean {
 
 @Injectable()
 export class OutputGuard {
-  constructor(@Inject(LLM_PROVIDER) private readonly provider: LLMProvider) {}
+  constructor(
+    @Inject(LLM_PROVIDER) private readonly provider: LLMProvider,
+    private readonly metrics: MetricsService = new MetricsService(),
+  ) {}
 
   async validateResponse(
     text: string,
     memories: string[],
     input: string,
   ): Promise<string> {
-    if (!lexicalOutputSafe(text, memories.length > 0)) return SAFE_FALLBACK;
+    if (!lexicalOutputSafe(text, memories.length > 0)) {
+      this.metrics.outputGuardRejected("lexical");
+      return SAFE_FALLBACK;
+    }
     if (this.provider instanceof MockLLMProvider) return text;
 
     try {
@@ -82,8 +89,10 @@ export class OutputGuard {
         ],
         z.object({ safe: z.boolean() }),
       );
+      if (!result.safe) this.metrics.outputGuardRejected("reviewer");
       return result.safe ? text : SAFE_FALLBACK;
     } catch {
+      this.metrics.outputGuardRejected("unavailable");
       return SAFE_FALLBACK;
     }
   }

@@ -94,6 +94,6 @@ Kiểm thử database chạy SQL thật bằng PGlite + pgvector với lớp Aut
 
 ## Trạng thái và giới hạn
 
-Xem [kiến trúc](docs/ARCHITECTURE.md), [API](docs/API.md), [các việc cần xác minh trước phát hành](docs/RELEASE.md). Đây là MVP phát triển có demo end-to-end, chưa phải sản phẩm được thẩm định lâm sàng hay bản phát hành App Store. Không có khóa Supabase/AI thật trong workspace, nên kết nối dịch vụ thật và thông báo trên thiết bị cần được kiểm tra sau khi cấu hình.
+Xem [kiến trúc](docs/ARCHITECTURE.md), [API](docs/API.md), [các việc cần xác minh trước phát hành](docs/RELEASE.md), [privacy nội bộ](docs/PRIVACY.md), [retention](docs/DATA_RETENTION.md), [AI disclosure](docs/AI_DISCLOSURE.md), [safety](docs/SAFETY.md), [quy trình crisis resources](docs/CRISIS_RESOURCES.md) và [deployment runbook](docs/DEPLOYMENT.md). Đây là MVP phát triển có demo end-to-end, chưa phải sản phẩm được thẩm định lâm sàng hay bản phát hành App Store. Không có khóa Supabase/AI thật trong workspace, nên kết nối dịch vụ thật và thông báo trên thiết bị cần được kiểm tra sau khi cấu hình.
 
 Tham chiếu kỹ thuật: [Expo SDK](https://docs.expo.dev/versions/latest/), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [PGlite extensions](https://pglite.dev/extensions/). Dependency native được căn theo `expo/bundledNativeModules.json` của phiên bản đã cài, không theo phiên bản latest không tương thích.

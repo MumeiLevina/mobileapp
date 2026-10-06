@@ -1,6 +1,6 @@
 # Repository audit
 
-Audit date: 2026-10-06. This document records the baseline before beta hardening. It does not claim real-service or device validation.
+Audit updated: 2026-10-07. This document records beta-hardening status without claiming real-service or device validation.
 
 ## Current architecture
 
@@ -19,7 +19,7 @@ Audit date: 2026-10-06. This document records the baseline before beta hardening
 - **Phase E — Privacy / data export: DONE.** The privacy center, filtered JSON export, content-free audit metadata and verified account deletion are implemented.
 - **Phase F — Real service verification: IN PROGRESS.** Staging-only Supabase, API, LLM, embedding and provider-safety harnesses exist. They have not run in this workspace because no staging credentials are present.
 - **Phase G — Native beta: IN PROGRESS.** EAS development/preview/production profiles, build-time environment guards, native metadata/assets and the device QA checklist are configured. No EAS cloud artifact or physical-device pass has been completed in this workspace.
-- **Phase H — Release preparation: TODO.** Internal privacy, retention, deployment and operational documents still need completion.
+- **Phase H — Release preparation: IN PROGRESS.** Internal privacy, retention, AI disclosure, safety, crisis-resource and deployment documents plus content-free request/safety metrics are implemented. Public policy URLs, provider-specific terms, operational retention, staging evidence and store review remain external release gates.
 
 ## Auth and ownership findings
 

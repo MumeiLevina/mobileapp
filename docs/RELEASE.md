@@ -6,6 +6,8 @@ Expo/Nest/shared monorepo, migrations and seed, Supabase JWT guard, RLS with ser
 
 No raw message/journal content is logged or sent to analytics. No analytics provider is configured. No streak penalties, diagnostic scores, emotional guilt notifications, romantic/exclusive companion claims or user-content upload feature.
 
+Internal release inputs now live in `PRIVACY.md`, `DATA_RETENTION.md`, `AI_DISCLOSURE.md`, `SAFETY.md`, `CRISIS_RESOURCES.md` and `DEPLOYMENT.md`. They document current behavior and remaining operator decisions; they are not substitutes for reviewed public policies.
+
 ## Requires configured services/device verification
 
 - TODO: Run Auth/signup, each API endpoint and deletion against an actual Supabase project; PGlite tests cover SQL and RLS, not GoTrue/PostgREST/Storage integration.
@@ -14,8 +16,8 @@ No raw message/journal content is logged or sent to analytics. No analytics prov
 - TODO: Native device checks on iOS/Android: notification permissions, scheduling/timezone changes, keyboard/screen-reader focus, secure storage failures, reduced motion, large text and background activity timer behavior. JS bundles are not native APK/IPA builds.
 - EAS development, internal preview and store-ready production profiles are configured under `apps/mobile/eas.json`. No APK, AAB or iOS archive has been built or installed yet; complete `docs/NATIVE_QA.md` before closed beta.
 - TODO: Clinical/editorial review of crisis language and curated self-care library; populate and operationally re-verify the region-based emergency resource directory. The schema and verified-only retrieval path are implemented, but no unverified hotline numbers are seeded or hardcoded.
-- TODO: Publish privacy policy, AI subprocessors, retention, backup expiry, age suitability and support process before real users.
-- TODO: Recheck dependency advisories against compatible Expo/Jest releases before beta distribution. On 2026-10-06, `npm audit` reports 64 transitive findings (49 high, 15 moderate) and no critical finding; Expo's CLI/build graph is included in the installed dependency tree. The high findings are `braces` through Jest/Metro glob tooling and `node-forge` through Expo code-signing tooling. Moderate findings are `decode-uri-component` through Expo Router, `sprintf-js` through Istanbul/Jest tooling and `uuid` through Expo's Xcode tooling. None is a direct Mori dependency. The reported automatic fixes force breaking Expo/Jest changes, including an Expo 44 downgrade, so no forced audit fix was applied. Treat malformed external deep links as untrusted and update through an Expo-compatible release rather than overriding the lockfile blindly.
+- TODO: Adapt the internal specifications into reviewed public policy/support URLs; name the selected AI subprocessors and regions; configure operational log retention, backup expiry, age suitability and the incident/support process before real users.
+- TODO: Recheck dependency advisories against compatible Expo/Jest releases before beta distribution. On 2026-10-07, `npm audit` reports 64 transitive findings (49 high, 15 moderate) and no critical finding; Expo's CLI/build graph is included in the installed dependency tree. The high findings are `braces` through Jest/Metro glob tooling and `node-forge` through Expo code-signing tooling. Moderate findings are `decode-uri-component` through Expo Router, `sprintf-js` through Istanbul/Jest tooling and `uuid` through Expo's Xcode tooling. None is a direct Mori dependency. The reported automatic fixes force breaking Expo/Jest changes, including an Expo 44 downgrade, so no forced audit fix was applied. Treat malformed external deep links as untrusted and update through an Expo-compatible release rather than overriding the lockfile blindly.
 
 ## Explicitly deferred product scope
 

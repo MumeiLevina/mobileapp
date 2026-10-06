@@ -21,6 +21,7 @@ import {
 } from "../safety/safety.service";
 import { classifyIntent } from "./intent";
 import { SelfCareService } from "../selfcare/selfcare.service";
+import { MetricsService } from "../../observability/metrics.service";
 @Injectable()
 export class AIOrchestratorService {
   constructor(
@@ -31,6 +32,7 @@ export class AIOrchestratorService {
     private readonly guard: OutputGuard,
     @Inject(LLM_PROVIDER) private readonly provider: LLMProvider,
     private readonly selfCare: SelfCareService,
+    private readonly metrics: MetricsService = new MetricsService(),
   ) {}
   async processUserMessage(
     user: string,
@@ -55,6 +57,11 @@ export class AIOrchestratorService {
       };
     const normalized = input.normalize("NFC").trim();
     const safety = await this.safety.classifySafety(normalized);
+    this.metrics.safetyDecision({
+      safety_level: safety.level,
+      classifier_status: safety.classifierStatus,
+      requires_escalation: safety.requiresEscalation,
+    });
     const profile = await this.db.one<Profile>("profiles", user);
     let response: string;
     let candidate: Memory | undefined;

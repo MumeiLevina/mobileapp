@@ -5,6 +5,7 @@ import {
   HttpException,
 } from "@nestjs/common";
 import { Response } from "express";
+import type { ObservedRequest } from "../observability/request-metrics.middleware";
 import pino from "pino";
 const logger = pino({ level: "info" });
 @Catch()
@@ -12,9 +13,14 @@ export class ErrorFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const status =
       exception instanceof HttpException ? exception.getStatus() : 500;
-    logger.warn({ event: "request_failed", status });
-    host
-      .switchToHttp()
+    const http = host.switchToHttp();
+    const request = http.getRequest<ObservedRequest>();
+    logger.warn({
+      event: "request_failed",
+      request_id: request.requestId,
+      status,
+    });
+    http
       .getResponse<Response>()
       .status(status)
       .json({

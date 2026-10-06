@@ -25,6 +25,7 @@ import { readConfig } from "./config/env";
 import { SelfCareService } from "./modules/selfcare/selfcare.service";
 import { AccountController } from "./modules/account/account.controller";
 import { AccountExportService } from "./modules/account/account-export.service";
+import { MetricsService } from "./observability/metrics.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -47,6 +48,7 @@ import { AccountExportService } from "./modules/account/account-export.service";
     CrisisResponseService,
     OutputGuard,
     AccountExportService,
+    MetricsService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

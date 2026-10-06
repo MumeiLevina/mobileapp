@@ -29,6 +29,10 @@ The in-app privacy center gives the user one place to export data, manage memori
 
 The export service synchronously collects every retained owner-scoped row in 500-row pages with explicit field projections. It returns one versioned JSON package and excludes internal safety metadata, vector embeddings and ownership identifiers. A server-only audit table stores request status, timestamps and aggregate record counts without exported content. Web downloads the package as a JSON file; native passes the JSON payload to the system share sheet. Large-account support should replace this synchronous response with a background job and a private, short-lived download object.
 
+## Observability
+
+A global API interceptor assigns or validates a UUID request ID, returns it as `X-Request-ID`, and records only the route template, response status and duration. Provider logs contain operation, status, latency and normalized error category. Safety events record level/classifier status/escalation counts, and output-guard rejection events record only lexical, reviewer or unavailable reason. Error logs include request ID and status. These paths never log authorization headers, tokens or raw conversation, journal or memory content.
+
 ## Delivery validation
 
 Run typecheck, ESLint, critical Jest tests and Expo web export. Native device validation and live Supabase/LLM checks require configured services and device builds. Production release additionally requires bilingual adversarial safety evaluation, clinical review of curated copy, backup/deletion policy, and operational monitoring without sensitive content.
