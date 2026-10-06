@@ -1,0 +1,13 @@
+-- Curated public library only. Never seed private user content in production.
+insert into public.self_care_activities(id,title,description,duration,category,steps,difficulty,energy_level,time_of_day,enabled) values
+('breathing','Hai phút thở chậm','Một khoảng nghỉ, chỉ dành cho bạn.',120,'breathing','["Ngồi ở tư thế thoải mái.","Hít vào nhẹ nhàng trong 4 giây nếu thấy dễ chịu.","Thở ra chậm trong 6 giây. Không cần nín thở.","Trở lại nhịp thở tự nhiên bất cứ lúc nào. Dừng nếu thấy khó chịu."]'::jsonb,'easy','low',array['any'],true),
+('grounding','Chạm vào hiện tại','Nhận ra những điều nhỏ ở quanh mình.',120,'grounding','["Nhìn quanh, gọi tên ba vật bạn thấy.","Cảm nhận bàn chân chạm sàn.","Lắng nghe một âm thanh gần bạn."]'::jsonb,'easy','low',array['any'],true),
+('rain','Mưa bên ô cửa','Ngắm một khoảng trời yên. Không cần làm gì cả.',180,'relaxation','["Chọn một chỗ ngồi thoải mái.","Để mắt nghỉ trên cảnh mưa.","Bạn có thể rời đi bất cứ lúc nào."]'::jsonb,'easy','low',array['any'],true),
+('water','Uống một chút nước','Một cử chỉ nhỏ chăm sóc mình.',60,'hydration','["Lấy một cốc nước.","Uống chậm theo nhu cầu của bạn."]'::jsonb,'easy','low',array['any'],true),
+('walk','Một vòng ngoài trời','Đổi khung cảnh trong vài phút.',300,'walk','["Chọn một nơi an toàn, dễ đi.","Bước chậm và nhìn ngắm xung quanh.","Trở về khi bạn muốn."]'::jsonb,'easy','medium',array['morning','afternoon'],true),
+('sleep','Khép lại một ngày','Cho buổi tối một nhịp chậm hơn.',180,'sleep','["Giảm ánh sáng nếu bạn muốn.","Đặt điện thoại ra xa.","Cho mình một lúc nghỉ ngơi."]'::jsonb,'easy','low',array['evening'],true),
+('reach-out','Gửi lời cho một người','Một kết nối nhỏ ngoài đời.',120,'reach_out','["Nghĩ đến một người bạn tin tưởng.","Bạn có thể nhắn: Hôm nay bạn thế nào?","Không cần phải kể mọi chuyện ngay."]'::jsonb,'easy','medium',array['any'],true),
+('break','Rời màn hình một chút','Thế giới ngoài này vẫn ở đây.',120,'digital_break','["Đặt thiết bị xuống.","Nhìn ra xa hoặc đứng dậy nếu thoải mái.","Quay lại khi bạn sẵn sàng."]'::jsonb,'easy','low',array['any'],true),
+('kindness','Một lời dịu dàng','Thử nói với mình như nói với một người bạn.',120,'self_compassion','["Nhận ra điều hôm nay khiến bạn mệt.","Thử nói: Mình đã cố gắng trong khả năng của mình.","Không cần ép bản thân tin ngay."]'::jsonb,'easy','low',array['any'],true),
+('stretch','Thả lỏng đôi vai','Nhẹ nhàng nhận biết cơ thể.',120,'stretching','["Chọn tư thế dễ chịu.","Thả lỏng vai, cử động nhẹ trong giới hạn thoải mái.","Dừng nếu thấy đau hay khó chịu."]'::jsonb,'easy','low',array['any'],true)
+on conflict(id) do nothing;

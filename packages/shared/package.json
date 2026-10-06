@@ -1,0 +1,15 @@
+{
+  "name": "@mori/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --outDir dist"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "react-native": "src/index.ts"
+}

@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Mori",
+    "slug": "mori",
+    "scheme": "mori",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "app.mori.companion" },
+    "android": { "package": "app.mori.companion" },
+    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"],
+    "web": { "bundler": "metro", "output": "single" },
+    "experiments": { "typedRoutes": true }
+  }
+}

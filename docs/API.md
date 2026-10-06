@@ -1,0 +1,34 @@
+# API contract
+
+Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorization: Bearer <Supabase access token>`. Request bodies validated with shared Zod schemas; unknown fields discarded. Caller cannot set `user_id`. IDs validated as UUID except curated activity IDs. Error responses contain a localized generic `error`, never raw provider errors/private data.
+
+| Method | Path | Behavior |
+|---|---|---|
+| POST | /auth/profile | Complete onboarding profile |
+| GET, PATCH | /profile | Read/update own profile |
+| DELETE | /account | Delete Supabase Auth user; cascade application data |
+| GET, POST | /moods | List/create mood; `client_id` prevents retry duplicates |
+| GET, POST | /conversations | List/create own conversation |
+| GET, DELETE | /conversations/:id | Read conversation/messages or delete both |
+| POST | /conversations/:id/messages | Safety pipeline; content, mode, client_id |
+| POST | /conversations/:id/journal-draft | Return unsaved draft, never insert journal |
+| GET, POST, DELETE | /memories | List/add approved memory/delete all |
+| PATCH, DELETE | /memories/:id | Edit/delete memory and active vector |
+| POST | /memories/:id/approve | Embed and approve explicitly |
+| GET, POST | /journals | List/save reviewed journal |
+| PATCH, DELETE | /journals/:id | Edit/delete own entry |
+| GET | /self-care | Enabled curated database activities |
+| POST | /self-care/:id/start | Create own activity session |
+| POST | /self-care/:id/complete | Complete matching `session_id`, award once |
+| GET | /garden | Own persistent garden state |
+| GET | /weekly-reflection | Opt-in summary of last seven days |
+| POST | /weekly-reflection/complete | Save weekly summary, award once per UTC week |
+| GET, PATCH | /notification-preferences | Off/morning/evening/custom and local time |
+
+List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Cursor pagination and account-wide export are tracked before scaling beyond MVP. Database schema supports all historical records.
+
+Global throttle: 90 requests/minute/IP; message generation 12/minute/IP; journal generation 5/minute/IP. Single-process in-memory throttle is appropriate to this modular monolith; use shared storage before horizontal scaling.
+
+Normal message response: `{message, memory?, safetyLevel, activity?}`. Intent classification JSON remains server-internal. Crisis/elevated states bypass companion, memory retrieval/candidate creation and self-care suggestion. Server persists a pair of messages atomically and returns the same assistant record when a client retries the same UUID.
+
+Hard deletion is used for explicit user deletion of private content. `deleted_at` columns additionally support operator recovery workflows; retrieval excludes soft-deleted data. No recovery interface is exposed to users in MVP.
