@@ -153,7 +153,9 @@ test("privacy center exports and deletes each requested data group", async ({
   );
   const path = await download.path();
   const accountExport = JSON.parse(await readFile(path!, "utf8"));
-  expect(accountExport.schemaVersion).toBe(1);
+  expect(accountExport.schemaVersion).toBe(3);
+  expect(accountExport.data).toHaveProperty("lifeMapItems");
+  expect(accountExport.data).toHaveProperty("memorySources");
   expect(accountExport.data).not.toHaveProperty("safetyEvents");
   expect(JSON.stringify(accountExport.data.memories)).not.toContain(
     "embedding",
@@ -192,4 +194,68 @@ test("privacy center exports and deletes each requested data group", async ({
   expect(
     await page.evaluate(() => localStorage.getItem("mori-demo")),
   ).toBeNull();
+});
+
+test("Wave 1 connects Ask Mori, Life Map, Memory evidence, Timeline and Patterns", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+
+  await page.goto("/me");
+  await page
+    .getByRole("button", { name: "Nạp dữ liệu mẫu để khám phá" })
+    .click();
+
+  await page.getByRole("button", { name: "Bản đồ cuộc sống của mình" }).click();
+  await expect(page.getByText("Mori gợi ý · Bạn quyết định")).toBeVisible();
+  await page.getByRole("button", { name: "Thêm", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("mori-demo")!).lifeMapItems.length,
+      ),
+    )
+    .toBe(1);
+
+  await page.goto("/me");
+  await page.getByRole("button", { name: "Xem những nhịp lặp lại" }).click();
+  await expect(page.getByText("Chủ đề xuất hiện nhiều lần")).toBeVisible();
+  await expect(
+    page.getByText(
+      "This is a pattern in your entries, not proof of cause or a diagnosis.",
+    ),
+  ).toBeVisible();
+
+  await page.goto("/talk");
+  await page
+    .getByRole("button", { name: "Hỏi Mori về những điều mình đã lưu" })
+    .click();
+  await page
+    .getByLabel("Câu hỏi cho Mori")
+    .fill("Gần đây mình viết gì về công việc?");
+  await page.getByRole("button", { name: "Nhìn lại dữ liệu của mình" }).click();
+  await expect(page.getByText("Dựa trên", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/không phải bằng chứng về nguyên nhân/).first(),
+  ).toBeVisible();
+
+  await page.goto("/journal");
+  await page
+    .getByRole("button", { name: "Xem dòng thời gian của mình" })
+    .click();
+  await expect(page.getByText("Dòng thời gian", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Tâm trạng:/).first()).toBeVisible();
+  await expect(
+    page.getByText("Một buổi sáng chậm", { exact: true }).last(),
+  ).toBeVisible();
+
+  await page.goto("/memories");
+  await expect(page.getByText("Vì sao Mori ghi nhớ điều này?")).toBeVisible();
+  await expect(
+    page.getByText("Được bạn trực tiếp thêm vào ký ức của Mori."),
+  ).toBeVisible();
+  await expect(page.getByText(/Được bạn duyệt ngày/)).toBeVisible();
+  expect(errors).toEqual([]);
 });
