@@ -151,6 +151,27 @@ export type TimelineItem = {
   occurredAt: string;
   sourceId: string;
 };
+export const PATTERN_DISCLAIMER =
+  "This is a pattern in your entries, not proof of cause or a diagnosis.";
+export type LifePatternType =
+  | "recurring_topic"
+  | "helpful_activity"
+  | "time_pattern"
+  | "recurring_thought"
+  | "mood_activity";
+export type LifePattern = {
+  id: string;
+  type: LifePatternType;
+  title: string;
+  observation: string;
+  evidenceCount: number;
+  sources: InsightSource[];
+};
+export type LifePatternsResponse = {
+  patterns: LifePattern[];
+  message: string | null;
+  disclaimer: typeof PATTERN_DISCLAIMER;
+};
 export type InsightSourceType = z.infer<typeof InsightSourceType>;
 export type InsightSource = {
   id: string;

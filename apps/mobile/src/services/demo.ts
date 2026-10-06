@@ -10,12 +10,14 @@ import {
   Journal,
   LifeMapItem,
   LifeMapSuggestion,
+  LifePatternsResponse,
   Memory,
   MemorySource,
   Message,
   Mood,
   NotificationPreference,
   Profile,
+  PATTERN_DISCLAIMER,
   TimelineFilter,
   TimelineItem,
   activities,
@@ -539,6 +541,60 @@ export async function demoRequest(
       db.lifeMapItems.unshift(item);
       result = item;
     }
+  } else if (resource === "insights" && id === "patterns") {
+    const workMoods = db.moods.filter((mood) => mood.tags.includes("Work"));
+    const patterns: LifePatternsResponse["patterns"] = [];
+    if (workMoods.length >= 5)
+      patterns.push({
+        id: "topic:work",
+        type: "recurring_topic",
+        title: "Chủ đề xuất hiện nhiều lần",
+        observation: `Công việc xuất hiện trong ${workMoods.length} ghi chép gần đây của bạn.`,
+        evidenceCount: workMoods.length,
+        sources: workMoods.slice(0, 7).map((mood) => ({
+          id: mood.id,
+          type: "mood",
+          label: "Tâm trạng",
+          occurredAt: mood.created_at,
+        })),
+      });
+    const completed = db.sessions.filter(
+      (session) => session.completed && session.completed_at,
+    );
+    const byActivity = completed.reduce<Record<string, typeof completed>>(
+      (groups, session) => ({
+        ...groups,
+        [session.activity_id]: [
+          ...(groups[session.activity_id] ?? []),
+          session,
+        ],
+      }),
+      {},
+    );
+    const frequent = Object.entries(byActivity).find(
+      ([, sessions]) => sessions.length >= 5,
+    );
+    if (frequent) {
+      const [activityId, sessions] = frequent;
+      patterns.push({
+        id: `activity:${activityId}`,
+        type: "helpful_activity",
+        title: "Hoạt động bạn thường chọn",
+        observation: `${activities.find((activity) => activity.id === activityId)?.title ?? activityId} xuất hiện ${sessions.length} lần trong lịch sử chăm sóc bản thân của bạn.`,
+        evidenceCount: sessions.length,
+        sources: sessions.slice(0, 7).map((session) => ({
+          id: session.id,
+          type: "self_care",
+          label: "Chăm sóc bản thân",
+          occurredAt: session.completed_at!,
+        })),
+      });
+    }
+    return {
+      patterns,
+      message: patterns.length ? null : "There's not enough information yet.",
+      disclaimer: PATTERN_DISCLAIMER,
+    } satisfies LifePatternsResponse;
   } else if (resource === "insights" && id === "ask") {
     const { question } = askMoriSchema.parse(body);
     const folded = question
@@ -662,15 +718,17 @@ export async function loadDemoSamples() {
   const db = await get();
   const past = (days: number) =>
     new Date(Date.now() - days * 86400000).toISOString();
-  db.moods = ["good", "low", "okay", "joyful"].map((mood, i) => ({
-    ...entity(),
-    created_at: past(i + 1),
-    mood: mood as Mood["mood"],
-    intensity: 0.5,
-    tags: ["Work"],
-    optional_note: "Dữ liệu mẫu",
-    client_id: newId(),
-  }));
+  db.moods = ["good", "low", "okay", "joyful", "good", "okay"].map(
+    (mood, i) => ({
+      ...entity(),
+      created_at: past(i + 1),
+      mood: mood as Mood["mood"],
+      intensity: 0.5,
+      tags: ["Work"],
+      optional_note: "Dữ liệu mẫu",
+      client_id: newId(),
+    }),
+  );
   db.journals = [
     {
       ...entity(),

@@ -2,35 +2,36 @@
 
 Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorization: Bearer <Supabase access token>`. Request bodies validated with shared Zod schemas; unknown fields discarded. Caller cannot set `user_id`. IDs validated as UUID except curated activity IDs. Error responses contain a localized generic `error`, never raw provider errors/private data. Every response includes `X-Request-ID`; a caller-supplied value is accepted only when it is a valid UUID.
 
-| Method            | Path                             | Behavior                                                     |
-| ----------------- | -------------------------------- | ------------------------------------------------------------ |
-| POST              | /auth/profile                    | Complete onboarding profile                                  |
-| GET, PATCH        | /profile                         | Read/update own profile                                      |
-| POST              | /account/export                  | Return a JSON package of the caller's account data           |
-| DELETE            | /account                         | Delete Supabase Auth user; cascade application data          |
-| GET, POST         | /moods                           | List/create mood; `client_id` prevents retry duplicates      |
-| GET, POST, DELETE | /conversations                   | List/create own conversation or delete all own conversations |
-| GET, DELETE       | /conversations/:id               | Read conversation/messages or delete both                    |
-| POST              | /conversations/:id/messages      | Safety pipeline; content, mode, client_id                    |
-| POST              | /conversations/:id/journal-draft | Return unsaved draft, never insert journal                   |
-| GET, POST, DELETE | /memories                        | List/add approved memory/delete all                          |
-| PATCH, DELETE     | /memories/:id                    | Edit/delete memory and active vector                         |
-| POST              | /memories/:id/approve            | Embed and approve explicitly                                 |
-| POST              | /insights/ask                    | Answer from bounded, owned saved data with source references |
-| GET, POST         | /life-map                        | List active items or add an approved manual item             |
-| PATCH, DELETE     | /life-map/:id                    | Edit or soft-delete an owned item                            |
-| POST              | /life-map/:id/approve            | Approve a pending item                                       |
-| GET, POST         | /life-map/suggestions            | Preview or explicitly accept memory-backed suggestions       |
-| GET               | /reflections/timeline            | Private merged timeline with an optional validated filter    |
-| GET, POST, DELETE | /journals                        | List/save reviewed journal or delete all own entries         |
-| PATCH, DELETE     | /journals/:id                    | Edit/delete own entry                                        |
-| GET               | /self-care                       | Enabled curated database activities                          |
-| POST              | /self-care/:id/start             | Create own activity session                                  |
-| POST              | /self-care/:id/complete          | Complete matching `session_id`, award once                   |
-| GET               | /garden                          | Own persistent garden state                                  |
-| GET               | /weekly-reflection               | Opt-in summary of last seven days                            |
-| POST              | /weekly-reflection/complete      | Save weekly summary, award once per UTC week                 |
-| GET, PATCH        | /notification-preferences        | Off/morning/evening/custom and local time                    |
+| Method            | Path                             | Behavior                                                      |
+| ----------------- | -------------------------------- | ------------------------------------------------------------- |
+| POST              | /auth/profile                    | Complete onboarding profile                                   |
+| GET, PATCH        | /profile                         | Read/update own profile                                       |
+| POST              | /account/export                  | Return a JSON package of the caller's account data            |
+| DELETE            | /account                         | Delete Supabase Auth user; cascade application data           |
+| GET, POST         | /moods                           | List/create mood; `client_id` prevents retry duplicates       |
+| GET, POST, DELETE | /conversations                   | List/create own conversation or delete all own conversations  |
+| GET, DELETE       | /conversations/:id               | Read conversation/messages or delete both                     |
+| POST              | /conversations/:id/messages      | Safety pipeline; content, mode, client_id                     |
+| POST              | /conversations/:id/journal-draft | Return unsaved draft, never insert journal                    |
+| GET, POST, DELETE | /memories                        | List/add approved memory/delete all                           |
+| PATCH, DELETE     | /memories/:id                    | Edit/delete memory and active vector                          |
+| POST              | /memories/:id/approve            | Embed and approve explicitly                                  |
+| POST              | /insights/ask                    | Answer from bounded, owned saved data with source references  |
+| GET               | /insights/patterns               | Deterministic observations with at least five supporting rows |
+| GET, POST         | /life-map                        | List active items or add an approved manual item              |
+| PATCH, DELETE     | /life-map/:id                    | Edit or soft-delete an owned item                             |
+| POST              | /life-map/:id/approve            | Approve a pending item                                        |
+| GET, POST         | /life-map/suggestions            | Preview or explicitly accept memory-backed suggestions        |
+| GET               | /reflections/timeline            | Private merged timeline with an optional validated filter     |
+| GET, POST, DELETE | /journals                        | List/save reviewed journal or delete all own entries          |
+| PATCH, DELETE     | /journals/:id                    | Edit/delete own entry                                         |
+| GET               | /self-care                       | Enabled curated database activities                           |
+| POST              | /self-care/:id/start             | Create own activity session                                   |
+| POST              | /self-care/:id/complete          | Complete matching `session_id`, award once                    |
+| GET               | /garden                          | Own persistent garden state                                   |
+| GET               | /weekly-reflection               | Opt-in summary of last seven days                             |
+| POST              | /weekly-reflection/complete      | Save weekly summary, award once per UTC week                  |
+| GET, PATCH        | /notification-preferences        | Off/morning/evening/custom and local time                     |
 
 List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Database schema supports all historical records.
 

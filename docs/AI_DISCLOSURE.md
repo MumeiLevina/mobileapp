@@ -12,4 +12,6 @@ Memories are optional. Mori may use only active memories the user explicitly app
 
 The Memory screen shows why a memory exists, its source category and when the user approved it. Conversation-derived candidates remain pending and excluded from retrieval until explicit approval.
 
+Life Patterns is deterministic and does not call the LLM. It requires at least five relevant records for each observation, returns an explicit non-causation and non-diagnosis notice, and returns an honest empty state when the threshold is not met.
+
 This disclosure must appear in onboarding and the published support/privacy material in language appropriate to the target audience. The selected provider/model and relevant subprocessor information must be filled in before release.
