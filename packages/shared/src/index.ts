@@ -97,6 +97,30 @@ export const notificationSchema = z.object({
   minute: z.number().int().min(0).max(59),
   timezone: z.string().max(80),
 });
+export const askMoriSchema = z.object({
+  question: z.string().trim().min(3).max(500),
+});
+export const InsightSourceType = z.enum([
+  "memory",
+  "journal",
+  "mood",
+  "conversation",
+  "self_care",
+  "weekly_reflection",
+]);
+export type InsightSourceType = z.infer<typeof InsightSourceType>;
+export type InsightSource = {
+  id: string;
+  type: InsightSourceType;
+  label: string;
+  occurredAt: string;
+};
+export type AskMoriResponse = {
+  answer: string;
+  sources: InsightSource[];
+  safetyLevel: SafetyLevel;
+  crisisResources?: CrisisResource[];
+};
 export type NotificationPreference = z.infer<typeof notificationSchema>;
 export type Entity = {
   id: string;

@@ -35,6 +35,13 @@ export default function Talk() {
       <MoriText muted>
         Bạn không cần sắp xếp mọi suy nghĩ trước khi bắt đầu.
       </MoriText>
+      <MoriButton
+        secondary
+        icon="sparkles-outline"
+        onPress={() => router.push("/ask-mori")}
+      >
+        Hỏi Mori về những điều mình đã lưu
+      </MoriButton>
       <GardenScene />
       <MoriText>Bạn muốn cuộc trò chuyện này như thế nào?</MoriText>
       {(["listen", "understand", "think"] as const).map((m) => (

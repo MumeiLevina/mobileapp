@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Activity,
   AccountDataExport,
+  AskMoriResponse,
   ChatResult,
   Conversation,
   ConversationMode,
@@ -20,6 +21,7 @@ import {
   moodSchema,
   notificationSchema,
   profileSchema,
+  askMoriSchema,
 } from "@mori/shared";
 import { newId } from "../lib/id";
 type DemoData = {
@@ -309,6 +311,92 @@ export async function demoRequest(
           : `Trong 7 ngày qua, bạn đã ghé lại với mình ${db.moods.filter((m) => Date.parse(m.created_at) > since).length} lần.\n\nBạn muốn mang theo điều gì vào tuần tới?`
         : null,
     };
+  } else if (resource === "insights" && id === "ask") {
+    const { question } = askMoriSchema.parse(body);
+    const folded = question
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+    if (
+      /(tu tu|tu sat|muon chet|khong muon song|kill myself|suicid)/.test(folded)
+    ) {
+      return {
+        answer:
+          "Điều bạn vừa chia sẻ nghe rất nghiêm trọng. Nếu bạn có thể hành động ngay hoặc đang gặp nguy hiểm, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc đến cơ sở cấp cứu gần nhất. Nếu có thể, hãy liên hệ một người bạn tin tưởng để họ ở bên bạn. Bạn có đang gặp nguy hiểm ngay lúc này không?",
+        sources: [],
+        safetyLevel: "crisis",
+      } satisfies AskMoriResponse;
+    }
+    const candidates = [
+      ...db.memories
+        .filter((memory) => memory.approved_by_user && !memory.deleted_at)
+        .map((memory) => ({
+          id: memory.id,
+          type: "memory" as const,
+          label: "Ký ức",
+          occurredAt: memory.created_at,
+          text: memory.content,
+        })),
+      ...db.journals
+        .filter((journal) => !journal.deleted_at)
+        .map((journal) => ({
+          id: journal.id,
+          type: "journal" as const,
+          label: "Nhật ký",
+          occurredAt: journal.created_at,
+          text: `${journal.title} ${journal.content}`,
+        })),
+      ...db.moods.map((mood) => ({
+        id: mood.id,
+        type: "mood" as const,
+        label: "Tâm trạng",
+        occurredAt: mood.created_at,
+        text: `${mood.mood} ${mood.tags.join(" ")} ${mood.optional_note}`,
+      })),
+      ...db.conversations
+        .filter((conversation) => !conversation.deleted_at)
+        .map((conversation) => ({
+          id: conversation.id,
+          type: "conversation" as const,
+          label: "Trò chuyện",
+          occurredAt: conversation.created_at,
+          text: conversation.title,
+        })),
+      ...db.sessions
+        .filter((session) => session.completed)
+        .map((session) => ({
+          id: session.id,
+          type: "self_care" as const,
+          label: "Chăm sóc bản thân",
+          occurredAt: new Date().toISOString(),
+          text: session.activity_id,
+        })),
+    ];
+    const tokens = folded.split(/[^a-z0-9]+/).filter((word) => word.length > 2);
+    const ranked = candidates
+      .map((candidate) => ({
+        ...candidate,
+        score: tokens.filter((word) =>
+          candidate.text
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .includes(word),
+        ).length,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+    const sources = ranked.map(
+      ({ text: _text, score: _score, ...source }) => source,
+    );
+    return {
+      answer: sources.length
+        ? `Mình tìm thấy ${sources.length} khoảnh khắc có liên quan trong dữ liệu bạn đã lưu. Đây là quan sát từ các ghi chép của bạn, không phải bằng chứng về nguyên nhân.`
+        : "Mình chưa có đủ thông tin liên quan trong những điều bạn đã lưu.",
+      sources,
+      safetyLevel: "normal",
+    } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
       schemaVersion: 1,

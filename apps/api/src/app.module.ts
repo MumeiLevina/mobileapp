@@ -26,6 +26,8 @@ import { SelfCareService } from "./modules/selfcare/selfcare.service";
 import { AccountController } from "./modules/account/account.controller";
 import { AccountExportService } from "./modules/account/account-export.service";
 import { MetricsService } from "./observability/metrics.service";
+import { InsightsController } from "./modules/insights/insights.controller";
+import { AskMoriService } from "./modules/insights/ask-mori.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -37,6 +39,7 @@ import { MetricsService } from "./observability/metrics.service";
     SelfCareController,
     ReflectionsController,
     AccountController,
+    InsightsController,
   ],
   providers: [
     DatabaseService,
@@ -49,6 +52,7 @@ import { MetricsService } from "./observability/metrics.service";
     OutputGuard,
     AccountExportService,
     MetricsService,
+    AskMoriService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

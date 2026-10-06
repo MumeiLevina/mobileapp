@@ -21,12 +21,14 @@ export class DatabaseService {
     options: {
       active?: boolean;
       equals?: Record<string, string | boolean>;
+      notNull?: string[];
       limit?: number;
     } = {},
   ): Promise<T[]> {
     let q = this.admin.from(table).select("*").eq("user_id", user);
     if (options.active) q = q.is("deleted_at", null);
     for (const [k, v] of Object.entries(options.equals ?? {})) q = q.eq(k, v);
+    for (const column of options.notNull ?? []) q = q.not(column, "is", null);
     const { data, error } = await q
       .order("created_at", { ascending: false })
       .limit(options.limit ?? 100);

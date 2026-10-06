@@ -16,6 +16,7 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 | GET, POST, DELETE | /memories                        | List/add approved memory/delete all                          |
 | PATCH, DELETE     | /memories/:id                    | Edit/delete memory and active vector                         |
 | POST              | /memories/:id/approve            | Embed and approve explicitly                                 |
+| POST              | /insights/ask                    | Answer from bounded, owned saved data with source references |
 | GET, POST, DELETE | /journals                        | List/save reviewed journal or delete all own entries         |
 | PATCH, DELETE     | /journals/:id                    | Edit/delete own entry                                        |
 | GET               | /self-care                       | Enabled curated database activities                          |

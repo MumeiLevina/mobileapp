@@ -6,6 +6,8 @@ Mori does not diagnose mental-health conditions and must not recommend starting,
 
 The service can send conversation text, a bounded recent message window and explicitly approved memories to the configured AI provider. Safety classification and output review reduce known risks but cannot guarantee safe or correct responses. Engineering evaluations are regression tests and are not clinical validation.
 
+Ask Mori can send a question and at most 12 relevant excerpts from the user's approved memories, active journals, moods, conversation titles, completed self-care history and weekly reflections. It does not send the full history, unapproved memories, deleted content, another user's data or internal safety metadata. Answers include references to the source records and describe associations as observations rather than causes.
+
 Memories are optional. Mori may use only active memories the user explicitly approved. Users can review, edit or delete them from the privacy center. A response can still make a mistake; users should not rely on Mori as the sole source of important medical, legal, financial or safety decisions.
 
 This disclosure must appear in onboarding and the published support/privacy material in language appropriate to the target audience. The selected provider/model and relevant subprocessor information must be filled in before release.
