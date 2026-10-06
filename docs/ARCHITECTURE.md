@@ -23,6 +23,12 @@ Provider interface supports text, structured output and embeddings. An OpenAI-co
 
 Crisis responses come from a deterministic service rather than the companion model. The service reads only enabled, verified resources from `crisis_resources`. The current product has no manually selected country, so it returns only globally applicable resources and never infers location from IP. An empty or unavailable directory falls back to generic local emergency-service guidance. No hotline is seeded without a verification source and timestamp.
 
+## Privacy controls
+
+The in-app privacy center gives the user one place to export data, manage memories, delete all journals or conversations, and delete the account. Every destructive action has a separate confirmation with a clear keep-data path. Account deletion first removes the verified Supabase Auth user so database cascades delete owned server records, then clears local drafts, reminders, auth state and query caches. The client never reports success when the server deletion fails.
+
+The export service synchronously collects every retained owner-scoped row in 500-row pages with explicit field projections. It returns one versioned JSON package and excludes internal safety metadata, vector embeddings and ownership identifiers. A server-only audit table stores request status, timestamps and aggregate record counts without exported content. Web downloads the package as a JSON file; native passes the JSON payload to the system share sheet. Large-account support should replace this synchronous response with a background job and a private, short-lived download object.
+
 ## Delivery validation
 
 Run typecheck, ESLint, critical Jest tests and Expo web export. Native device validation and live Supabase/LLM checks require configured services and device builds. Production release additionally requires bilingual adversarial safety evaluation, clinical review of curated copy, backup/deletion policy, and operational monitoring without sensitive content.

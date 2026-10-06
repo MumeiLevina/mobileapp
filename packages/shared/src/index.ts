@@ -169,6 +169,22 @@ export type ChatResult = {
   activity?: Activity;
   crisisResources?: CrisisResource[];
 };
+export type AccountDataExport = {
+  schemaVersion: 1;
+  generatedAt: string;
+  data: {
+    profile: Record<string, unknown>;
+    moods: Record<string, unknown>[];
+    journals: Record<string, unknown>[];
+    memories: Record<string, unknown>[];
+    conversations: Record<string, unknown>[];
+    messages: Record<string, unknown>[];
+    selfCareHistory: Record<string, unknown>[];
+    garden: Record<string, unknown>;
+    weeklyReflections: Record<string, unknown>[];
+    notificationPreferences: Record<string, unknown>;
+  };
+};
 export const gardenFromPoints = (points: number): Garden => ({
   growth_points: points,
   tree_level: Math.min(5, 1 + Math.floor(points / 5)),

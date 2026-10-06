@@ -28,7 +28,6 @@ export default function Me() {
   const copy = useT();
   const preferences = usePreferences();
   const user = useSession((s) => s.userId);
-  const [deleting, setDeleting] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
   const data = useQuery({
@@ -40,17 +39,6 @@ export default function Me() {
       request("/profile", "PATCH", value),
     onSuccess: () => {
       void refresh();
-    },
-  });
-  const remove = useMutation({
-    mutationFn: async () => {
-      await request("/account", "DELETE");
-      await clearUserDeviceData(user ?? "demo");
-      if (!config.demo) await supabase?.auth.signOut();
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      router.replace("/");
     },
   });
   const signout = useMutation({
@@ -100,6 +88,10 @@ export default function Me() {
       ))}
       <MoriButton secondary onPress={() => router.push("/memories")}>
         {copy.memories}
+      </MoriButton>
+      <SectionHeading title="Dữ liệu của bạn" />
+      <MoriButton secondary onPress={() => router.push("/privacy")}>
+        Mở trung tâm dữ liệu
       </MoriButton>
       <MoriButton secondary onPress={() => router.push("/notifications")}>
         {copy.notifications}
@@ -181,11 +173,6 @@ export default function Me() {
           Đăng xuất và xóa bản nháp thiết bị
         </MoriButton>
       )}
-      <MoriButton secondary onPress={() => setDeleting(true)}>
-        {config.demo
-          ? "Xóa dữ liệu demo và bắt đầu lại"
-          : "Xóa tài khoản và dữ liệu"}
-      </MoriButton>
       <MoriText muted variant="small">
         {copy.boundary}
       </MoriText>
@@ -208,29 +195,9 @@ export default function Me() {
             thật trong demo.
           </MoriText>
           <MoriText muted>
-            Xuất dữ liệu: chưa triển khai trong MVP. Kiến trúc tác vụ xuất được
-            mô tả trong tài liệu dự án.
+            Bạn có thể xuất hoặc xóa dữ liệu trong mục Dữ liệu của bạn.
           </MoriText>
           <MoriButton onPress={() => setPrivacy(false)}>Đã hiểu</MoriButton>
-        </View>
-      </MoriBottomSheet>
-      <MoriBottomSheet visible={deleting} onClose={() => setDeleting(false)}>
-        <View style={styles.stack}>
-          <MoriText variant="title">Xóa không gian này?</MoriText>
-          <MoriText>
-            Toàn bộ nhật ký, trò chuyện, ký ức, cảm xúc và khu vườn sẽ bị xóa.
-            Không thể hoàn tác.
-          </MoriText>
-          <ErrorNote error={remove.error} />
-          <MoriButton
-            loading={remove.isPending}
-            onPress={() => remove.mutate()}
-          >
-            Xác nhận xóa toàn bộ
-          </MoriButton>
-          <MoriButton secondary onPress={() => setDeleting(false)}>
-            Giữ lại
-          </MoriButton>
         </View>
       </MoriBottomSheet>
     </ScreenContainer>

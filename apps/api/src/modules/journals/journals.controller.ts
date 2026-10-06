@@ -49,4 +49,7 @@ export class JournalsController {
   @Delete(":id") delete(@UserId() user: string, @Param("id") id: string) {
     return this.db.remove("journals", user, uuid(id));
   }
+  @Delete() deleteAll(@UserId() user: string) {
+    return this.db.remove("journals", user);
+  }
 }

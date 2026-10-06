@@ -24,6 +24,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610060003_data_export_audits.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -127,6 +133,20 @@ try {
     1,
   );
   console.log("PASS verified crisis resource directory permissions and shape");
+  await pg.query(
+    "insert into data_export_audits(user_id,status,record_counts,completed_at) values($1,'completed',$2,now())",
+    [a, JSON.stringify({ journals: 1 })],
+  );
+  assert.equal(
+    (
+      await pg.query(
+        "select record_counts from data_export_audits where user_id=$1",
+        [a],
+      )
+    ).rows.length,
+    1,
+  );
+  console.log("PASS export audit stores metadata without exported content");
   for (let i = 0; i < 3; i++)
     await pg.query("select award_growth($1,$2)", [a, "mood:one"]);
   assert.equal(
@@ -213,6 +233,7 @@ try {
     "garden_states",
     "garden_unlocks",
     "conversations",
+    "data_export_audits",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

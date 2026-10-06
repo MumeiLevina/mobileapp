@@ -106,6 +106,34 @@ export class DatabaseService {
     return (data ?? []) as CrisisResource[];
   }
 
+  async listAllForExport<T>(
+    table:
+      | "mood_entries"
+      | "journals"
+      | "memories"
+      | "conversations"
+      | "messages"
+      | "self_care_sessions"
+      | "weekly_reflections",
+    user: string,
+    columns: string,
+  ): Promise<T[]> {
+    const pageSize = 500;
+    const rows: T[] = [];
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await this.admin
+        .from(table)
+        .select(columns)
+        .eq("user_id", user)
+        .order("created_at", { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new ServiceUnavailableException();
+      const page = (data ?? []) as T[];
+      rows.push(...page);
+      if (page.length < pageSize) return rows;
+    }
+  }
+
   private withoutOwnership(value: Record<string, unknown>) {
     const { user_id: _ignoredUserId, ...safeValue } = value;
     return safeValue;

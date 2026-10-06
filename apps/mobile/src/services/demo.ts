@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Activity,
+  AccountDataExport,
   ChatResult,
   Conversation,
   ConversationMode,
@@ -77,6 +78,10 @@ function award(db: DemoData, key: string) {
   }
 }
 const record = (input: unknown) => input as Record<string, unknown>;
+const withoutOwner = <T extends { user_id?: string }>(value: T) => {
+  const { user_id: _userId, ...safe } = value;
+  return safe;
+};
 export async function demoRequest(
   path: string,
   method: string,
@@ -103,7 +108,7 @@ export async function demoRequest(
   else if (resource === "journals") {
     if (method === "GET") return db.journals;
     if (method === "DELETE") {
-      db.journals = db.journals.filter((j) => j.id !== id);
+      db.journals = id ? db.journals.filter((j) => j.id !== id) : [];
       result = { ok: true };
     } else if (method === "PATCH") {
       const journal = db.journals.find((j) => j.id === id);
@@ -159,8 +164,10 @@ export async function demoRequest(
         : db.conversations;
     }
     if (method === "DELETE") {
-      db.conversations = db.conversations.filter((c) => c.id !== id);
-      db.messages = db.messages.filter((m) => m.conversation_id !== id);
+      db.conversations = id ? db.conversations.filter((c) => c.id !== id) : [];
+      db.messages = id
+        ? db.messages.filter((m) => m.conversation_id !== id)
+        : [];
       result = { ok: true };
     } else if (action === "journal-draft") {
       const text = db.messages
@@ -302,6 +309,29 @@ export async function demoRequest(
           : `Trong 7 ngày qua, bạn đã ghé lại với mình ${db.moods.filter((m) => Date.parse(m.created_at) > since).length} lần.\n\nBạn muốn mang theo điều gì vào tuần tới?`
         : null,
     };
+  } else if (resource === "account" && id === "export") {
+    const accountExport: AccountDataExport = {
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      data: {
+        profile: { ...db.profile },
+        moods: db.moods.map(withoutOwner),
+        journals: db.journals.map(withoutOwner),
+        memories: db.memories.map(
+          ({ embedding: _embedding, confidence: _confidence, ...memory }) =>
+            withoutOwner(memory),
+        ),
+        conversations: db.conversations.map(withoutOwner),
+        messages: db.messages.map(({ safety_level: _safety, ...message }) =>
+          withoutOwner(message),
+        ),
+        selfCareHistory: db.sessions.map((session) => ({ ...session })),
+        garden: { ...db.garden },
+        weeklyReflections: [],
+        notificationPreferences: { ...db.notifications },
+      },
+    };
+    return accountExport;
   } else if (resource === "account") {
     database = initial();
     await AsyncStorage.removeItem("mori-demo");

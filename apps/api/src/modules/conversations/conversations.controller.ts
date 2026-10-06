@@ -61,4 +61,7 @@ export class ConversationsController {
   @Delete(":id") delete(@UserId() user: string, @Param("id") id: string) {
     return this.db.remove("conversations", user, uuid(id));
   }
+  @Delete() deleteAll(@UserId() user: string) {
+    return this.db.remove("conversations", user);
+  }
 }

@@ -264,8 +264,6 @@ export const english: Record<string, string> = {
     "Memories are used only with your approval. Deleting your account removes related data from the active database. Operators must publish backup retention policies before release.",
   "Bản nháp trên web nằm trong trình duyệt này; trên native được lưu bằng bộ nhớ bảo mật của hệ điều hành. Không dùng dữ liệu nhạy cảm thật trong demo.":
     "Web drafts stay in this browser; native drafts use the operating system secure store. Do not use real sensitive data in demo mode.",
-  "Xuất dữ liệu: chưa triển khai trong MVP. Kiến trúc tác vụ xuất được mô tả trong tài liệu dự án.":
-    "Data export is not implemented in this MVP. Its planned architecture is documented in the project.",
   "Đã hiểu": "Understood",
   "Xóa không gian này?": "Delete this space?",
   "Toàn bộ nhật ký, trò chuyện, ký ức, cảm xúc và khu vườn sẽ bị xóa. Không thể hoàn tác.":
@@ -311,4 +309,39 @@ export const english: Record<string, string> = {
   "Không tìm thấy hoạt động.": "Activity not found.",
   "Không tìm thấy trang viết.": "Entry not found.",
   "Không tìm thấy ký ức.": "Memory not found.",
+  "Dữ liệu của bạn": "Your data",
+  "Mở trung tâm dữ liệu": "Open data center",
+  "Bạn có thể xuất hoặc xóa dữ liệu trong mục Dữ liệu của bạn.":
+    "You can export or delete data from Your data.",
+  "Bạn có thể lấy một bản sao hoặc xóa từng nhóm dữ liệu. Không lựa chọn nào được bật sẵn.":
+    "Get a copy or delete individual data groups. No option is preselected.",
+  "Lấy bản sao": "Get a copy",
+  "Tạo tệp JSON chứa dữ liệu tài khoản của bạn. Nội dung safety nội bộ và embedding không được đưa vào bản xuất.":
+    "Create a JSON file containing your account data. Internal safety data and embeddings are excluded.",
+  "Xuất dữ liệu của tôi": "Export my data",
+  "Bản xuất dữ liệu đã sẵn sàng.": "Your data export is ready.",
+  "Quản lý và xóa dữ liệu": "Manage and delete data",
+  "Quản lý ký ức của Mori": "Manage Mori memories",
+  "Xóa tất cả cuộc trò chuyện": "Delete all conversations",
+  "Xóa tất cả nhật ký": "Delete all journals",
+  "Xóa tài khoản và toàn bộ dữ liệu": "Delete account and all data",
+  "Xóa tất cả cuộc trò chuyện?": "Delete all conversations?",
+  "Toàn bộ cuộc trò chuyện và tin nhắn sẽ bị xóa vĩnh viễn.":
+    "All conversations and messages will be permanently deleted.",
+  "Xác nhận xóa cuộc trò chuyện": "Confirm deleting conversations",
+  "Xóa tất cả nhật ký?": "Delete all journals?",
+  "Toàn bộ trang viết đã lưu sẽ bị xóa vĩnh viễn.":
+    "All saved journal entries will be permanently deleted.",
+  "Xác nhận xóa nhật ký": "Confirm deleting journals",
+  "Xóa tất cả ký ức của Mori?": "Delete all Mori memories?",
+  "Mori sẽ không dùng những ký ức này trong các cuộc trò chuyện sau.":
+    "Mori will no longer use these memories in future conversations.",
+  "Xác nhận xóa ký ức": "Confirm deleting memories",
+  "Xóa tài khoản và toàn bộ dữ liệu?": "Delete account and all data?",
+  "Nhật ký, trò chuyện, ký ức, cảm xúc, khu vườn và tài khoản sẽ bị xóa. Không thể hoàn tác.":
+    "Journals, conversations, memories, moods, garden data, and the account will be deleted. This cannot be undone.",
+  "Xác nhận xóa tài khoản": "Confirm deleting account",
+  "Giữ lại dữ liệu": "Keep my data",
+  "Dữ liệu đã được xóa theo yêu cầu của bạn.":
+    "The selected data has been deleted.",
 };

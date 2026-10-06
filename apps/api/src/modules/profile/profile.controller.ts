@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Patch,
-  Post,
-  ServiceUnavailableException,
-} from "@nestjs/common";
+import { Body, Controller, Get, Patch, Post } from "@nestjs/common";
 import { profileSchema, notificationSchema } from "@mori/shared";
 import { DatabaseService } from "../../database/database.service";
 import { UserId } from "../../common/auth.guard";
@@ -46,10 +38,5 @@ export class ProfileController {
       undefined,
       parse(notificationSchema, body),
     );
-  }
-  @Delete("account") async remove(@UserId() user: string) {
-    const { error } = await this.db.admin.auth.admin.deleteUser(user);
-    if (error) throw new ServiceUnavailableException();
-    return { ok: true };
   }
 }

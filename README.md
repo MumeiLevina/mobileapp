@@ -47,7 +47,7 @@ Test tạo hai tài khoản tạm thời và xóa chúng sau khi kiểm tra. Ch�
 
 Timeout của provider được cấu hình riêng qua `LLM_TEXT_TIMEOUT_MS`, `LLM_CLASSIFICATION_TIMEOUT_MS` và `LLM_EMBEDDING_TIMEOUT_MS`; giá trị mặc định nằm trong `apps/api/.env.example`.
 
-Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon key. Supabase Storage được bật trong cấu hình local, chưa có tải tệp riêng tư trong MVP; pipeline xuất dữ liệu được mô tả trong tài liệu.
+Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon key. Trung tâm dữ liệu cho phép xuất gói JSON đã lọc trường nội bộ; web tải tệp trực tiếp và native mở bảng chia sẻ hệ thống. Luồng đồng bộ hiện dành cho tài khoản quy mô MVP.
 
 ## Các luồng đã có
 
@@ -58,7 +58,8 @@ Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon ke
 - Nhật ký: tìm kiếm, lịch tháng, tạo/sửa/xóa, bản nháp trên thiết bị. Nội dung người dùng không bị dịch tự động.
 - Ký ức: nhóm theo loại, thêm/sửa/duyệt/xóa/xóa hết; retrieval chỉ dùng approved + active + đúng chủ sở hữu.
 - 10 hoạt động curated, bắt đầu/tạm dừng/hoàn thành, nhịp thở có reduced motion, garden growth không phạt cảm xúc buồn hoặc bỏ ngày.
-- Weekly reflection opt-in, lời nhắc local trên native sau khi cấp quyền, xóa tài khoản và dữ liệu liên quan.
+- Weekly reflection opt-in, lời nhắc local trên native sau khi cấp quyền.
+- Trung tâm dữ liệu: xuất JSON, quản lý/xóa toàn bộ ký ức, nhật ký hoặc cuộc trò chuyện, và xóa tài khoản sau bước xác nhận riêng.
 
 ## Kiểm tra
 

@@ -6,16 +6,17 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 |---|---|---|
 | POST | /auth/profile | Complete onboarding profile |
 | GET, PATCH | /profile | Read/update own profile |
+| POST | /account/export | Return a JSON package of the caller's account data |
 | DELETE | /account | Delete Supabase Auth user; cascade application data |
 | GET, POST | /moods | List/create mood; `client_id` prevents retry duplicates |
-| GET, POST | /conversations | List/create own conversation |
+| GET, POST, DELETE | /conversations | List/create own conversation or delete all own conversations |
 | GET, DELETE | /conversations/:id | Read conversation/messages or delete both |
 | POST | /conversations/:id/messages | Safety pipeline; content, mode, client_id |
 | POST | /conversations/:id/journal-draft | Return unsaved draft, never insert journal |
 | GET, POST, DELETE | /memories | List/add approved memory/delete all |
 | PATCH, DELETE | /memories/:id | Edit/delete memory and active vector |
 | POST | /memories/:id/approve | Embed and approve explicitly |
-| GET, POST | /journals | List/save reviewed journal |
+| GET, POST, DELETE | /journals | List/save reviewed journal or delete all own entries |
 | PATCH, DELETE | /journals/:id | Edit/delete own entry |
 | GET | /self-care | Enabled curated database activities |
 | POST | /self-care/:id/start | Create own activity session |
@@ -25,7 +26,9 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 | POST | /weekly-reflection/complete | Save weekly summary, award once per UTC week |
 | GET, PATCH | /notification-preferences | Off/morning/evening/custom and local time |
 
-List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Cursor pagination and account-wide export are tracked before scaling beyond MVP. Database schema supports all historical records.
+List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Database schema supports all historical records.
+
+`POST /account/export` is limited to 2 requests/minute/IP and synchronously returns all retained rows owned by the authenticated user. The package contains profile, moods, journals, approved and pending memories, conversations with messages, self-care history, garden state, weekly reflections and notification preferences. Explicit projections exclude ownership identifiers, embeddings, classifier confidence, internal safety levels and safety events. The server pages through each table in batches of 500 and records only status, timestamps and record counts in `data_export_audits`; exported content is never copied into the audit. This synchronous path is intended for MVP-sized accounts. Move generation to a background job and private expiring object storage before supporting large accounts.
 
 Global throttle: 90 requests/minute/IP; message generation 12/minute/IP; journal generation 5/minute/IP. Single-process in-memory throttle is appropriate to this modular monolith; use shared storage before horizontal scaling.
 

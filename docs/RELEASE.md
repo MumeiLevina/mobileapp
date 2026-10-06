@@ -2,7 +2,7 @@
 
 ## Implemented
 
-Expo/Nest/shared monorepo, migrations and seed, Supabase JWT guard, RLS with server-only writes, scoped repositories, consent-gated vector retrieval, safety-before-intent routing, independent output review, deterministic crisis response, local drafts, reversible preferences, native reminder scheduling, critical tests and browser E2E.
+Expo/Nest/shared monorepo, migrations and seed, Supabase JWT guard, RLS with server-only writes, scoped repositories, consent-gated vector retrieval, safety-before-intent routing, independent output review, deterministic crisis response, local drafts, reversible preferences, native reminder scheduling, privacy center, owner-scoped JSON export, verified account deletion, critical tests and browser E2E.
 
 No raw message/journal content is logged or sent to analytics. No analytics provider is configured. No streak penalties, diagnostic scores, emotional guilt notifications, romantic/exclusive companion claims or user-content upload feature.
 
@@ -19,7 +19,7 @@ No raw message/journal content is logged or sent to analytics. No analytics prov
 ## Explicitly deferred product scope
 
 - Voice button is labeled unavailable; no recording/realtime voice in MVP.
-- Data export is a documented architecture placeholder: authenticated request → background job → private Supabase Storage object under user UUID → short-lived signed download URL → automatic expiry and audit event without content. No export endpoint claims to work yet.
+- Data export currently returns a synchronous JSON package and is intended for MVP-sized accounts. Before supporting large accounts, move generation to a background job with private object storage, short-lived signed downloads and automatic expiry. Native currently shares the JSON payload through the system share sheet; web downloads a `.json` file.
 - Cursor pagination beyond initial list windows, server push notifications and richer semantic recent-memory expiry are next iterations. Local reminders and bounded recent conversation context work now.
 - No social network, therapist marketplace, payments, wearables, 3D garden or video avatar.
 

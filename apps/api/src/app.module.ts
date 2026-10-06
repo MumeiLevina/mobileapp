@@ -23,6 +23,8 @@ import { MockLLMProvider } from "./ai/providers/mock.provider";
 import { HttpLLMProvider } from "./ai/providers/http.provider";
 import { readConfig } from "./config/env";
 import { SelfCareService } from "./modules/selfcare/selfcare.service";
+import { AccountController } from "./modules/account/account.controller";
+import { AccountExportService } from "./modules/account/account-export.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -33,6 +35,7 @@ import { SelfCareService } from "./modules/selfcare/selfcare.service";
     ConversationsController,
     SelfCareController,
     ReflectionsController,
+    AccountController,
   ],
   providers: [
     DatabaseService,
@@ -43,6 +46,7 @@ import { SelfCareService } from "./modules/selfcare/selfcare.service";
     SafetyService,
     CrisisResponseService,
     OutputGuard,
+    AccountExportService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

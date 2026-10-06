@@ -81,6 +81,12 @@ integration("real Supabase Auth and RLS", () => {
         intensity: 0.5,
         client_id: crypto.randomUUID(),
       }),
+      admin.from("data_export_audits").insert({
+        user_id: idB,
+        status: "completed",
+        record_counts: { journals: 1 },
+        completed_at: new Date().toISOString(),
+      }),
     ]);
     const failed = writes.find((write) => write.error);
     if (failed?.error) throw failed.error;
@@ -96,6 +102,7 @@ integration("real Supabase Auth and RLS", () => {
       "profiles",
       "garden_states",
       "notification_preferences",
+      "data_export_audits",
     ]) {
       const result = await admin
         .from(table)

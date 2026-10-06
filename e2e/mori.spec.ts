@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 test("onboarding → mood → conversation → approved memory → journal → care → garden", async ({
   page,
 }) => {
@@ -133,4 +134,62 @@ test("journal local draft survives reload and deletion removes approved memory",
       "Mori chưa ghi nhớ điều gì. Bạn không cần thêm nếu không muốn.",
     ),
   ).toBeVisible();
+});
+
+test("privacy center exports and deletes each requested data group", async ({
+  page,
+}) => {
+  await page.goto("/me");
+  await page
+    .getByRole("button", { name: "Nạp dữ liệu mẫu để khám phá" })
+    .click();
+  await page.getByRole("button", { name: "Mở trung tâm dữ liệu" }).click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Xuất dữ liệu của tôi" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(
+    /^mori-data-\d{4}-\d{2}-\d{2}\.json$/,
+  );
+  const path = await download.path();
+  const accountExport = JSON.parse(await readFile(path!, "utf8"));
+  expect(accountExport.schemaVersion).toBe(1);
+  expect(accountExport.data).not.toHaveProperty("safetyEvents");
+  expect(JSON.stringify(accountExport.data.memories)).not.toContain(
+    "embedding",
+  );
+
+  await page
+    .getByRole("button", { name: "Xóa tất cả cuộc trò chuyện", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Xác nhận xóa cuộc trò chuyện" })
+    .click();
+  await page
+    .getByRole("button", { name: "Xóa tất cả nhật ký", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Xác nhận xóa nhật ký" }).click();
+  await page
+    .getByRole("button", { name: "Xóa tất cả ký ức của Mori", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Xác nhận xóa ký ức" }).click();
+
+  const data = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(data.conversations).toEqual([]);
+  expect(data.messages).toEqual([]);
+  expect(data.journals).toEqual([]);
+  expect(data.memories).toEqual([]);
+
+  await page
+    .getByRole("button", { name: "Xóa dữ liệu demo và bắt đầu lại" })
+    .click();
+  await page.getByRole("button", { name: "Xác nhận xóa tài khoản" }).click();
+  await expect(
+    page.getByRole("button", { name: "Bắt đầu", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem("mori-demo")),
+  ).toBeNull();
 });
