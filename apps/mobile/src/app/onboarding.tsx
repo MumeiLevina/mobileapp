@@ -154,11 +154,11 @@ export default function Onboarding() {
         <>
           <GardenScene />
           <MoriText variant="title">
-            Một người bạn AI.\nVới những giới hạn rõ ràng.
+            Một người bạn đồng hành AI, với những giới hạn rõ ràng.
           </MoriText>
           <MoriText>
-            Mori có thể lắng nghe, giúp bạn suy ngẫm và gợi ý những việc chăm
-            sóc bản thân nhỏ.
+            Mori có thể lắng nghe, giúp bạn suy ngẫm và gợi ý những cách chăm
+            sóc bản thân đơn giản.
           </MoriText>
           <MoriText muted>
             Mori không phải bác sĩ hay nhà trị liệu, không chẩn đoán và không
@@ -166,8 +166,8 @@ export default function Onboarding() {
             chưa phù hợp.
           </MoriText>
           <MoriText muted>
-            Nếu bạn đang gặp nguy hiểm ngay lúc này, hãy liên hệ cấp cứu tại nơi
-            bạn sống hoặc một người bạn tin tưởng.
+            Nếu bạn đang gặp nguy hiểm ngay lúc này, hãy liên hệ dịch vụ cấp cứu
+            tại nơi bạn sống hoặc một người bạn tin tưởng.
           </MoriText>
           <MoriButton onPress={() => setStep(4)}>Mình đã hiểu</MoriButton>
         </>

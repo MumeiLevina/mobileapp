@@ -23,13 +23,13 @@ export const english: Record<string, string> = {
   "Tự nhiên, thân thiện như một cuộc trò chuyện.":
     "Natural, friendly and conversational.",
   "Ít lời hơn. Nhiều khoảng nghỉ hơn.": "Fewer words. More room to pause.",
-  "Một người bạn AI.\\nVới những giới hạn rõ ràng.":
-    "An AI companion. With clear boundaries.",
-  "Mori có thể lắng nghe, giúp bạn suy ngẫm và gợi ý những việc chăm sóc bản thân nhỏ.":
-    "Mori can listen, help you reflect and suggest small moments of self-care.",
+  "Một người bạn đồng hành AI, với những giới hạn rõ ràng.":
+    "An AI companion with clear boundaries.",
+  "Mori có thể lắng nghe, giúp bạn suy ngẫm và gợi ý những cách chăm sóc bản thân đơn giản.":
+    "Mori can listen, help you reflect, and suggest simple ways to care for yourself.",
   "Mori không phải bác sĩ hay nhà trị liệu, không chẩn đoán và không thay thế sự hỗ trợ từ con người. AI có thể hiểu sai hoặc trả lời chưa phù hợp.":
     "Mori is not a doctor or therapist, cannot diagnose, and does not replace human support. AI can misunderstand or respond poorly.",
-  "Nếu bạn đang gặp nguy hiểm ngay lúc này, hãy liên hệ cấp cứu tại nơi bạn sống hoặc một người bạn tin tưởng.":
+  "Nếu bạn đang gặp nguy hiểm ngay lúc này, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc một người bạn tin tưởng.":
     "If you are in immediate danger, contact local emergency services or someone you trust.",
   "Mình đã hiểu": "I understand",
   "Khoảng riêng của bạn.": "Your own private space.",
