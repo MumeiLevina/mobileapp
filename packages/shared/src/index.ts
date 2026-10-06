@@ -144,6 +144,17 @@ export type SafetyResult = {
   violenceRisk: boolean;
   requiresEscalation: boolean;
 };
+export type CrisisResource = {
+  id: string;
+  country_code: string | null;
+  region: string | null;
+  resource_type: "emergency" | "crisis_line" | "hospital" | "support_service";
+  name: string;
+  phone: string | null;
+  url: string | null;
+  available_hours: string | null;
+  language: string;
+};
 export type IntentResult = {
   intent: IntentType;
   emotion: string;
@@ -156,6 +167,7 @@ export type ChatResult = {
   memory?: Memory;
   safetyLevel: SafetyLevel;
   activity?: Activity;
+  crisisResources?: CrisisResource[];
 };
 export const gardenFromPoints = (points: number): Garden => ({
   growth_points: points,

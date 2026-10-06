@@ -25,7 +25,7 @@ Mở http://localhost:8081. Có thể nạp nhật ký, lịch sử cảm xúc, 
 ## Chế độ backend thật
 
 1. Tạo Supabase project, hoặc chạy Supabase CLI với Docker bằng `supabase start` trong thư mục dự án.
-2. Áp dụng `supabase/migrations/202610010001_initial.sql` rồi `supabase/seed.sql`. Với local CLI dùng `supabase db reset` **chỉ trên cơ sở dữ liệu local có thể xóa**. Với hosted project, dùng migration workflow của Supabase hoặc SQL Editor. Không chạy reset trên dữ liệu thật.
+2. Áp dụng tất cả file trong `supabase/migrations` theo thứ tự tên rồi chạy `supabase/seed.sql`. Với local CLI dùng `supabase db reset` **chỉ trên cơ sở dữ liệu local có thể xóa**. Với hosted project, dùng migration workflow của Supabase hoặc SQL Editor. Không chạy reset trên dữ liệu thật.
 3. Sao chép `apps/api/.env.example` thành `apps/api/.env`; cấu hình URL, anon key, service-role key của Supabase.
 4. Sao chép `apps/mobile/.env.example` thành `apps/mobile/.env`; đặt `EXPO_PUBLIC_DEMO_MODE=false`, URL API và Supabase anon key. Trên điện thoại thật, URL API phải là IP LAN/HTTPS truy cập được, không phải `localhost` của máy tính.
 5. Chạy `npm run dev:api` và `npm run dev:mobile` ở hai terminal. Khởi động lại Metro sau khi thay biến môi trường.

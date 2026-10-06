@@ -29,6 +29,6 @@ List endpoints currently return the most recent 100 entries (conversation detail
 
 Global throttle: 90 requests/minute/IP; message generation 12/minute/IP; journal generation 5/minute/IP. Single-process in-memory throttle is appropriate to this modular monolith; use shared storage before horizontal scaling.
 
-Normal message response: `{message, memory?, safetyLevel, activity?}`. Intent classification JSON remains server-internal. Crisis/elevated states bypass companion, memory retrieval/candidate creation and self-care suggestion. Server persists a pair of messages atomically and returns the same assistant record when a client retries the same UUID.
+Normal message response: `{message, memory?, safetyLevel, activity?, crisisResources?}`. Intent classification JSON and safety-classifier availability remain server-internal. Crisis/elevated states bypass companion, memory retrieval/candidate creation and self-care suggestion. A classifier failure returns conservative copy with public `safetyLevel: "elevated"`; it never continues to normal generation. `crisisResources` contains only enabled resources with verification metadata recorded server-side and is omitted when none match. Server persists a pair of messages atomically and returns the same assistant record when a client retries the same UUID.
 
 Hard deletion is used for explicit user deletion of private content. `deleted_at` columns additionally support operator recovery workflows; retrieval excludes soft-deleted data. No recovery interface is exposed to users in MVP.

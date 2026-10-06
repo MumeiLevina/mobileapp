@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -47,6 +48,9 @@ export default function ConversationScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [candidate, setCandidate] = useState<ChatResult["memory"]>();
   const [crisis, setCrisis] = useState(false);
+  const [crisisResources, setCrisisResources] = useState<
+    NonNullable<ChatResult["crisisResources"]>
+  >([]);
   const [activity, setActivity] = useState<ChatResult["activity"]>();
   const [voiceNote, setVoiceNote] = useState(false);
   const scroll = useRef<ScrollView>(null);
@@ -73,6 +77,7 @@ export default function ConversationScreen() {
       setCandidate(result.memory);
       setActivity(result.activity);
       setCrisis(["crisis", "elevated"].includes(result.safetyLevel));
+      setCrisisResources(result.crisisResources ?? []);
       await refresh();
     },
   });
@@ -198,6 +203,31 @@ export default function ConversationScreen() {
                 Liên hệ một người bạn tin tưởng hoặc dịch vụ cấp cứu tại nơi bạn
                 sống nếu có nguy hiểm ngay lập tức.
               </MoriText>
+              {crisisResources.map((resource) => {
+                const destination = resource.phone
+                  ? `tel:${resource.phone.replace(/[^+\d]/g, "")}`
+                  : resource.url;
+                return (
+                  <View key={resource.id} style={{ gap: 6 }}>
+                    <MoriText variant="subtitle" translate={false}>
+                      {resource.name}
+                    </MoriText>
+                    {resource.available_hours && (
+                      <MoriText variant="small" muted translate={false}>
+                        {resource.available_hours}
+                      </MoriText>
+                    )}
+                    {destination && (
+                      <MoriButton
+                        secondary
+                        onPress={() => void Linking.openURL(destination)}
+                      >
+                        {resource.phone ? "Gọi hỗ trợ" : "Mở trang hỗ trợ"}
+                      </MoriButton>
+                    )}
+                  </View>
+                );
+              })}
             </MoriCard>
           )}
           {activity && !crisis && (

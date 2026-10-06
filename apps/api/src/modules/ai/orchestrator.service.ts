@@ -14,7 +14,11 @@ import { OutputGuard } from "../../ai/guards/output.guard";
 import { buildCompanionContext } from "../../ai/prompts/companion";
 import { DatabaseService } from "../../database/database.service";
 import { MemoriesService } from "../memories/memories.service";
-import { SafetyService, CrisisResponseService } from "../safety/safety.service";
+import {
+  SafetyService,
+  CrisisResponseService,
+  safetyUnavailableResponse,
+} from "../safety/safety.service";
 import { classifyIntent } from "./intent";
 import { SelfCareService } from "../selfcare/selfcare.service";
 @Injectable()
@@ -55,11 +59,22 @@ export class AIOrchestratorService {
     let response: string;
     let candidate: Memory | undefined;
     let activity: ChatResult["activity"];
-    if (safety.requiresEscalation) {
-      response = this.crisis.respond(profile.locale);
+    let crisisResources: ChatResult["crisisResources"];
+    if (safety.classifierStatus === "unavailable") {
+      response = safetyUnavailableResponse(profile.locale);
       await this.db.insert("safety_events", user, {
         level: safety.level,
         requires_escalation: true,
+        classifier_status: "unavailable",
+      });
+    } else if (safety.requiresEscalation) {
+      const crisis = await this.crisis.respond(profile.locale);
+      response = crisis.message;
+      crisisResources = crisis.resources;
+      await this.db.insert("safety_events", user, {
+        level: safety.level,
+        requires_escalation: true,
+        classifier_status: "classified",
       });
     } else {
       let intent = classifyIntent(normalized, mode);
@@ -141,6 +156,7 @@ export class AIOrchestratorService {
       memory: candidate,
       safetyLevel: safety.level,
       activity,
+      crisisResources,
     };
   }
   async journalDraft(user: string, conversationId: string) {

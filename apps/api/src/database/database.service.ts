@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { readConfig } from "../config/env";
+import { CrisisResource } from "@mori/shared";
 @Injectable()
 export class DatabaseService {
   readonly admin: SupabaseClient;
@@ -85,6 +86,24 @@ export class DatabaseService {
     const { data, error } = await this.admin.rpc(name, args);
     if (error) throw new ServiceUnavailableException();
     return data as T;
+  }
+
+  async listVerifiedCrisisResources(
+    language: "vi" | "en",
+  ): Promise<CrisisResource[]> {
+    const { data, error } = await this.admin
+      .from("crisis_resources")
+      .select(
+        "id,country_code,region,resource_type,name,phone,url,available_hours,language",
+      )
+      .eq("enabled", true)
+      .not("verified_at", "is", null)
+      .is("country_code", null)
+      .in("language", [language, "multi"])
+      .order("resource_type")
+      .limit(10);
+    if (error) throw new ServiceUnavailableException();
+    return (data ?? []) as CrisisResource[];
   }
 
   private withoutOwnership(value: Record<string, unknown>) {

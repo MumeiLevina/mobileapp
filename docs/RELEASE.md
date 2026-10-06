@@ -11,7 +11,7 @@ No raw message/journal content is logged or sent to analytics. No analytics prov
 - TODO: Run Auth/signup, each API endpoint and deletion against an actual Supabase project; PGlite tests cover SQL and RLS, not GoTrue/PostgREST/Storage integration.
 - TODO: Supply a compatible model and evaluate bilingual safety, indirect crisis language, adversarial prompt injection, grounded memory references and output-review failures. Keyword mock classification is only a developer fixture, not a production safety system.
 - TODO: Native device checks on iOS/Android: notification permissions, scheduling/timezone changes, keyboard/screen-reader focus, secure storage failures, reduced motion, large text and background activity timer behavior. JS bundles are not native APK/IPA builds.
-- TODO: Clinical/editorial review of crisis language and curated self-care library; add a verified region-based emergency resource directory. No unverified hotline numbers are hardcoded.
+- TODO: Clinical/editorial review of crisis language and curated self-care library; populate and operationally re-verify the region-based emergency resource directory. The schema and verified-only retrieval path are implemented, but no unverified hotline numbers are seeded or hardcoded.
 - TODO: Publish privacy policy, AI subprocessors, retention, backup expiry, age suitability and support process before real users.
 - TODO: Resolve dependency advisories in compatible upstream versions. Audit currently reports 13 moderate transitive findings, originating in `uuid` via Expo/Xcode tooling and `decode-uri-component` via Expo Router/query-string. No high/critical findings. Do not force-downgrade Expo to the old version suggested by npm audit.
 

@@ -17,7 +17,7 @@
     "test": "jest --runInBand",
     "build:api": "npm run build -w @mori/shared && npm run build -w @mori/api",
     "test:mobile": "npm exec -w @mori/mobile -- jest --config jest.config.cjs --runInBand",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run export:web && playwright test",
     "test:database": "node scripts/test-database.mjs",
     "test:supabase": "jest --runInBand tests/supabase.integration.test.ts",
     "preview:web": "node scripts/serve-web.mjs"

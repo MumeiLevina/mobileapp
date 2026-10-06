@@ -8,8 +8,8 @@ import { MemoriesService } from "../apps/api/src/modules/memories/memories.servi
 import { OutputGuard } from "../apps/api/src/ai/guards/output.guard";
 import { MockLLMProvider } from "../apps/api/src/ai/providers/mock.provider";
 import { SelfCareService } from "../apps/api/src/modules/selfcare/selfcare.service";
-function setup() {
-  const provider = new MockLLMProvider();
+import { LLMProvider } from "../apps/api/src/ai/providers/provider";
+function setup(provider: LLMProvider = new MockLLMProvider()) {
   const repository = {
     one: jest
       .fn()
@@ -17,6 +17,7 @@ function setup() {
     list: jest.fn().mockResolvedValue([]),
     insert: jest.fn(),
     rpc: jest.fn().mockResolvedValue([{ id: "reply", role: "assistant" }]),
+    listVerifiedCrisisResources: jest.fn().mockResolvedValue([]),
   };
   const memories = {
     retrieveMemories: jest.fn().mockResolvedValue([]),
@@ -30,7 +31,7 @@ function setup() {
     service: new AIOrchestratorService(
       repository as unknown as DatabaseService,
       new SafetyService(provider),
-      new CrisisResponseService(),
+      new CrisisResponseService(repository as unknown as DatabaseService),
       memories as unknown as MemoriesService,
       new OutputGuard(provider),
       provider,
@@ -55,8 +56,41 @@ test("crisis bypasses companion, memory retrieval, self-care and candidate extra
   expect(repository.insert).toHaveBeenCalledWith("safety_events", "user", {
     level: "crisis",
     requires_escalation: true,
+    classifier_status: "classified",
   });
   expect(response.activity).toBeUndefined();
+});
+test("safety classifier failure returns conservative response without normal AI", async () => {
+  const provider = {
+    generateText: jest.fn(),
+    generateStructured: jest.fn().mockRejectedValue(new Error("offline")),
+    embed: jest.fn(),
+  } as unknown as LLMProvider;
+  const { service, memories, repository } = setup(provider);
+
+  const response = await service.processUserMessage(
+    "user",
+    "conversation",
+    "I feel uncertain",
+    "listen",
+    "client",
+  );
+
+  expect(response.safetyLevel).toBe("elevated");
+  expect(provider.generateText).not.toHaveBeenCalled();
+  expect(memories.retrieveMemories).not.toHaveBeenCalled();
+  expect(repository.insert).toHaveBeenCalledWith("safety_events", "user", {
+    level: "elevated",
+    requires_escalation: true,
+    classifier_status: "unavailable",
+  });
+  expect(repository.rpc).toHaveBeenCalledWith(
+    "save_exchange",
+    expect.objectContaining({
+      p_output: expect.stringContaining("xử lý tin nhắn này một cách an toàn"),
+      p_level: "elevated",
+    }),
+  );
 });
 test("journal generation returns an unsaved draft and never inserts a journal", async () => {
   const { service, repository } = setup();

@@ -25,12 +25,14 @@ createServer(async (req, res) => {
     } catch {
       file = resolve(root, "index.html");
     }
+    const body = await readFile(file);
     res.writeHead(200, {
       "Content-Type": types[extname(file)] ?? "application/octet-stream",
     });
-    res.end(await readFile(file));
+    res.end(body);
   } catch {
-    res.writeHead(500).end();
+    if (!res.headersSent) res.writeHead(500).end();
+    else res.destroy();
   }
 }).listen(8081, "127.0.0.1", () =>
   console.log("Mori web preview: http://localhost:8081"),

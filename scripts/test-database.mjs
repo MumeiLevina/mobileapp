@@ -18,6 +18,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610060002_crisis_resources.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -102,6 +108,25 @@ try {
   console.log(
     "PASS RLS prevents cross-user read; browser cannot write or call privileged functions",
   );
+  await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
+  await assert.rejects(
+    pg.query(
+      "insert into crisis_resources(resource_type,name,url,language,verified_at,source_url) values('crisis_line','unverified browser write','https://example.test','en',now(),'https://example.test/source')",
+    ),
+  );
+  await pg.exec("reset role");
+  await pg.query(
+    "insert into crisis_resources(country_code,resource_type,name,url,language,verified_at,source_url) values(null,'support_service','Verified global test resource','https://example.test/help','en',now(),'https://example.test/source')",
+  );
+  assert.equal(
+    (
+      await pg.query(
+        "select count(*)::int as count from crisis_resources where enabled and verified_at is not null",
+      )
+    ).rows[0].count,
+    1,
+  );
+  console.log("PASS verified crisis resource directory permissions and shape");
   for (let i = 0; i < 3; i++)
     await pg.query("select award_growth($1,$2)", [a, "mood:one"]);
   assert.equal(
