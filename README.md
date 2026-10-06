@@ -45,6 +45,8 @@ Test tạo hai tài khoản tạm thời và xóa chúng sau khi kiểm tra. Ch�
 
 `MOCK_AI=true` chỉ giả lập AI phía server; dữ liệu và Auth vẫn thật. Đặt `MOCK_AI=false` và cấu hình `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_EMBEDDING_MODEL` để dùng adapter HTTP tương thích chat-completions/embeddings. Embedding phải hỗ trợ **1536 chiều**. Không đổi model embedding mà giữ nguyên vector cũ: cần re-embed các ký ức đã duyệt. Chế độ production từ chối mock AI.
 
+Timeout của provider được cấu hình riêng qua `LLM_TEXT_TIMEOUT_MS`, `LLM_CLASSIFICATION_TIMEOUT_MS` và `LLM_EMBEDDING_TIMEOUT_MS`; giá trị mặc định nằm trong `apps/api/.env.example`.
+
 Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon key. Supabase Storage được bật trong cấu hình local, chưa có tải tệp riêng tư trong MVP; pipeline xuất dữ liệu được mô tả trong tài liệu.
 
 ## Các luồng đã có

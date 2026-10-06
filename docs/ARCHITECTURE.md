@@ -19,7 +19,7 @@ JWTs are stored in SecureStore on native. Web sessions use browser storage. Nati
 
 Normalize → independent safety classification → intent/emotion → approved vector memories (max 4) → compose separated identity/style/policy/memory/current input → provider → independent output validation → persist. Crisis/elevated risk bypass companion generation. Unavailable safety classification fails closed. Candidates remain unapproved and excluded from retrieval. Recent context uses a bounded conversation window, no automatic long-term extraction.
 
-Provider interface supports text, structured output and embeddings. An OpenAI-compatible HTTP adapter is transport-only, configured with server environment variables; other vendors can implement the same contract. Mock mode is deterministic and is not a clinical safety classifier.
+Provider interface supports text, structured output and embeddings. An OpenAI-compatible HTTP adapter is transport-only, configured with server environment variables; other vendors can implement the same contract. Text, structured classification and embedding calls have independent timeouts. Transport failures are normalized into typed timeout, rate-limit, unavailable and invalid-response errors; the API error boundary returns only its generic user-safe message. Structured output accepts a bare JSON object or one JSON markdown fence and retries at most once after a format/schema failure. Provider logs contain only provider, operation, status, latency and error category. Mock mode is deterministic and is not a clinical safety classifier.
 
 ## Delivery validation
 

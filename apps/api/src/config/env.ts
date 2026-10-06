@@ -13,6 +13,24 @@ const schema = z.object({
   LLM_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().optional(),
   LLM_EMBEDDING_MODEL: z.string().optional(),
+  LLM_TEXT_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(120000)
+    .default(30000),
+  LLM_CLASSIFICATION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(120000)
+    .default(10000),
+  LLM_EMBEDDING_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(120000)
+    .default(10000),
 });
 export function readConfig() {
   const config = schema.parse(process.env);
