@@ -31,6 +31,18 @@ Mở http://localhost:8081. Có thể nạp nhật ký, lịch sử cảm xúc, 
 5. Chạy `npm run dev:api` và `npm run dev:mobile` ở hai terminal. Khởi động lại Metro sau khi thay biến môi trường.
 6. Đăng ký/đăng nhập bằng email và mật khẩu. Hosted Supabase có thể yêu cầu xác nhận email. Trigger tạo profile, garden và notification preferences. Mọi request cần JWT hợp lệ; không có development auth bypass.
 
+Kiểm thử tích hợp với Supabase development/staging là opt-in để CI mặc định không cần secrets:
+
+```sh
+RUN_SUPABASE_INTEGRATION_TESTS=true \
+SUPABASE_INTEGRATION_URL=... \
+SUPABASE_INTEGRATION_ANON_KEY=... \
+SUPABASE_INTEGRATION_SERVICE_ROLE_KEY=... \
+npm run test:supabase
+```
+
+Test tạo hai tài khoản tạm thời và xóa chúng sau khi kiểm tra. Chỉ chạy với project development/staging có thể tạo dữ liệu thử; không dùng production.
+
 `MOCK_AI=true` chỉ giả lập AI phía server; dữ liệu và Auth vẫn thật. Đặt `MOCK_AI=false` và cấu hình `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_EMBEDDING_MODEL` để dùng adapter HTTP tương thích chat-completions/embeddings. Embedding phải hỗ trợ **1536 chiều**. Không đổi model embedding mà giữ nguyên vector cũ: cần re-embed các ký ức đã duyệt. Chế độ production từ chối mock AI.
 
 Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon key. Supabase Storage được bật trong cấu hình local, chưa có tải tệp riêng tư trong MVP; pipeline xuất dữ liệu được mô tả trong tài liệu.

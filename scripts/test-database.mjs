@@ -12,6 +12,12 @@ try {
   await pg.exec(
     await readFile("supabase/migrations/202610010001_initial.sql", "utf8"),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610060001_auth_rls_hardening.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -55,11 +61,32 @@ try {
   console.log(
     "PASS vector retrieval excludes unapproved, deleted and other users",
   );
-  await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
-  assert.deepEqual(
-    (await pg.query("select user_id from profiles")).rows.map((r) => r.user_id),
-    [a],
+  await pg.query(
+    "insert into journals(user_id,title,content,source,client_id) values($1,'private B','private','manual',$2)",
+    [b, "33333333-3333-4333-a333-333333333333"],
   );
+  await pg.query(
+    "insert into conversations(user_id,title) values($1,'private B')",
+    [b],
+  );
+  await pg.query(
+    "insert into mood_entries(user_id,mood,intensity,client_id) values($1,'okay',0.5,$2)",
+    [b, "44444444-4444-4444-a444-444444444444"],
+  );
+  await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
+  for (const table of [
+    "profiles",
+    "journals",
+    "memories",
+    "conversations",
+    "mood_entries",
+  ]) {
+    const rows = await pg.query(`select user_id from ${table}`);
+    assert.ok(
+      rows.rows.every((row) => row.user_id === a),
+      `${table} leaked another user`,
+    );
+  }
   await assert.rejects(
     pg.exec(
       `insert into memories(user_id,content,category) values('${a}','unauthorized','preference')`,

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { act, render, screen } from "@testing-library/react-native";
 import { MoriText } from "../components/ui";
 import { usePreferences } from "../store/preferences";
 test("English interface never rewrites private user content", async () => {
@@ -11,5 +11,5 @@ test("English interface never rewrites private user content", async () => {
   );
   expect(screen.getByText("Edit")).toBeTruthy();
   expect(screen.getByText("Chỉnh sửa")).toBeTruthy();
-  usePreferences.setState({ locale: "vi" });
+  await act(async () => usePreferences.setState({ locale: "vi" }));
 });

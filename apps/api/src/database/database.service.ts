@@ -51,9 +51,10 @@ export class DatabaseService {
     user: string,
     value: Record<string, unknown>,
   ): Promise<T> {
+    const safeValue = this.withoutOwnership(value);
     const { data, error } = await this.admin
       .from(table)
-      .insert({ ...value, user_id: user })
+      .insert({ ...safeValue, user_id: user })
       .select()
       .single();
     if (error) throw new ServiceUnavailableException();
@@ -65,7 +66,8 @@ export class DatabaseService {
     id: string | undefined,
     value: Record<string, unknown>,
   ): Promise<T> {
-    let q = this.admin.from(table).update(value).eq("user_id", user);
+    const safeValue = this.withoutOwnership(value);
+    let q = this.admin.from(table).update(safeValue).eq("user_id", user);
     if (id) q = q.eq("id", id);
     const { data, error } = await q.select().maybeSingle();
     if (error) throw new ServiceUnavailableException();
@@ -83,5 +85,10 @@ export class DatabaseService {
     const { data, error } = await this.admin.rpc(name, args);
     if (error) throw new ServiceUnavailableException();
     return data as T;
+  }
+
+  private withoutOwnership(value: Record<string, unknown>) {
+    const { user_id: _ignoredUserId, ...safeValue } = value;
+    return safeValue;
   }
 }
