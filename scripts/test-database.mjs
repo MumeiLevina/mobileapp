@@ -30,6 +30,9 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile("supabase/migrations/202610070001_life_map.sql", "utf8"),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -85,6 +88,10 @@ try {
     "insert into mood_entries(user_id,mood,intensity,client_id) values($1,'okay',0.5,$2)",
     [b, "44444444-4444-4444-a444-444444444444"],
   );
+  await pg.query(
+    "insert into life_map_items(user_id,type,title,approved_by_user) values($1,'people','private B',true)",
+    [b],
+  );
   await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
   for (const table of [
     "profiles",
@@ -92,6 +99,7 @@ try {
     "memories",
     "conversations",
     "mood_entries",
+    "life_map_items",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -114,6 +122,13 @@ try {
   console.log(
     "PASS RLS prevents cross-user read; browser cannot write or call privileged functions",
   );
+  await assert.rejects(
+    pg.query(
+      "insert into life_map_items(user_id,type,title,source_type,source_id) values($1,'people','invalid','memory',null)",
+      [a],
+    ),
+  );
+  console.log("PASS Life Map validates paired provenance fields");
   await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
   await assert.rejects(
     pg.query(
@@ -234,6 +249,7 @@ try {
     "garden_unlocks",
     "conversations",
     "data_export_audits",
+    "life_map_items",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

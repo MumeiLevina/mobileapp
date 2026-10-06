@@ -116,7 +116,8 @@ export class DatabaseService {
       | "conversations"
       | "messages"
       | "self_care_sessions"
-      | "weekly_reflections",
+      | "weekly_reflections"
+      | "life_map_items",
     user: string,
     columns: string,
   ): Promise<T[]> {

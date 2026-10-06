@@ -28,6 +28,8 @@ import { AccountExportService } from "./modules/account/account-export.service";
 import { MetricsService } from "./observability/metrics.service";
 import { InsightsController } from "./modules/insights/insights.controller";
 import { AskMoriService } from "./modules/insights/ask-mori.service";
+import { LifeMapController } from "./modules/life-map/life-map.controller";
+import { LifeMapService } from "./modules/life-map/life-map.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -40,6 +42,7 @@ import { AskMoriService } from "./modules/insights/ask-mori.service";
     ReflectionsController,
     AccountController,
     InsightsController,
+    LifeMapController,
   ],
   providers: [
     DatabaseService,
@@ -53,6 +56,7 @@ import { AskMoriService } from "./modules/insights/ask-mori.service";
     AccountExportService,
     MetricsService,
     AskMoriService,
+    LifeMapService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

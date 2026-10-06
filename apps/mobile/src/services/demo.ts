@@ -8,6 +8,8 @@ import {
   ConversationMode,
   Garden,
   Journal,
+  LifeMapItem,
+  LifeMapSuggestion,
   Memory,
   Message,
   Mood,
@@ -16,6 +18,8 @@ import {
   activities,
   gardenFromPoints,
   journalSchema,
+  lifeMapSchema,
+  lifeMapSuggestionSchema,
   memorySchema,
   messageSchema,
   moodSchema,
@@ -35,6 +39,7 @@ type DemoData = {
   awards: string[];
   sessions: { id: string; activity_id: string; completed: boolean }[];
   notifications: NotificationPreference;
+  lifeMapItems: LifeMapItem[];
 };
 const entity = () => ({
   id: newId(),
@@ -64,12 +69,14 @@ const initial = (): DemoData => ({
     minute: 0,
     timezone: "Asia/Ho_Chi_Minh",
   },
+  lifeMapItems: [],
 });
 let database: DemoData | undefined;
 async function get() {
   if (!database) {
     const stored = await AsyncStorage.getItem("mori-demo");
     database = stored ? (JSON.parse(stored) as DemoData) : initial();
+    database.lifeMapItems ??= [];
   }
   return database;
 }
@@ -311,6 +318,86 @@ export async function demoRequest(
           : `Trong 7 ngày qua, bạn đã ghé lại với mình ${db.moods.filter((m) => Date.parse(m.created_at) > since).length} lần.\n\nBạn muốn mang theo điều gì vào tuần tới?`
         : null,
     };
+  } else if (resource === "life-map") {
+    if (method === "GET" && id === "suggestions") {
+      const existing = new Set(
+        db.lifeMapItems.map((item) => item.source_id).filter(Boolean),
+      );
+      const mapType = (category: Memory["category"]): LifeMapItem["type"] =>
+        category === "relationship"
+          ? "people"
+          : category === "goal"
+            ? "goals"
+            : category === "life_event"
+              ? "important_events"
+              : category === "self_care_preference"
+                ? "helpful_things"
+                : "preferences";
+      return db.memories
+        .filter(
+          (memory) =>
+            memory.approved_by_user &&
+            !memory.deleted_at &&
+            !existing.has(memory.id),
+        )
+        .slice(0, 5)
+        .map(
+          (memory) =>
+            ({
+              type: mapType(memory.category),
+              title: memory.content.slice(0, 120),
+              description:
+                "Được đề xuất từ một ký ức bạn đã cho phép Mori dùng.",
+              source_type: "memory",
+              source_id: memory.id,
+            }) satisfies LifeMapSuggestion,
+        );
+    }
+    if (method === "GET")
+      return db.lifeMapItems.filter((item) => !item.deleted_at);
+    if (method === "DELETE") {
+      const item = db.lifeMapItems.find((entry) => entry.id === id);
+      if (!item) throw new Error("Không tìm thấy mục này.");
+      item.deleted_at = new Date().toISOString();
+      result = { ok: true };
+    } else if (action === "approve") {
+      const item = db.lifeMapItems.find((entry) => entry.id === id);
+      if (!item) throw new Error("Không tìm thấy mục này.");
+      item.approved_by_user = true;
+      result = item;
+    } else if (method === "PATCH") {
+      const item = db.lifeMapItems.find((entry) => entry.id === id);
+      if (!item) throw new Error("Không tìm thấy mục này.");
+      Object.assign(item, lifeMapSchema.parse(body), {
+        updated_at: new Date().toISOString(),
+      });
+      result = item;
+    } else {
+      const suggestion = id === "suggestions";
+      const suggestionValue = suggestion
+        ? lifeMapSuggestionSchema.parse(body)
+        : null;
+      const value = suggestionValue ?? lifeMapSchema.parse(body);
+      if (
+        suggestion &&
+        !db.memories.some(
+          (memory) =>
+            memory.id === suggestionValue?.source_id &&
+            memory.approved_by_user &&
+            !memory.deleted_at,
+        )
+      )
+        throw new Error("Nguồn đề xuất không còn khả dụng.");
+      const item: LifeMapItem = {
+        ...entity(),
+        ...value,
+        source_type: suggestion ? "memory" : null,
+        source_id: suggestionValue?.source_id ?? null,
+        approved_by_user: true,
+      };
+      db.lifeMapItems.unshift(item);
+      result = item;
+    }
   } else if (resource === "insights" && id === "ask") {
     const { question } = askMoriSchema.parse(body);
     const folded = question
@@ -399,7 +486,7 @@ export async function demoRequest(
     } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       generatedAt: new Date().toISOString(),
       data: {
         profile: { ...db.profile },
@@ -417,6 +504,7 @@ export async function demoRequest(
         garden: { ...db.garden },
         weeklyReflections: [],
         notificationPreferences: { ...db.notifications },
+        lifeMapItems: db.lifeMapItems.map(withoutOwner),
       },
     };
     return accountExport;

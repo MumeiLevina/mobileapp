@@ -28,6 +28,8 @@ Conversation input and bounded recent context can be sent by the API to the conf
 
 The privacy center lets a user export a filtered JSON package, manage or delete memories, delete all journals or conversations, and delete the account. Exports omit vector embeddings, ownership identifiers and internal safety metadata. Account deletion removes the Supabase Auth user, relies on database cascades for owned server data, then clears local session, drafts, reminders and query caches.
 
+Life Map suggestions are derived only from active memories the user already approved. A suggestion is returned as a preview and is not stored until the user chooses Add. Life Map rows remain private, owner-scoped and are included in account export and deletion.
+
 ## Logs and operational data
 
 Structured logs may contain request ID, route template, HTTP status, latency, provider operation/status/error category, safety-level count and output-guard rejection reason. Logs must not contain raw conversations, journals, memories, authorization headers, access tokens, passwords, service keys or embeddings. No analytics provider is configured.

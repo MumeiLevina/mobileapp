@@ -17,6 +17,10 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 | PATCH, DELETE     | /memories/:id                    | Edit/delete memory and active vector                         |
 | POST              | /memories/:id/approve            | Embed and approve explicitly                                 |
 | POST              | /insights/ask                    | Answer from bounded, owned saved data with source references |
+| GET, POST         | /life-map                        | List active items or add an approved manual item             |
+| PATCH, DELETE     | /life-map/:id                    | Edit or soft-delete an owned item                            |
+| POST              | /life-map/:id/approve            | Approve a pending item                                       |
+| GET, POST         | /life-map/suggestions            | Preview or explicitly accept memory-backed suggestions       |
 | GET, POST, DELETE | /journals                        | List/save reviewed journal or delete all own entries         |
 | PATCH, DELETE     | /journals/:id                    | Edit/delete own entry                                        |
 | GET               | /self-care                       | Enabled curated database activities                          |
@@ -30,6 +34,8 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Database schema supports all historical records.
 
 `POST /account/export` is limited to 2 requests/minute/IP and synchronously returns all retained rows owned by the authenticated user. The package contains profile, moods, journals, approved and pending memories, conversations with messages, self-care history, garden state, weekly reflections and notification preferences. Explicit projections exclude ownership identifiers, embeddings, classifier confidence, internal safety levels and safety events. The server pages through each table in batches of 500 and records only status, timestamps and record counts in `data_export_audits`; exported content is never copied into the audit. This synchronous path is intended for MVP-sized accounts. Move generation to a background job and private expiring object storage before supporting large accounts.
+
+Export schema version 2 also includes active and deleted Life Map items with their source references, but never duplicates the source content beyond the user-approved Life Map title and description.
 
 Global throttle: 90 requests/minute/IP; message generation 12/minute/IP; journal generation 5/minute/IP. Single-process in-memory throttle is appropriate to this modular monolith; use shared storage before horizontal scaling.
 

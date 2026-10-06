@@ -89,6 +89,9 @@ export default function Me() {
       <MoriButton secondary onPress={() => router.push("/memories")}>
         {copy.memories}
       </MoriButton>
+      <MoriButton secondary onPress={() => router.push("/life-map")}>
+        Bản đồ cuộc sống của mình
+      </MoriButton>
       <SectionHeading title="Dữ liệu của bạn" />
       <MoriButton secondary onPress={() => router.push("/privacy")}>
         Mở trung tâm dữ liệu

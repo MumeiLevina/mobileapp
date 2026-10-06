@@ -118,6 +118,12 @@ integration("real Supabase Auth, provisioning and RLS", () => {
         record_counts: { journals: 1 },
         completed_at: new Date().toISOString(),
       }),
+      admin.from("life_map_items").insert({
+        user_id: idB,
+        type: "people",
+        title: "synthetic private B",
+        approved_by_user: true,
+      }),
     ]);
     const failed = writes.find((write) => write.error);
     if (failed?.error) throw failed.error;
@@ -176,6 +182,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
     "messages",
     "garden_states",
     "notification_preferences",
+    "life_map_items",
   ])("User A cannot read User B rows from %s", async (table) => {
     await ensureUserASession();
     const result = await userA.from(table).select("*").eq("user_id", idB);
@@ -206,6 +213,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
       "garden_states",
       "notification_preferences",
       "data_export_audits",
+      "life_map_items",
     ]) {
       const result = await admin
         .from(table)

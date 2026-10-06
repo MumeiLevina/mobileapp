@@ -30,7 +30,7 @@ describe("account data export", () => {
 
     const result = await new AccountExportService(db).create("owner");
 
-    expect(result.schemaVersion).toBe(1);
+    expect(result.schemaVersion).toBe(2);
     expect(result.data.profile).toEqual({
       display_name: "Bạn",
       locale: "vi",

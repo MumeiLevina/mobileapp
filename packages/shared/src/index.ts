@@ -100,6 +100,25 @@ export const notificationSchema = z.object({
 export const askMoriSchema = z.object({
   question: z.string().trim().min(3).max(500),
 });
+export const LifeMapType = z.enum([
+  "people",
+  "goals",
+  "values",
+  "places",
+  "important_events",
+  "preferences",
+  "helpful_things",
+]);
+export const lifeMapSchema = z.object({
+  type: LifeMapType,
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(2000).default(""),
+});
+export const lifeMapSuggestionSchema = lifeMapSchema.extend({
+  source_type: z.literal("memory"),
+  source_id: z.string().uuid(),
+});
+export type LifeMapType = z.infer<typeof LifeMapType>;
 export const InsightSourceType = z.enum([
   "memory",
   "journal",
@@ -138,6 +157,13 @@ export type Memory = Entity &
     embedding?: number[] | null;
   };
 export type Conversation = Entity & { title: string; mode: ConversationMode };
+export type LifeMapItem = Entity &
+  z.infer<typeof lifeMapSchema> & {
+    source_type: "memory" | "journal" | "conversation" | null;
+    source_id: string | null;
+    approved_by_user: boolean;
+  };
+export type LifeMapSuggestion = z.infer<typeof lifeMapSuggestionSchema>;
 export type Message = Entity & {
   conversation_id: string;
   role: "user" | "assistant";
@@ -194,7 +220,7 @@ export type ChatResult = {
   crisisResources?: CrisisResource[];
 };
 export type AccountDataExport = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   generatedAt: string;
   data: {
     profile: Record<string, unknown>;
@@ -207,6 +233,7 @@ export type AccountDataExport = {
     garden: Record<string, unknown>;
     weeklyReflections: Record<string, unknown>[];
     notificationPreferences: Record<string, unknown>;
+    lifeMapItems: Record<string, unknown>[];
   };
 };
 export const gardenFromPoints = (points: number): Garden => ({
