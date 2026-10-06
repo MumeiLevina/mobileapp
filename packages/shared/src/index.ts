@@ -127,6 +127,30 @@ export const InsightSourceType = z.enum([
   "self_care",
   "weekly_reflection",
 ]);
+export const TimelineFilter = z.enum([
+  "all",
+  "mood",
+  "journal",
+  "self_care",
+  "important_moment",
+]);
+export type TimelineFilter = z.infer<typeof TimelineFilter>;
+export type TimelineItemType =
+  | "mood"
+  | "journal"
+  | "conversation"
+  | "self_care"
+  | "important_event"
+  | "garden_milestone"
+  | "letter";
+export type TimelineItem = {
+  id: string;
+  type: TimelineItemType;
+  title: string;
+  detail?: string;
+  occurredAt: string;
+  sourceId: string;
+};
 export type InsightSourceType = z.infer<typeof InsightSourceType>;
 export type InsightSource = {
   id: string;

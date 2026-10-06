@@ -16,6 +16,8 @@ import {
   Mood,
   NotificationPreference,
   Profile,
+  TimelineFilter,
+  TimelineItem,
   activities,
   gardenFromPoints,
   journalSchema,
@@ -39,7 +41,14 @@ type DemoData = {
   messages: Message[];
   garden: Garden;
   awards: string[];
-  sessions: { id: string; activity_id: string; completed: boolean }[];
+  sessions: {
+    id: string;
+    activity_id: string;
+    completed: boolean;
+    created_at: string;
+    completed_at?: string;
+  }[];
+  gardenMilestones: { id: string; action_key: string; created_at: string }[];
   notifications: NotificationPreference;
   lifeMapItems: LifeMapItem[];
 };
@@ -66,6 +75,7 @@ const initial = (): DemoData => ({
   garden: gardenFromPoints(0),
   awards: [],
   sessions: [],
+  gardenMilestones: [],
   notifications: {
     period: "off",
     hour: 20,
@@ -81,12 +91,18 @@ async function get() {
     database = stored ? (JSON.parse(stored) as DemoData) : initial();
     database.lifeMapItems ??= [];
     database.memorySources ??= [];
+    database.gardenMilestones ??= [];
   }
   return database;
 }
 function award(db: DemoData, key: string) {
   if (!db.awards.includes(key)) {
     db.awards.push(key);
+    db.gardenMilestones.push({
+      id: newId(),
+      action_key: key,
+      created_at: new Date().toISOString(),
+    });
     db.garden = gardenFromPoints(db.garden.growth_points + 1);
   }
 }
@@ -101,7 +117,9 @@ export async function demoRequest(
   body?: unknown,
 ): Promise<unknown> {
   const db = await get();
-  const [resource, id, action] = path.replace(/^\//, "").split("/");
+  const [route, query = ""] = path.replace(/^\//, "").split("?");
+  const [resource, id, action] = route.split("/");
+  const queryParams = new URLSearchParams(query);
   let result: unknown;
   if (resource === "profile" || resource === "auth") {
     if (method === "GET") return db.profile;
@@ -317,7 +335,12 @@ export async function demoRequest(
     if (!activities.some((a) => a.id === id))
       throw new Error("Không tìm thấy hoạt động.");
     if (action === "start") {
-      const session = { id: newId(), activity_id: id, completed: false };
+      const session = {
+        id: newId(),
+        activity_id: id,
+        completed: false,
+        created_at: new Date().toISOString(),
+      };
       db.sessions.push(session);
       result = session;
     } else {
@@ -326,6 +349,7 @@ export async function demoRequest(
       );
       if (!session) throw new Error("Không tìm thấy lượt thực hiện.");
       session.completed = true;
+      session.completed_at = new Date().toISOString();
       award(db, `selfcare:${session.id}`);
       result = { ok: true };
     }
@@ -333,6 +357,89 @@ export async function demoRequest(
     if (method === "GET") return db.notifications;
     db.notifications = notificationSchema.parse(body);
     result = db.notifications;
+  } else if (resource === "reflections" && id === "timeline") {
+    const filter = TimelineFilter.parse(queryParams.get("filter") ?? "all");
+    const moodNames: Record<Mood["mood"], string> = {
+      joyful: "Rất vui",
+      good: "Khá ổn",
+      okay: "Bình thường",
+      low: "Hơi buồn",
+      overwhelmed: "Quá tải",
+    };
+    const items: TimelineItem[] = [
+      ...db.moods.map((mood) => ({
+        id: `mood:${mood.id}`,
+        type: "mood" as const,
+        title: `Tâm trạng: ${moodNames[mood.mood]}`,
+        detail: mood.optional_note || mood.tags.join(" · ") || undefined,
+        occurredAt: mood.created_at,
+        sourceId: mood.id,
+      })),
+      ...db.journals
+        .filter((journal) => !journal.deleted_at)
+        .map((journal) => ({
+          id: `journal:${journal.id}`,
+          type: "journal" as const,
+          title: journal.title,
+          detail: journal.content.slice(0, 240),
+          occurredAt: journal.created_at,
+          sourceId: journal.id,
+        })),
+      ...db.conversations
+        .filter((conversation) => !conversation.deleted_at)
+        .map((conversation) => ({
+          id: `conversation:${conversation.id}`,
+          type: "conversation" as const,
+          title: conversation.title,
+          occurredAt: conversation.created_at,
+          sourceId: conversation.id,
+        })),
+      ...db.sessions
+        .filter((session) => session.completed && session.completed_at)
+        .map((session) => ({
+          id: `self-care:${session.id}`,
+          type: "self_care" as const,
+          title:
+            activities.find((activity) => activity.id === session.activity_id)
+              ?.title ?? "Một khoảng chăm sóc bản thân",
+          occurredAt: session.completed_at!,
+          sourceId: session.id,
+        })),
+      ...db.lifeMapItems
+        .filter(
+          (item) =>
+            !item.deleted_at &&
+            item.approved_by_user &&
+            item.type === "important_events",
+        )
+        .map((item) => ({
+          id: `important-event:${item.id}`,
+          type: "important_event" as const,
+          title: item.title,
+          detail: item.description || undefined,
+          occurredAt: item.created_at,
+          sourceId: item.id,
+        })),
+      ...db.gardenMilestones.map((milestone) => ({
+        id: `garden:${milestone.id}`,
+        type: "garden_milestone" as const,
+        title: "Khu vườn ghi nhận một bước chăm sóc bản thân",
+        occurredAt: milestone.created_at,
+        sourceId: milestone.id,
+      })),
+    ];
+    return items
+      .filter((item) =>
+        filter === "all"
+          ? true
+          : filter === "important_moment"
+            ? ["important_event", "garden_milestone", "letter"].includes(
+                item.type,
+              )
+            : item.type === filter,
+      )
+      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+      .slice(0, 100);
   } else if (resource === "weekly-reflection") {
     const since = Date.now() - 7 * 86400000;
     if (method === "POST" && id === "complete") {

@@ -47,6 +47,13 @@ export default function JournalList() {
       <MoriText variant="hero">{copy.journalTitle}</MoriText>
       <MoriText muted>{copy.journalNote}</MoriText>
       <MoriButton
+        secondary
+        icon="time-outline"
+        onPress={() => router.push("/timeline")}
+      >
+        Xem dòng thời gian của mình
+      </MoriButton>
+      <MoriButton
         icon="create-outline"
         onPress={() => router.push("/journal/new")}
       >

@@ -21,6 +21,7 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 | PATCH, DELETE     | /life-map/:id                    | Edit or soft-delete an owned item                            |
 | POST              | /life-map/:id/approve            | Approve a pending item                                       |
 | GET, POST         | /life-map/suggestions            | Preview or explicitly accept memory-backed suggestions       |
+| GET               | /reflections/timeline            | Private merged timeline with an optional validated filter    |
 | GET, POST, DELETE | /journals                        | List/save reviewed journal or delete all own entries         |
 | PATCH, DELETE     | /journals/:id                    | Edit/delete own entry                                        |
 | GET               | /self-care                       | Enabled curated database activities                          |

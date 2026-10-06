@@ -30,6 +30,8 @@ import { InsightsController } from "./modules/insights/insights.controller";
 import { AskMoriService } from "./modules/insights/ask-mori.service";
 import { LifeMapController } from "./modules/life-map/life-map.controller";
 import { LifeMapService } from "./modules/life-map/life-map.service";
+import { TimelineController } from "./modules/reflections/timeline.controller";
+import { TimelineService } from "./modules/reflections/timeline.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -43,6 +45,7 @@ import { LifeMapService } from "./modules/life-map/life-map.service";
     AccountController,
     InsightsController,
     LifeMapController,
+    TimelineController,
   ],
   providers: [
     DatabaseService,
@@ -57,6 +60,7 @@ import { LifeMapService } from "./modules/life-map/life-map.service";
     MetricsService,
     AskMoriService,
     LifeMapService,
+    TimelineService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

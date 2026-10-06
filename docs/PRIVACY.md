@@ -32,6 +32,8 @@ Life Map suggestions are derived only from active memories the user already appr
 
 Each Memory records a short reason, source reference and approval time. Provenance does not copy the raw conversation, journal or mood into a second table. Source ownership is enforced by a composite database foreign key, and provenance follows the Memory through export and deletion.
 
+Reflection Timeline is assembled on request from the user's existing rows and is not a public feed or a second content store. Conversation moments expose the conversation title and date; they do not copy message text into timeline storage.
+
 ## Logs and operational data
 
 Structured logs may contain request ID, route template, HTTP status, latency, provider operation/status/error category, safety-level count and output-guard rejection reason. Logs must not contain raw conversations, journals, memories, authorization headers, access tokens, passwords, service keys or embeddings. No analytics provider is configured.
