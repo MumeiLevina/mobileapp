@@ -35,12 +35,17 @@ export function classifyLexicalSafety(text: string): SafetyResult {
     "suicide",
     "suicidal",
     "endmylife",
+    "wanttodie",
+    "wishiweredead",
+    "dontwanttobealive",
+    "donotwanttobealive",
     "hurtmyself",
     "tulamdau",
   ]);
   const indirectSelfHarm = includesAny(words, [
     "chac khong co minh moi nguoi se tot hon",
     "khong co minh moi nguoi se tot hon",
+    "khong co minh chac ai cung do met",
     "minh muon bien mat",
     "muon bien mat",
     "gia ma ngu roi khong day nua",
@@ -51,19 +56,20 @@ export function classifyLexicalSafety(text: string): SafetyResult {
     "i want to disappear",
     "better off without me",
     "wish i would not wake up",
+    "i wish i were dead",
   ]);
   const methodSignal =
-    /(co|cam|giu) dao (o day|trong tay)|uong het (thuoc|medicine)|overdose|qua lieu/.test(
+    /(co|cam|giu) dao (o day|trong tay)|uong het (thuoc|medicine)|overdose|qua lieu|have (the )?(pills|knife) (here|with me)/.test(
       words,
     );
   const violence =
-    /(giet|dam|ban) (anh|co|no|nguoi|ai do)|kill (him|her|them|someone)|hurt someone/.test(
+    /(giet|dam|ban) (anh|co|no|nguoi|ai do)|lam hai (nguoi khac|ai do)|kill (him|her|them|someone)|hurt someone|attack (him|her|them|someone)/.test(
       words,
     );
-  const ambiguousPlan = includesAny(words, [
+  const ambiguousPlan = [
     "toi nay minh se lam",
     "i will do it tonight",
-  ]);
+  ].includes(words);
   const selfHarm =
     explicitSelfHarm || indirectSelfHarm || methodSignal || ambiguousPlan;
   const immediate =
@@ -81,6 +87,11 @@ export function classifyLexicalSafety(text: string): SafetyResult {
     "sad",
     "exhausted",
     "overwhelmed",
+    "overwhelming",
+    "qua tai",
+    "can kiet",
+    "chang lam gi noi",
+    "barely do anything",
   ]);
   const level: SafetyLevel =
     selfHarm || violence

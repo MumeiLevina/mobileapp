@@ -4,10 +4,17 @@ export function classifyIntent(
   text: string,
   mode: ConversationMode,
 ): IntentResult {
-  const t = fold(text);
+  const t = fold(text).replace(/[^a-z0-9]+/g, " ");
+  const declinesAdvice =
+    /(khong.*loi khuyen|chi.*lang nghe|dung.*khuyen|no advice|just listen|do not want advice|don t want advice)/.test(
+      t,
+    );
   const adviceRequested =
-    mode === "think" ||
-    /(nen lam gi|cho.*loi khuyen|what should|advice)/.test(t);
+    !declinesAdvice &&
+    (mode === "think" ||
+      /(nen lam gi|cho.*loi khuyen|what should|can you advise|need advice)/.test(
+        t,
+      ));
   const intent = /(nhat ky|journal)/.test(t)
     ? "JOURNAL"
     : /(bai tho|self.care|thu gian)/.test(t)
