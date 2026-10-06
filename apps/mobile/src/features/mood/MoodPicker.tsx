@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { MoodType } from "@mori/shared";
 import {
   MoriBottomSheet,
   MoriButton,
+  MoriChip,
   MoriInput,
+  MoriPressable,
   MoriText,
   ErrorNote,
   styles,
@@ -15,6 +17,7 @@ import { useTheme } from "../../theme";
 import { useT } from "../../i18n";
 import { newId } from "../../lib/id";
 import { request, refresh } from "../../services/api";
+import { interactionFeedback } from "../../services/interaction-feedback";
 import Svg, { Circle, Path } from "react-native-svg";
 export const moods: {
   value: MoodType;
@@ -70,19 +73,22 @@ export function MoodButton({
 }) {
   const t = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <MoriPressable
+      accessibilityRole="radio"
       accessibilityLabel={mood.label}
       accessibilityState={{ selected }}
+      feedback="selection"
       onPress={onPress}
-      style={{
-        flex: 1,
+      wrapperStyle={{ flex: 1 }}
+      style={(pressed) => ({
         alignItems: "center",
         gap: 8,
+        minHeight: 82,
         paddingVertical: 8,
         borderRadius: 15,
         backgroundColor: selected ? t.soft : "transparent",
-      }}
+        opacity: pressed ? 0.82 : 1,
+      })}
     >
       <View
         style={{
@@ -113,7 +119,7 @@ export function MoodButton({
       >
         {mood.label}
       </MoriText>
-    </Pressable>
+    </MoriPressable>
   );
 }
 const tags = [
@@ -132,19 +138,19 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
   const [intensity, setIntensity] = useState(0.5);
   const [id, setId] = useState(newId);
   const [saved, setSaved] = useState(false);
-  const t = useTheme();
   const copy = useT();
   const mutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (includeDetails: boolean) =>
       request("/moods", "POST", {
         mood,
         intensity,
-        tags: selected,
-        optional_note: note,
+        tags: includeDetails ? selected : [],
+        optional_note: includeDetails ? note : "",
         client_id: id,
       }),
     onSuccess: () => {
       setSaved(true);
+      void interactionFeedback.success();
       void refresh();
     },
   });
@@ -160,7 +166,11 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
   };
   return (
     <>
-      <View style={{ flexDirection: "row", gap: 3 }}>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Cảm xúc hiện tại"
+        style={{ flexDirection: "row", gap: 3 }}
+      >
         {moods.map((m) => (
           <MoodButton
             key={m.value}
@@ -170,7 +180,10 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
           />
         ))}
       </View>
-      <MoriBottomSheet visible={mood !== null} onClose={close}>
+      <MoriBottomSheet
+        visible={mood !== null}
+        onClose={mutation.isPending ? () => undefined : close}
+      >
         <View style={styles.stack}>
           {saved ? (
             <>
@@ -205,10 +218,11 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
               <MoriText muted>Điều gì đang ở trong tâm trí bạn?</MoriText>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {tags.map(([value, label]) => (
-                  <Pressable
+                  <MoriChip
                     key={value}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected.includes(value) }}
+                    label={label}
+                    selected={selected.includes(value)}
+                    disabled={mutation.isPending}
                     onPress={() =>
                       setSelected(
                         selected.includes(value)
@@ -216,23 +230,7 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
                           : [...selected, value],
                       )
                     }
-                    style={{
-                      padding: 12,
-                      borderRadius: 20,
-                      backgroundColor: selected.includes(value)
-                        ? t.primary
-                        : t.soft,
-                    }}
-                  >
-                    <MoriText
-                      variant="small"
-                      style={{
-                        color: selected.includes(value) ? t.onPrimary : t.text,
-                      }}
-                    >
-                      {label}
-                    </MoriText>
-                  </Pressable>
+                  />
                 ))}
               </View>
               <MoriText variant="small" muted>
@@ -240,22 +238,14 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
               </MoriText>
               <View style={styles.row}>
                 {[0.25, 0.5, 0.75, 1].map((n, i) => (
-                  <Pressable
+                  <MoriChip
                     key={n}
+                    label={["Nhẹ", "Vừa", "Nhiều", "Rất nhiều"][i]}
+                    selected={intensity === n}
+                    disabled={mutation.isPending}
+                    role="radio"
                     onPress={() => setIntensity(n)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: intensity === n }}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 12,
-                      borderRadius: 10,
-                      backgroundColor: intensity === n ? t.soft : t.surface,
-                    }}
-                  >
-                    <MoriText variant="small" style={{ textAlign: "center" }}>
-                      {["Nhẹ", "Vừa", "Nhiều", "Rất nhiều"][i]}
-                    </MoriText>
-                  </Pressable>
+                  />
                 ))}
               </View>
               <MoriInput
@@ -263,6 +253,7 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
                 placeholder={copy.note}
                 value={note}
                 onChangeText={setNote}
+                editable={!mutation.isPending}
                 multiline
                 maxLength={2000}
                 style={{ minHeight: 90 }}
@@ -270,12 +261,17 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
               <ErrorNote error={mutation.error} />
               <MoriButton
                 loading={mutation.isPending}
-                onPress={() => mutation.mutate()}
+                loadingLabel="Đang lưu cảm xúc…"
+                onPress={() => mutation.mutate(true)}
               >
                 {copy.save}
               </MoriButton>
-              <MoriButton secondary onPress={() => mutation.mutate()}>
-                Bỏ qua chi tiết và lưu cảm xúc
+              <MoriButton
+                variant="ghost"
+                disabled={mutation.isPending}
+                onPress={() => mutation.mutate(false)}
+              >
+                Chỉ lưu cảm xúc
               </MoriButton>
             </>
           )}

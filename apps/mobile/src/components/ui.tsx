@@ -46,6 +46,7 @@ type MoriPressableProps = Omit<
   feedback?: FeedbackType;
   guardMs?: number;
   onPress?: NonNullable<ComponentProps<typeof Pressable>["onPress"]>;
+  wrapperStyle?: ViewStyle;
   style?:
     ViewStyle | ViewStyle[] | ((pressed: boolean) => ViewStyle | ViewStyle[]);
 };
@@ -55,6 +56,7 @@ export function MoriPressable({
   disabled = false,
   feedback = "none",
   guardMs = 0,
+  wrapperStyle,
   style,
   children,
   ...props
@@ -77,7 +79,7 @@ export function MoriPressable({
     }).start();
   };
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={[wrapperStyle, { transform: [{ scale }] }]}>
       <Pressable
         {...props}
         disabled={disabled}
