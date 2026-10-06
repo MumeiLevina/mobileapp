@@ -10,4 +10,11 @@ jest.mock("expo-router", () => ({
   },
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
+jest.mock("expo-haptics", () => ({
+  selectionAsync: jest.fn(),
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium" },
+  NotificationFeedbackType: { Success: "success", Warning: "warning" },
+}));
 jest.mock("react-native-reanimated", () => ({ useReducedMotion: () => true }));

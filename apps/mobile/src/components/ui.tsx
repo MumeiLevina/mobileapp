@@ -1,5 +1,14 @@
-import { Children, PropsWithChildren, ReactNode } from "react";
 import {
+  Children,
+  ComponentProps,
+  PropsWithChildren,
+  ReactNode,
+  useRef,
+  useState,
+} from "react";
+import {
+  ActivityIndicator,
+  Animated,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +27,89 @@ import { Ionicons } from "@expo/vector-icons";
 import { typography, useTheme } from "../theme";
 import { useT, useTranslate } from "../i18n";
 import { useReducedMotion } from "react-native-reanimated";
+import { interactionFeedback } from "../services/interaction-feedback";
+
+export type MoriButtonVariant =
+  "primary" | "secondary" | "ghost" | "danger" | "dangerGhost";
+type FeedbackType = "none" | "primary" | "selection" | "success" | "warning";
+
+function runFeedback(type: FeedbackType) {
+  if (type === "none") return;
+  void interactionFeedback[type]();
+}
+
+type MoriPressableProps = Omit<
+  ComponentProps<typeof Pressable>,
+  "children" | "onPress" | "style"
+> & {
+  children: ReactNode;
+  feedback?: FeedbackType;
+  guardMs?: number;
+  onPress?: NonNullable<ComponentProps<typeof Pressable>["onPress"]>;
+  style?:
+    ViewStyle | ViewStyle[] | ((pressed: boolean) => ViewStyle | ViewStyle[]);
+};
+
+export function MoriPressable({
+  onPress,
+  disabled = false,
+  feedback = "none",
+  guardMs = 0,
+  style,
+  children,
+  ...props
+}: MoriPressableProps) {
+  const reducedMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  const lastPressAt = useRef(0);
+  const [focused, setFocused] = useState(false);
+  const animate = (value: number) => {
+    if (reducedMotion) return;
+    Animated.timing(scale, {
+      toValue: value,
+      duration: value < 1 ? 90 : 120,
+      useNativeDriver: true,
+    }).start();
+  };
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        {...props}
+        disabled={disabled}
+        onFocus={(event) => {
+          setFocused(true);
+          props.onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          props.onBlur?.(event);
+        }}
+        onPressIn={(event) => {
+          animate(0.98);
+          props.onPressIn?.(event);
+        }}
+        onPressOut={(event) => {
+          animate(1);
+          props.onPressOut?.(event);
+        }}
+        onPress={(event) => {
+          if (disabled) return;
+          const now = Date.now();
+          if (guardMs > 0 && now - lastPressAt.current < guardMs) return;
+          lastPressAt.current = now;
+          runFeedback(feedback);
+          onPress?.(event);
+        }}
+        style={({ pressed }) => [
+          typeof style === "function" ? style(pressed) : style,
+          focused && styles.focused,
+        ]}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
 export function MoriText({
   variant = "body",
   muted = false,
@@ -56,53 +148,165 @@ export function MoriText({
 export function MoriButton({
   children,
   onPress,
+  variant,
   secondary = false,
+  size = "large",
   disabled = false,
   loading = false,
+  loadingLabel,
   icon,
+  feedback,
 }: PropsWithChildren<{
   onPress: () => void;
+  variant?: MoriButtonVariant;
+  /** @deprecated Use variant="secondary". */
   secondary?: boolean;
+  size?: "medium" | "large";
   disabled?: boolean;
   loading?: boolean;
+  loadingLabel?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  feedback?: FeedbackType;
 }>) {
   const t = useTheme();
   const tr = useTranslate();
+  const resolvedVariant = variant ?? (secondary ? "secondary" : "primary");
+  const inactive = disabled || loading;
+  const filled = resolvedVariant === "primary" || resolvedVariant === "danger";
+  const danger =
+    resolvedVariant === "danger" || resolvedVariant === "dangerGhost";
+  const backgroundColor = inactive
+    ? t.line
+    : resolvedVariant === "primary"
+      ? t.primary
+      : resolvedVariant === "danger"
+        ? t.error
+        : resolvedVariant === "secondary"
+          ? t.soft
+          : "transparent";
+  const foregroundColor = inactive
+    ? t.muted
+    : filled
+      ? t.onPrimary
+      : danger
+        ? t.error
+        : t.text;
   return (
-    <Pressable
+    <MoriPressable
       accessibilityRole="button"
       accessibilityLabel={
         typeof children === "string" ? tr(children) : undefined
       }
-      disabled={disabled || loading}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      disabled={inactive}
+      accessibilityState={{ disabled: inactive, busy: loading }}
       onPress={onPress}
-      style={({ pressed }) => [
+      guardMs={350}
+      feedback={
+        feedback ??
+        (danger
+          ? "warning"
+          : resolvedVariant === "primary"
+            ? "primary"
+            : "none")
+      }
+      style={(pressed) => [
         styles.button,
         {
-          backgroundColor: secondary ? t.soft : t.primary,
-          opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
+          minHeight: size === "large" ? 54 : 46,
+          paddingVertical: size === "large" ? 14 : 10,
+          backgroundColor,
+          borderColor:
+            resolvedVariant === "dangerGhost"
+              ? t.error
+              : resolvedVariant === "ghost"
+                ? "transparent"
+                : inactive
+                  ? t.line
+                  : backgroundColor,
+          opacity: pressed ? 0.82 : inactive ? 0.72 : 1,
         },
       ]}
     >
-      {icon && (
-        <Ionicons
-          name={icon}
-          size={20}
-          color={secondary ? t.text : t.onPrimary}
-        />
+      {loading && <ActivityIndicator size="small" color={foregroundColor} />}
+      {icon && !loading && (
+        <Ionicons name={icon} size={20} color={foregroundColor} />
       )}
       <MoriText
         style={{
-          color: secondary ? t.text : t.onPrimary,
+          color: foregroundColor,
           fontWeight: "600",
           textAlign: "center",
+          flexShrink: 1,
         }}
       >
-        {loading ? "…" : children}
+        {loading && loadingLabel ? tr(loadingLabel) : children}
       </MoriText>
-    </Pressable>
+    </MoriPressable>
+  );
+}
+
+export function MoriIconButton({
+  icon,
+  accessibilityLabel,
+  onPress,
+  variant = "ghost",
+  disabled = false,
+  loading = false,
+  selected = false,
+  feedback = "none",
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  accessibilityLabel: string;
+  onPress: () => void;
+  variant?: "ghost" | "primary" | "danger";
+  disabled?: boolean;
+  loading?: boolean;
+  selected?: boolean;
+  feedback?: FeedbackType;
+}) {
+  const t = useTheme();
+  const inactive = disabled || loading;
+  const background = inactive
+    ? t.line
+    : variant === "primary"
+      ? t.primary
+      : selected
+        ? t.soft
+        : "transparent";
+  const color = inactive
+    ? t.muted
+    : variant === "primary"
+      ? t.onPrimary
+      : variant === "danger"
+        ? t.error
+        : t.text;
+  return (
+    <MoriPressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: inactive, busy: loading, selected }}
+      disabled={inactive}
+      feedback={
+        variant === "danger"
+          ? "warning"
+          : variant === "primary"
+            ? "primary"
+            : feedback
+      }
+      onPress={onPress}
+      guardMs={250}
+      hitSlop={4}
+      style={(pressed) => [
+        styles.iconButton,
+        { backgroundColor: background, opacity: pressed ? 0.72 : 1 },
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <Ionicons name={icon} size={22} color={color} />
+      )}
+    </MoriPressable>
   );
 }
 export function MoriCard({
@@ -151,16 +355,13 @@ export function ScreenContainer({
   const content = (
     <>
       {back && (
-        <Pressable
-          accessibilityRole="button"
+        <MoriIconButton
+          icon="arrow-back"
           accessibilityLabel={copy.back}
           onPress={() =>
             router.canGoBack() ? router.back() : router.replace("/(tabs)")
           }
-          style={styles.back}
-        >
-          <Ionicons name="arrow-back" size={23} color={t.text} />
-        </Pressable>
+        />
       )}
       {children}
     </>
@@ -225,30 +426,105 @@ export function MoriBottomSheet({
     </Modal>
   );
 }
+export function MoriConfirmSheet({
+  visible,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = "Giữ lại",
+  variant = "danger",
+  loading = false,
+  error,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  variant?: "danger" | "primary";
+  loading?: boolean;
+  error?: unknown;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <MoriBottomSheet
+      visible={visible}
+      onClose={loading ? () => undefined : onCancel}
+    >
+      <View style={styles.stack}>
+        <MoriText variant="title">{title}</MoriText>
+        <MoriText muted>{description}</MoriText>
+        <ErrorNote error={error} />
+        <MoriButton
+          variant={variant}
+          loading={loading}
+          loadingLabel={variant === "danger" ? "Đang xóa…" : undefined}
+          onPress={onConfirm}
+        >
+          {confirmLabel}
+        </MoriButton>
+        <MoriButton variant="ghost" disabled={loading} onPress={onCancel}>
+          {cancelLabel}
+        </MoriButton>
+      </View>
+    </MoriBottomSheet>
+  );
+}
+
+export function MoriNotice({
+  children,
+  tone = "success",
+}: PropsWithChildren<{ tone?: "success" | "neutral" | "error" }>) {
+  const t = useTheme();
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.notice,
+        {
+          backgroundColor: tone === "neutral" ? t.soft : t.surface,
+          borderColor: tone === "error" ? t.error : t.line,
+        },
+      ]}
+    >
+      <MoriText style={tone === "error" ? { color: t.error } : undefined}>
+        {children}
+      </MoriText>
+    </View>
+  );
+}
 export function Choice({
   title,
   subtitle,
   selected,
   onPress,
+  disabled = false,
 }: {
   title: string;
   subtitle?: string;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   const t = useTheme();
   const tr = useTranslate();
   return (
-    <Pressable
+    <MoriPressable
       accessibilityRole="radio"
       accessibilityLabel={tr(title)}
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      feedback="selection"
       onPress={onPress}
-      style={[
+      style={(pressed) => [
         styles.choice,
         {
           borderColor: selected ? t.primary : t.line,
           backgroundColor: selected ? t.soft : t.surface,
+          opacity: disabled ? 0.6 : pressed ? 0.84 : 1,
         },
       ]}
     >
@@ -265,7 +541,87 @@ export function Choice({
         size={23}
         color={selected ? t.primary : t.muted}
       />
-    </Pressable>
+    </MoriPressable>
+  );
+}
+
+export function MoriChip({
+  label,
+  selected,
+  onPress,
+  role = "checkbox",
+  disabled = false,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  role?: "checkbox" | "radio";
+  disabled?: boolean;
+}) {
+  const t = useTheme();
+  const tr = useTranslate();
+  return (
+    <MoriPressable
+      accessibilityRole={role}
+      accessibilityLabel={tr(label)}
+      accessibilityState={
+        role === "checkbox"
+          ? { checked: selected, disabled }
+          : { selected, disabled }
+      }
+      disabled={disabled}
+      feedback="selection"
+      onPress={onPress}
+      style={(pressed) => [
+        styles.chip,
+        {
+          backgroundColor: selected ? t.primary : t.soft,
+          borderColor: selected ? t.primary : t.line,
+          opacity: disabled ? 0.6 : pressed ? 0.82 : 1,
+        },
+      ]}
+    >
+      <MoriText
+        variant="small"
+        style={{ color: selected ? t.onPrimary : t.text, textAlign: "center" }}
+      >
+        {label}
+      </MoriText>
+    </MoriPressable>
+  );
+}
+
+export function MoriSegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+  disabled = false,
+  accessibilityLabel,
+}: {
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+  disabled?: boolean;
+  accessibilityLabel: string;
+}) {
+  const t = useTheme();
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={accessibilityLabel}
+      style={[styles.segmented, { backgroundColor: t.soft }]}
+    >
+      {options.map((option) => (
+        <MoriChip
+          key={option.value}
+          label={option.label}
+          selected={value === option.value}
+          disabled={disabled}
+          role="radio"
+          onPress={() => onChange(option.value)}
+        />
+      ))}
+    </View>
   );
 }
 export function ErrorNote({
@@ -345,6 +701,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 10,
+    borderWidth: 1,
   },
   card: { padding: 20, borderRadius: 24, borderWidth: 1, gap: 12 },
   input: {
@@ -355,7 +712,13 @@ export const styles = StyleSheet.create({
     minHeight: 54,
     textAlignVertical: "top",
   },
-  back: { width: 44, height: 44, justifyContent: "center" },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   overlay: {
     flex: 1,
     backgroundColor: "#10201977",
@@ -379,6 +742,35 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  chip: {
+    minHeight: 44,
+    minWidth: 44,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+  segmented: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    borderRadius: 20,
+    padding: 5,
+  },
+  notice: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  focused: {
+    outlineStyle: "solid",
+    outlineWidth: 3,
+    outlineColor: "#7F9B84",
   },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   stack: { gap: 16 },
