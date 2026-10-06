@@ -17,7 +17,7 @@ import { MoodPicker } from "../features/mood/MoodPicker";
 import { request, refresh } from "../services/api";
 import { useT } from "../i18n";
 import { usePreferences } from "../store/preferences";
-import { useTheme } from "../theme";
+import { OnboardingScaffold } from "../components/OnboardingScaffold";
 const goals = [
   "Một nơi để tâm sự",
   "Nhẹ bớt căng thẳng",
@@ -32,7 +32,6 @@ export default function Onboarding() {
   const [selected, setSelected] = useState<string[]>([]);
   const [style, setStyle] = useState<CompanionStyle>("gentle");
   const copy = useT();
-  const theme = useTheme();
   const locale = usePreferences((s) => s.locale);
   const save = useMutation({
     mutationFn: () =>
@@ -49,24 +48,9 @@ export default function Onboarding() {
       setStep(6);
     },
   });
-  return (
-    <ScreenContainer>
-      {step > 0 && (
-        <View style={{ flexDirection: "row", gap: 5, paddingVertical: 12 }}>
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <View
-              key={n}
-              style={{
-                height: 3,
-                flex: 1,
-                borderRadius: 2,
-                backgroundColor: n <= step ? theme.primary : theme.line,
-              }}
-            />
-          ))}
-        </View>
-      )}
-      {step === 0 ? (
+  if (step === 0) {
+    return (
+      <ScreenContainer>
         <>
           <MoriText
             style={{ textAlign: "center", letterSpacing: 6, marginTop: 22 }}
@@ -85,7 +69,39 @@ export default function Onboarding() {
           </MoriText>
           <MoriButton onPress={() => setStep(1)}>{copy.begin}</MoriButton>
         </>
-      ) : step === 1 ? (
+      </ScreenContainer>
+    );
+  }
+
+  const footer =
+    step === 1 ? (
+      <MoriButton onPress={() => setStep(2)}>{copy.continue}</MoriButton>
+    ) : step === 2 ? (
+      <MoriButton onPress={() => setStep(3)}>{copy.continue}</MoriButton>
+    ) : step === 3 ? (
+      <MoriButton onPress={() => setStep(4)}>Mình đã hiểu</MoriButton>
+    ) : step === 4 ? (
+      <MoriButton onPress={() => setStep(5)}>
+        Tiếp tục với lựa chọn của mình
+      </MoriButton>
+    ) : step === 5 ? (
+      <MoriButton
+        loading={save.isPending}
+        loadingLabel="Đang chuẩn bị khu vườn…"
+        onPress={() => save.mutate()}
+      >
+        Để sau, vào khu vườn
+      </MoriButton>
+    ) : undefined;
+
+  return (
+    <OnboardingScaffold
+      step={step}
+      totalSteps={6}
+      onBack={() => setStep((current) => Math.max(0, current - 1))}
+      footer={footer}
+    >
+      {step === 1 ? (
         <>
           <MoriText muted variant="small">
             BẮT ĐẦU TỪ BẠN
@@ -115,7 +131,6 @@ export default function Onboarding() {
             onChangeText={setName}
             maxLength={60}
           />
-          <MoriButton onPress={() => setStep(2)}>{copy.continue}</MoriButton>
         </>
       ) : step === 2 ? (
         <>
@@ -148,7 +163,6 @@ export default function Onboarding() {
               onPress={() => setStyle(s.id)}
             />
           ))}
-          <MoriButton onPress={() => setStep(3)}>{copy.continue}</MoriButton>
         </>
       ) : step === 3 ? (
         <>
@@ -169,7 +183,6 @@ export default function Onboarding() {
             Nếu bạn đang gặp nguy hiểm ngay lúc này, hãy liên hệ dịch vụ cấp cứu
             tại nơi bạn sống hoặc một người bạn tin tưởng.
           </MoriText>
-          <MoriButton onPress={() => setStep(4)}>Mình đã hiểu</MoriButton>
         </>
       ) : step === 4 ? (
         <>
@@ -188,9 +201,6 @@ export default function Onboarding() {
             của trình duyệt này; tránh thiết bị dùng chung. Bản demo chỉ dành
             cho dữ liệu thử.
           </MoriText>
-          <MoriButton onPress={() => setStep(5)}>
-            Tiếp tục với lựa chọn của mình
-          </MoriButton>
         </>
       ) : step === 5 ? (
         <>
@@ -200,9 +210,6 @@ export default function Onboarding() {
             lúc nào. Mori không buồn hay cô đơn khi bạn vắng mặt.
           </MoriText>
           <ErrorNote error={save.error} />
-          <MoriButton loading={save.isPending} onPress={() => save.mutate()}>
-            Để sau, vào khu vườn
-          </MoriButton>
         </>
       ) : (
         <View style={styles.stack}>
@@ -214,11 +221,6 @@ export default function Onboarding() {
           </MoriButton>
         </View>
       )}
-      {step > 0 && step < 6 && (
-        <MoriButton secondary onPress={() => setStep(step - 1)}>
-          {copy.back}
-        </MoriButton>
-      )}
-    </ScreenContainer>
+    </OnboardingScaffold>
   );
 }

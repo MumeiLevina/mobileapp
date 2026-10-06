@@ -62,7 +62,12 @@ export function MoriPressable({
   const reducedMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(1)).current;
   const lastPressAt = useRef(0);
+  const lastPressHandler = useRef(onPress);
   const [focused, setFocused] = useState(false);
+  if (lastPressHandler.current !== onPress) {
+    lastPressHandler.current = onPress;
+    lastPressAt.current = 0;
+  }
   const animate = (value: number) => {
     if (reducedMotion) return;
     Animated.timing(scale, {
