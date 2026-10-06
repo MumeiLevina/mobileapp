@@ -422,13 +422,25 @@ export async function demoRequest(
           occurredAt: item.created_at,
           sourceId: item.id,
         })),
-      ...db.gardenMilestones.map((milestone) => ({
-        id: `garden:${milestone.id}`,
-        type: "garden_milestone" as const,
-        title: "Khu vườn ghi nhận một bước chăm sóc bản thân",
-        occurredAt: milestone.created_at,
-        sourceId: milestone.id,
-      })),
+      ...db.gardenMilestones.flatMap((milestone, index) => {
+        const titles: Record<number, string> = {
+          5: "Hoa đã xuất hiện trong khu vườn",
+          12: "Đom đóm và mặt hồ đã xuất hiện",
+          25: "Ghế nhỏ và ánh trăng đã xuất hiện",
+        };
+        const title = titles[index + 1];
+        return title
+          ? [
+              {
+                id: `garden:${milestone.id}`,
+                type: "garden_milestone" as const,
+                title,
+                occurredAt: milestone.created_at,
+                sourceId: milestone.id,
+              },
+            ]
+          : [];
+      }),
     ];
     return items
       .filter((item) =>

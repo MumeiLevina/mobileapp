@@ -193,15 +193,7 @@ export class LifePatternsService {
       .map((range) => ({
         ...range,
         entries: journals.filter((journal) =>
-          range.match(
-            Number(
-              new Intl.DateTimeFormat("en-US", {
-                hour: "numeric",
-                hour12: false,
-                timeZone: timezone,
-              }).format(new Date(journal.created_at)),
-            ) % 24,
-          ),
+          range.match(this.hourAt(journal.created_at, timezone)),
         ),
       }))
       .sort((a, b) => b.entries.length - a.entries.length)[0];
@@ -220,6 +212,22 @@ export class LifePatternsService {
           ),
       },
     ];
+  }
+
+  private hourAt(timestamp: string, timezone: string) {
+    try {
+      return (
+        Number(
+          new Intl.DateTimeFormat("en-US", {
+            hour: "numeric",
+            hour12: false,
+            timeZone: timezone,
+          }).format(new Date(timestamp)),
+        ) % 24
+      );
+    } catch {
+      return new Date(timestamp).getUTCHours();
+    }
   }
 
   private recurringThought(journals: JournalRow[]): LifePattern[] {

@@ -35,7 +35,10 @@ const rows: Record<string, Record<string, unknown>[]> = {
       created_at: "2026-10-03T12:00:00Z",
     },
   ],
-  garden_unlocks: [],
+  garden_unlocks: Array.from({ length: 5 }, (_, index) => ({
+    id: `garden-${index}`,
+    created_at: `2026-09-0${index + 1}T12:00:00Z`,
+  })),
 };
 
 function setup() {
@@ -59,6 +62,7 @@ test("timeline reads only bounded owner-scoped active sources and sorts moments"
     "mood",
     "journal",
     "important_event",
+    "garden_milestone",
   ]);
   expect(db.list.mock.calls.every((call) => call[1] === "owner")).toBe(true);
   expect(db.list).toHaveBeenCalledWith("journals", "owner", {
@@ -79,5 +83,5 @@ test("timeline filters do not turn personal history into an inferred feed", asyn
   ).toEqual(["mood"]);
   expect(
     (await service.list("owner", "important_moment")).map((item) => item.type),
-  ).toEqual(["important_event"]);
+  ).toEqual(["important_event", "garden_milestone"]);
 });

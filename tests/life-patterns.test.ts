@@ -81,3 +81,17 @@ test("mood and activity association stays descriptive and requires five pairs", 
     /chữa|gây ra|chẩn đoán|cures|causes|diagnos/,
   );
 });
+
+test("an invalid saved timezone falls back safely", async () => {
+  const journals = Array.from({ length: 5 }, (_, index) => ({
+    id: `journal-${index}`,
+    title: "Evening note",
+    content: `A distinct note ${index}`,
+    created_at: `2026-10-0${index + 1}T22:30:00Z`,
+  }));
+  const { service, db } = setup({ journals });
+  db.one.mockResolvedValue({ timezone: "not/a-timezone" });
+  await expect(service.list("owner")).resolves.toEqual(
+    expect.objectContaining({ patterns: expect.any(Array) }),
+  );
+});

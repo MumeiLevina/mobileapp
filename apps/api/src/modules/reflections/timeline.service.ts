@@ -86,13 +86,31 @@ export class TimelineService {
         occurredAt: event.created_at,
         sourceId: event.id,
       })),
-      ...milestones.map((milestone) => ({
-        id: `garden:${String(milestone.id)}`,
-        type: "garden_milestone" as const,
-        title: "Khu vườn ghi nhận một bước chăm sóc bản thân",
-        occurredAt: String(milestone.created_at),
-        sourceId: String(milestone.id),
-      })),
+      ...milestones
+        .slice()
+        .sort(
+          (a, b) =>
+            Date.parse(String(a.created_at)) - Date.parse(String(b.created_at)),
+        )
+        .flatMap((milestone, index) => {
+          const titles: Record<number, string> = {
+            5: "Hoa đã xuất hiện trong khu vườn",
+            12: "Đom đóm và mặt hồ đã xuất hiện",
+            25: "Ghế nhỏ và ánh trăng đã xuất hiện",
+          };
+          const title = titles[index + 1];
+          return title
+            ? [
+                {
+                  id: `garden:${String(milestone.id)}`,
+                  type: "garden_milestone" as const,
+                  title,
+                  occurredAt: String(milestone.created_at),
+                  sourceId: String(milestone.id),
+                },
+              ]
+            : [];
+        }),
     ];
 
     return items
