@@ -1,0 +1,34 @@
+name: Mori staging verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      STAGING_TARGET: staging
+      STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+      RUN_SUPABASE_INTEGRATION_TESTS: "true"
+      RUN_PROVIDER_SAFETY_EVALS: "true"
+      SUPABASE_INTEGRATION_URL: ${{ secrets.SUPABASE_INTEGRATION_URL }}
+      SUPABASE_INTEGRATION_ANON_KEY: ${{ secrets.SUPABASE_INTEGRATION_ANON_KEY }}
+      SUPABASE_INTEGRATION_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_INTEGRATION_SERVICE_ROLE_KEY }}
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_EMBEDDING_MODEL: ${{ secrets.LLM_EMBEDDING_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:supabase
+      - run: npm run verify:staging
+      - run: npm run eval:safety:staging

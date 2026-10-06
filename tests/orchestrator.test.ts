@@ -116,3 +116,38 @@ test("conversation ownership is checked before processing any private input", as
   ).rejects.toThrow("Not found");
   expect(generate).not.toHaveBeenCalled();
 });
+
+test("retrying the same client ID returns one saved assistant exchange", async () => {
+  const { service, repository, provider } = setup();
+  repository.list
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([
+      {
+        id: "reply",
+        role: "assistant",
+        content: "saved reply",
+        safety_level: "normal",
+      },
+    ]);
+  const generate = jest.spyOn(provider, "generateText");
+
+  await service.processUserMessage(
+    "user",
+    "conversation",
+    "Hôm nay mình hơi mệt.",
+    "listen",
+    "stable-client-id",
+  );
+  const retried = await service.processUserMessage(
+    "user",
+    "conversation",
+    "Hôm nay mình hơi mệt.",
+    "listen",
+    "stable-client-id",
+  );
+
+  expect(retried.message).toMatchObject({ id: "reply", role: "assistant" });
+  expect(repository.rpc).toHaveBeenCalledTimes(1);
+  expect(generate).toHaveBeenCalledTimes(1);
+});

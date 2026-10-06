@@ -1,9 +1,12 @@
+﻿import { ExecutionContext } from "@nestjs/common";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { AuthGuard } from "../apps/api/src/common/auth.guard";
+import { DatabaseService } from "../apps/api/src/database/database.service";
 
 const enabled = process.env.RUN_SUPABASE_INTEGRATION_TESTS === "true";
 const integration = enabled ? describe : describe.skip;
 
-integration("real Supabase Auth and RLS", () => {
+integration("real Supabase Auth, provisioning and RLS", () => {
   const url = process.env.SUPABASE_INTEGRATION_URL!;
   const anon = process.env.SUPABASE_INTEGRATION_ANON_KEY!;
   const serviceKey = process.env.SUPABASE_INTEGRATION_SERVICE_ROLE_KEY!;
@@ -13,7 +16,19 @@ integration("real Supabase Auth and RLS", () => {
   let idA = "";
   let idB = "";
   let emailA = "";
+  let emailB = "";
+  let accessTokenA = "";
   const password = `Mori-${Date.now()}-Aa9!`;
+
+  async function ensureUserASession() {
+    const current = await userA.auth.getSession();
+    if (current.data.session) return;
+    const login = await userA.auth.signInWithPassword({
+      email: emailA,
+      password,
+    });
+    if (login.error) throw login.error;
+  }
 
   beforeAll(async () => {
     if (!url || !anon || !serviceKey)
@@ -21,36 +36,37 @@ integration("real Supabase Auth and RLS", () => {
     admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    emailA = `mori-a-${stamp}@example.test`;
-    const emailB = `mori-b-${stamp}@example.test`;
-    const createdA = await admin.auth.admin.createUser({
-      email: emailA,
-      password,
-      email_confirm: true,
-    });
-    const createdB = await admin.auth.admin.createUser({
-      email: emailB,
-      password,
-      email_confirm: true,
-    });
-    idA = createdA.data.user?.id ?? "";
-    idB = createdB.data.user?.id ?? "";
-    if (
-      createdA.error ||
-      createdB.error ||
-      !createdA.data.user ||
-      !createdB.data.user
-    )
-      throw (
-        createdA.error ?? createdB.error ?? new Error("User creation failed")
-      );
     userA = createClient(url, anon, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     userB = createClient(url, anon, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    emailA = `mori-signup-${stamp}@example.test`;
+    emailB = `mori-b-${stamp}@example.test`;
+
+    const signedUpA = await userA.auth.signUp({ email: emailA, password });
+    if (signedUpA.error || !signedUpA.data.user)
+      throw signedUpA.error ?? new Error("User A signup failed");
+    idA = signedUpA.data.user.id;
+    if (!signedUpA.data.session) {
+      const confirmed = await admin.auth.admin.updateUserById(idA, {
+        email_confirm: true,
+      });
+      if (confirmed.error) throw confirmed.error;
+    }
+
+    const createdB = await admin.auth.admin.createUser({
+      email: emailB,
+      password,
+      email_confirm: true,
+    });
+    if (createdB.error || !createdB.data.user)
+      throw createdB.error ?? new Error("User B creation failed");
+    idB = createdB.data.user.id;
+
     const loginA = await userA.auth.signInWithPassword({
       email: emailA,
       password,
@@ -60,21 +76,36 @@ integration("real Supabase Auth and RLS", () => {
       password,
     });
     if (loginA.error || loginB.error) throw loginA.error ?? loginB.error;
+    accessTokenA = loginA.data.session?.access_token ?? "";
+
+    const conversation = await admin
+      .from("conversations")
+      .insert({ user_id: idB, title: "synthetic private B" })
+      .select("id")
+      .single();
+    if (conversation.error) throw conversation.error;
+
     const writes = await Promise.all([
       admin.from("journals").insert({
         user_id: idB,
-        title: "private B",
-        content: "private",
+        title: "synthetic private B",
+        content: "synthetic integration fixture",
         source: "manual",
         client_id: crypto.randomUUID(),
       }),
       admin.from("memories").insert({
         user_id: idB,
-        content: "private B",
+        content: "synthetic private B",
         category: "preference",
         approved_by_user: true,
       }),
-      admin.from("conversations").insert({ user_id: idB, title: "private B" }),
+      admin.from("messages").insert({
+        user_id: idB,
+        conversation_id: conversation.data.id,
+        role: "user",
+        content: "synthetic integration fixture",
+        client_id: crypto.randomUUID(),
+      }),
       admin.from("mood_entries").insert({
         user_id: idB,
         mood: "okay",
@@ -97,12 +128,11 @@ integration("real Supabase Auth and RLS", () => {
     if (idB) await admin.auth.admin.deleteUser(idB);
   });
 
-  test("signup trigger provisions application rows", async () => {
+  test("email/password signup provisions profile, garden and preferences", async () => {
     for (const table of [
       "profiles",
       "garden_states",
       "notification_preferences",
-      "data_export_audits",
     ]) {
       const result = await admin
         .from(table)
@@ -114,38 +144,68 @@ integration("real Supabase Auth and RLS", () => {
     }
   });
 
-  test("login session can be refreshed and logout clears it", async () => {
+  test("a real JWT is accepted by AuthGuard and supplies its verified subject", async () => {
+    const request = {
+      headers: { authorization: `Bearer ${accessTokenA}` },
+    } as {
+      headers: { authorization: string };
+      userId?: string;
+    };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as unknown as ExecutionContext;
+    const guard = new AuthGuard({ admin } as unknown as DatabaseService);
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.userId).toBe(idA);
+  });
+
+  test("login session refreshes and logout clears local auth state", async () => {
     const refreshed = await userA.auth.refreshSession();
     expect(refreshed.error).toBeNull();
     expect(refreshed.data.session?.user.id).toBe(idA);
-    expect((await userA.auth.signOut()).error).toBeNull();
+    expect((await userA.auth.signOut({ scope: "local" })).error).toBeNull();
     expect((await userA.auth.getSession()).data.session).toBeNull();
   });
 
   test.each([
     "profiles",
+    "mood_entries",
     "journals",
     "memories",
     "conversations",
-    "mood_entries",
-  ])("User A cannot read User B %s", async (table) => {
-    await userA.auth.signInWithPassword({ email: emailA, password });
+    "messages",
+    "garden_states",
+    "notification_preferences",
+  ])("User A cannot read User B rows from %s", async (table) => {
+    await ensureUserASession();
     const result = await userA.from(table).select("*").eq("user_id", idB);
     expect(result.error).toBeNull();
     expect(result.data).toEqual([]);
   });
 
-  test("account deletion cascades application data", async () => {
+  test("browser clients cannot read server-only export audits", async () => {
+    await ensureUserASession();
+    const result = await userA
+      .from("data_export_audits")
+      .select("*")
+      .eq("user_id", idB);
+    expect(result.data ?? []).toEqual([]);
+    expect(result.error).not.toBeNull();
+  });
+
+  test("account deletion cascades every seeded application row", async () => {
     const deleted = await admin.auth.admin.deleteUser(idB);
     expect(deleted.error).toBeNull();
     for (const table of [
       "profiles",
+      "mood_entries",
       "journals",
       "memories",
       "conversations",
-      "mood_entries",
+      "messages",
       "garden_states",
       "notification_preferences",
+      "data_export_audits",
     ]) {
       const result = await admin
         .from(table)

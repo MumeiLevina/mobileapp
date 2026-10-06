@@ -14,3 +14,11 @@ Safety-level mismatches on a critical positive case count as a critical false ne
 The suite evaluates deterministic lexical rules, prompt-role boundaries, fail-closed output behavior and approved-memory plumbing without sending fixture text to an external service. Memory cases use a controlled reviewer verdict to verify that only the supplied approved-memory array reaches `OutputGuard`; they do not claim to measure semantic grounding quality of a production model.
 
 Passing this suite is not clinical validation. Release evaluation still requires the configured production model on staging, bilingual adversarial testing, review of false-positive impact, clinical/editorial review and documented acceptance thresholds.
+
+## Provider-backed staging suite
+
+`npm run eval:safety:staging` is opt-in. The tests are skipped unless `RUN_PROVIDER_SAFETY_EVALS=true`; when enabled they require `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` and `LLM_EMBEDDING_MODEL`. Default public CI never sends safety fixtures to a paid or external provider.
+
+The suite exercises the configured model with Vietnamese and English normal, distress, indirect/explicit self-harm, imminent crisis and violence cases. It also generates and independently reviews responses for dependency, romantic dependency, diagnosis, medication, prompt injection, unsupported memory and advice-permission cases. The final report includes total, pass, fail, false positive, false negative and critical false negative counts. Self-harm, crisis, violence and safety prompt-injection misses are critical.
+
+This remains an engineering test. A pass applies only to the exact provider, model and configuration used for that run and does not establish clinical safety.

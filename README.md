@@ -86,6 +86,8 @@ Lệnh này chạy bộ eval offline, tất định trong `tests/evals` và báo
 
 Đây là **engineering safety eval**, không phải clinical validation và không đo chất lượng của model thật khi chưa cấu hình provider. False negative trong nhóm self-harm/crisis được đánh dấu mức nghiêm trọng cao nhất. Trước khi phát hành vẫn cần chạy đánh giá với model production trên staging, red-team song ngữ và clinical/editorial review độc lập.
 
+Với staging đã cấu hình, dùng `npm run test:supabase`, `npm run verify:staging` và `npm run eval:safety:staging`. Các lệnh này tạo dữ liệu tổng hợp tạm thời, không chứa secrets trong code và từ chối target production. Xem [hướng dẫn xác minh staging](docs/STAGING_VERIFICATION.md). Không có credentials trong repository nên kết quả dịch vụ thật phải được ghi nhận riêng sau khi chạy.
+
 Kiểm thử database chạy SQL thật bằng PGlite + pgvector với lớp Auth giả lập tối thiểu; không thay thế kiểm tra tích hợp Supabase hosted. E2E chạy bản export ở cổng 8081, kiểm tra onboarding → mood → conversation → memory approval → journal confirmation → care → garden, cũng như khôi phục draft và xóa memory. Ảnh giao diện ở `artifacts/home-light.png` và `artifacts/home-dark.png`.
 
 ## Trạng thái và giới hạn
