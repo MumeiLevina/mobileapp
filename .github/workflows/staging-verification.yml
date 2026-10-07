@@ -22,6 +22,14 @@ jobs:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LLM_MODEL: ${{ secrets.LLM_MODEL }}
       LLM_EMBEDDING_MODEL: ${{ secrets.LLM_EMBEDDING_MODEL }}
+      LLM_TEXT_TIMEOUT_MS: "60000"
+      LLM_CLASSIFICATION_TIMEOUT_MS: "30000"
+      LLM_EMBEDDING_TIMEOUT_MS: "30000"
+      MOCK_AI: "false"
+      EXPO_PUBLIC_DEMO_MODE: "false"
+      EXPO_PUBLIC_API_URL: ${{ secrets.STAGING_API_URL }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_INTEGRATION_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_INTEGRATION_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +37,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run preflight:staging
       - run: npm run test:supabase
       - run: npm run verify:staging
       - run: npm run eval:safety:staging

@@ -122,14 +122,18 @@ export function validateStagingConfig(env) {
   return errors;
 }
 
-const errors = validateStagingConfig(process.env);
-if (errors.length) {
-  console.error("FAIL staging preflight");
-  for (const error of errors) console.error(`- ${error}`);
-  process.exitCode = 1;
-} else {
-  console.log("PASS staging preflight: configuration is present and safe");
-  console.log(
-    "No network requests were made and no secret values were printed.",
-  );
+if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const errors = validateStagingConfig(process.env);
+  if (errors.length) {
+    console.error("FAIL staging preflight");
+    for (const error of errors) console.error(`- ${error}`);
+    process.exitCode = 1;
+  } else {
+    console.log("PASS staging preflight: configuration is present and safe");
+    console.log(
+      "No network requests were made and no secret values were printed.",
+    );
+  }
 }
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
