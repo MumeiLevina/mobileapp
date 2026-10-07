@@ -128,7 +128,9 @@ test("journal local draft survives reload and deletion removes approved memory",
   await page
     .getByRole("button", { name: "Quên điều này", exact: true })
     .click();
-  await page.getByRole("button", { name: "Xóa ký ức này", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Xóa ký ức này", exact: true })
+    .click();
   await expect(
     page.getByText(
       "Mori chưa ghi nhớ điều gì. Bạn không cần thêm nếu không muốn.",
@@ -171,10 +173,7 @@ test("privacy center exports and deletes each requested data group", async ({
   await page
     .getByRole("button", { name: "Xóa tất cả nhật ký", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Xóa tất cả nhật ký" })
-    .last()
-    .click();
+  await page.getByRole("button", { name: "Xóa tất cả nhật ký" }).last().click();
   await page
     .getByRole("button", { name: "Xóa tất cả ký ức của Mori", exact: true })
     .click();
@@ -265,4 +264,73 @@ test("Wave 1 connects Ask Mori, Life Map, Memory evidence, Timeline and Patterns
   ).toBeVisible();
   await expect(page.getByText(/Được bạn duyệt ngày/)).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("guided journal keeps a local draft and creates a journal only on save", async ({
+  page,
+}) => {
+  await page.goto("/journal");
+  await page
+    .getByRole("button", { name: "Xem tất cả gợi ý", exact: true })
+    .click();
+  await expect(page.getByText("Một gợi ý để bắt đầu.")).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Khi mình thấy mất phương hướng. 5 phút",
+      exact: true,
+    })
+    .click();
+
+  await page
+    .getByLabel("Câu trả lời 1")
+    .fill("Mình đang chưa biết nên bắt đầu từ đâu.");
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      return stored ? JSON.parse(stored).journals.length : 0;
+    }),
+  ).toBe(0);
+
+  await page.reload();
+  await expect(page.getByLabel("Câu trả lời 1")).toHaveValue(
+    "Mình đang chưa biết nên bắt đầu từ đâu.",
+  );
+  await page.getByRole("button", { name: "Câu tiếp theo" }).click();
+  await page
+    .getByLabel("Câu trả lời 2")
+    .fill("Những lần đi bộ chậm từng giúp mình vững hơn.");
+  await page.getByRole("button", { name: "Câu tiếp theo" }).click();
+  await page
+    .getByLabel("Câu trả lời 3")
+    .fill("Mình sẽ đi ra ngoài trong mười phút.");
+  await page.getByRole("button", { name: "Xem lại câu trả lời" }).click();
+  await expect(page.getByText("Những điều bạn muốn giữ lại.")).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      return stored ? JSON.parse(stored).journals.length : 0;
+    }),
+  ).toBe(0);
+
+  await page.getByRole("button", { name: "Lưu vào nhật ký" }).click();
+  await expect(
+    page.getByText("Khi mình thấy mất phương hướng", { exact: true }),
+  ).toBeVisible();
+  const saved = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("mori-demo")!).journals[0],
+  );
+  expect(saved.source).toBe("guided");
+  expect(saved.content).toContain("một bước thật nhỏ");
+
+  await page
+    .getByRole("button", { name: /Khi mình thấy mất phương hướng,/ })
+    .click();
+  await page.getByRole("button", { name: "Xóa trang viết" }).click();
+  await page
+    .getByRole("button", { name: "Xóa trang viết", exact: true })
+    .last()
+    .click();
+  await expect(
+    page.getByText("Khi mình thấy mất phương hướng", { exact: true }),
+  ).toBeHidden();
 });

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { Journal } from "@mori/shared";
+import { guidedJournalTemplates, Journal } from "@mori/shared";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ErrorNote,
@@ -14,7 +14,9 @@ import {
   MoriPressable,
   MoriText,
   ScreenContainer,
+  SectionHeading,
 } from "../../components/ui";
+import { GuidedJournalCard } from "../../features/journal/GuidedJournalCard";
 import { request } from "../../services/api";
 import { useT } from "../../i18n";
 import { useTheme } from "../../theme";
@@ -49,17 +51,33 @@ export default function JournalList() {
       <MoriText variant="hero">{copy.journalTitle}</MoriText>
       <MoriText muted>{copy.journalNote}</MoriText>
       <MoriButton
+        icon="create-outline"
+        onPress={() => router.push("/journal/new")}
+      >
+        Viết tự do
+      </MoriButton>
+      <SectionHeading title="Gợi ý để bắt đầu" />
+      {guidedJournalTemplates
+        .filter((template) =>
+          ["cuoi-ngay", "khi-moi-thu-hoi-nang", "hieu-minh-hon"].includes(
+            template.slug,
+          ),
+        )
+        .map((template) => (
+          <GuidedJournalCard key={template.id} template={template} />
+        ))}
+      <MoriButton
+        variant="ghost"
+        onPress={() => router.push("/guided-journals" as "/self-care")}
+      >
+        Xem tất cả gợi ý
+      </MoriButton>
+      <MoriButton
         secondary
         icon="time-outline"
         onPress={() => router.push("/timeline")}
       >
         Xem dòng thời gian của mình
-      </MoriButton>
-      <MoriButton
-        icon="create-outline"
-        onPress={() => router.push("/journal/new")}
-      >
-        {copy.newEntry}
       </MoriButton>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <MoriInput
@@ -219,7 +237,9 @@ export default function JournalList() {
             <MoriText variant="small" muted>
               {entry.source === "manual"
                 ? "Một trang tự viết"
-                : "Từ một khoảng suy ngẫm"}{" "}
+                : entry.source === "guided"
+                  ? "Nhật ký có hướng dẫn"
+                  : "Từ một khoảng suy ngẫm"}{" "}
               ↗
             </MoriText>
           </MoriCard>
