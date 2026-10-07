@@ -2,12 +2,13 @@
 
 Use a disposable development or staging Supabase project. The commands create synthetic users and delete them at the end. Never point them at production.
 
-Apply migrations in this exact order:
-
-1. `202610010001_initial.sql`
-2. `202610060001_auth_rls_hardening.sql`
-3. `202610060002_crisis_resources.sql`
-4. `202610060003_data_export_audits.sql`
+Apply **every file in `supabase/migrations` in filename order**. Do not use a
+hand-maintained subset: staging must contain the complete schema required by
+the current application. At this revision the sequence begins with
+`202610010001_initial.sql` and ends with
+`202610070009_personal_milestones.sql`, covering Life Map, memory provenance,
+Guided Journals, rituals and ritual notifications, Letters, Soft Goals, the
+Garden sanctuary and Personal Milestones.
 
 Configure the API with `MOCK_AI=false` and deploy it over HTTPS. Set these variables only in the local shell or the protected GitHub `staging` environment:
 
