@@ -17,6 +17,7 @@ import {
   Mood,
   NotificationPreference,
   Profile,
+  RitualEntry,
   PATTERN_DISCLAIMER,
   TimelineFilter,
   TimelineItem,
@@ -30,6 +31,7 @@ import {
   moodSchema,
   notificationSchema,
   profileSchema,
+  ritualEntrySchema,
   askMoriSchema,
 } from "@mori/shared";
 import { newId } from "../lib/id";
@@ -53,6 +55,7 @@ type DemoData = {
   gardenMilestones: { id: string; action_key: string; created_at: string }[];
   notifications: NotificationPreference;
   lifeMapItems: LifeMapItem[];
+  ritualEntries: RitualEntry[];
 };
 const entity = () => ({
   id: newId(),
@@ -85,6 +88,7 @@ const initial = (): DemoData => ({
     timezone: "Asia/Ho_Chi_Minh",
   },
   lifeMapItems: [],
+  ritualEntries: [],
 });
 let database: DemoData | undefined;
 async function get() {
@@ -94,6 +98,7 @@ async function get() {
     database.lifeMapItems ??= [];
     database.memorySources ??= [];
     database.gardenMilestones ??= [];
+    database.ritualEntries ??= [];
   }
   return database;
 }
@@ -354,6 +359,19 @@ export async function demoRequest(
       session.completed_at = new Date().toISOString();
       award(db, `selfcare:${session.id}`);
       result = { ok: true };
+    }
+  } else if (resource === "rituals") {
+    if (method === "GET") return db.ritualEntries;
+    const value = ritualEntrySchema.parse(body);
+    const existing = db.ritualEntries.find(
+      (entry) => entry.client_id === value.client_id,
+    );
+    if (existing) result = existing;
+    else {
+      const entry: RitualEntry = { ...entity(), ...value };
+      db.ritualEntries.unshift(entry);
+      award(db, `ritual:${entry.id}`);
+      result = entry;
     }
   } else if (resource === "notification-preferences") {
     if (method === "GET") return db.notifications;
@@ -695,7 +713,7 @@ export async function demoRequest(
     } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       generatedAt: new Date().toISOString(),
       data: {
         profile: { ...db.profile },
@@ -715,6 +733,7 @@ export async function demoRequest(
         notificationPreferences: { ...db.notifications },
         lifeMapItems: db.lifeMapItems.map(withoutOwner),
         memorySources: db.memorySources.map(withoutOwner),
+        ritualEntries: db.ritualEntries.map(withoutOwner),
       },
     };
     return accountExport;

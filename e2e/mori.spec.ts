@@ -155,7 +155,8 @@ test("privacy center exports and deletes each requested data group", async ({
   );
   const path = await download.path();
   const accountExport = JSON.parse(await readFile(path!, "utf8"));
-  expect(accountExport.schemaVersion).toBe(3);
+  expect(accountExport.schemaVersion).toBe(4);
+  expect(accountExport.data).toHaveProperty("ritualEntries");
   expect(accountExport.data).toHaveProperty("lifeMapItems");
   expect(accountExport.data).toHaveProperty("memorySources");
   expect(accountExport.data).not.toHaveProperty("safetyEvents");

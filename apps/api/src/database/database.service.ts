@@ -118,7 +118,8 @@ export class DatabaseService {
       | "self_care_sessions"
       | "weekly_reflections"
       | "life_map_items"
-      | "memory_sources",
+      | "memory_sources"
+      | "ritual_entries",
     user: string,
     columns: string,
   ): Promise<T[]> {

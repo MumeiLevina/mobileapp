@@ -33,6 +33,7 @@ import { LifeMapService } from "./modules/life-map/life-map.service";
 import { TimelineController } from "./modules/reflections/timeline.controller";
 import { TimelineService } from "./modules/reflections/timeline.service";
 import { LifePatternsService } from "./modules/insights/life-patterns.service";
+import { RitualsController } from "./modules/rituals/rituals.controller";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -47,6 +48,7 @@ import { LifePatternsService } from "./modules/insights/life-patterns.service";
     InsightsController,
     LifeMapController,
     TimelineController,
+    RitualsController,
   ],
   providers: [
     DatabaseService,

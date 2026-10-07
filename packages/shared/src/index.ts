@@ -100,6 +100,30 @@ export const notificationSchema = z.object({
   minute: z.number().int().min(0).max(59),
   timezone: z.string().max(80),
 });
+export const RitualType = z.enum(["morning", "evening"]);
+export const DesiredFeeling = z.enum([
+  "peaceful",
+  "focused",
+  "gentle",
+  "brave",
+]);
+export const ritualEntrySchema = z
+  .object({
+    type: RitualType,
+    desired_feeling: DesiredFeeling.nullable().default(null),
+    small_intention: z.string().trim().max(1000).default(""),
+    reflection: z.string().trim().max(4000).default(""),
+    client_id: z.string().uuid(),
+  })
+  .superRefine((value, context) => {
+    if (value.type === "morning" && !value.desired_feeling) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["desired_feeling"],
+        message: "Morning ritual needs an explicit desired feeling.",
+      });
+    }
+  });
 export const askMoriSchema = z.object({
   question: z.string().trim().min(3).max(500),
 });
@@ -189,6 +213,8 @@ export type AskMoriResponse = {
   crisisResources?: CrisisResource[];
 };
 export type NotificationPreference = z.infer<typeof notificationSchema>;
+export type RitualType = z.infer<typeof RitualType>;
+export type DesiredFeeling = z.infer<typeof DesiredFeeling>;
 export type Entity = {
   id: string;
   user_id: string;
@@ -198,6 +224,7 @@ export type Entity = {
 };
 export type Mood = Entity & z.infer<typeof moodSchema>;
 export type Journal = Entity & z.infer<typeof journalSchema>;
+export type RitualEntry = Entity & z.infer<typeof ritualEntrySchema>;
 export type Memory = Entity &
   z.infer<typeof memorySchema> & {
     approved_by_user: boolean;
@@ -283,7 +310,7 @@ export type ChatResult = {
   crisisResources?: CrisisResource[];
 };
 export type AccountDataExport = {
-  schemaVersion: 3;
+  schemaVersion: 4;
   generatedAt: string;
   data: {
     profile: Record<string, unknown>;
@@ -298,6 +325,7 @@ export type AccountDataExport = {
     notificationPreferences: Record<string, unknown>;
     lifeMapItems: Record<string, unknown>[];
     memorySources: Record<string, unknown>[];
+    ritualEntries: Record<string, unknown>[];
   };
 };
 export const gardenFromPoints = (points: number): Garden => ({

@@ -45,6 +45,9 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile("supabase/migrations/202610070004_rituals.sql", "utf8"),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -73,6 +76,15 @@ try {
   console.log(
     "PASS guided journals reuse private owner-scoped journal storage",
   );
+  await pg.query(
+    "insert into ritual_entries(user_id,type,desired_feeling,small_intention,client_id) values($1,'morning','peaceful','A private intention',$2)",
+    [a, "66666666-6666-4666-a666-666666666666"],
+  );
+  await pg.query(
+    "insert into ritual_entries(user_id,type,desired_feeling,small_intention,client_id) values($1,'morning','brave','Other owner',$2)",
+    [b, "77777777-7777-4777-a777-777777777777"],
+  );
+  console.log("PASS ritual entries validate useful owner-scoped data");
   const embedding = JSON.stringify(
     Array.from({ length: 1536 }, (_, i) => (i === 0 ? 1 : 0)),
   );
@@ -129,6 +141,7 @@ try {
     "mood_entries",
     "life_map_items",
     "memory_sources",
+    "ritual_entries",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -297,6 +310,7 @@ try {
     "data_export_audits",
     "life_map_items",
     "memory_sources",
+    "ritual_entries",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows
