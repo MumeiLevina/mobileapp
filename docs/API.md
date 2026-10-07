@@ -29,6 +29,12 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 | POST              | /self-care/:id/start             | Create own activity session                                   |
 | POST              | /self-care/:id/complete          | Complete matching `session_id`, award once                    |
 | GET               | /garden                          | Own persistent garden state                                   |
+| GET, POST         | /soft-goals                      | List or create an owned gentle intention                      |
+| PATCH, DELETE     | /soft-goals/:id                  | Edit or delete an owned intention                             |
+| POST              | /soft-goals/:id/complete         | Complete once; idempotent Garden reward and Path Stones       |
+| POST              | /soft-goals/:id/archive          | Archive without penalty or growth removal                     |
+| GET               | /personal-milestones             | List the caller's gentle private milestones                   |
+| POST              | /personal-milestones/:id/acknowledge | Mark one owned milestone as seen                          |
 | GET               | /weekly-reflection               | Opt-in summary of last seven days                             |
 | POST              | /weekly-reflection/complete      | Save weekly summary, award once per UTC week                  |
 | GET, PATCH        | /notification-preferences        | Off/morning/evening/custom and local time                     |
@@ -37,7 +43,7 @@ Base URL: configured by `EXPO_PUBLIC_API_URL`. Every route requires `Authorizati
 
 List endpoints currently return the most recent 100 entries (conversation detail: 200 messages; AI context: 12 messages). Database schema supports all historical records.
 
-`POST /account/export` is limited to 2 requests/minute/IP and synchronously returns all retained rows owned by the authenticated user. The package contains profile, moods, journals, approved and pending memories, conversations with messages, self-care history, garden state, weekly reflections and notification preferences. Explicit projections exclude ownership identifiers, embeddings, classifier confidence, internal safety levels and safety events. The server pages through each table in batches of 500 and records only status, timestamps and record counts in `data_export_audits`; exported content is never copied into the audit. This synchronous path is intended for MVP-sized accounts. Move generation to a background job and private expiring object storage before supporting large accounts.
+`POST /account/export` is limited to 2 requests/minute/IP and synchronously returns schema v6 with all retained rows owned by the authenticated user. The package contains profile, moods, journals, memories, conversations with messages, self-care history, garden state, weekly reflections, notification preferences, Life Map, memory provenance, rituals, letters, Soft Goals, Garden unlocks and Personal Milestones. Explicit projections exclude ownership identifiers, embeddings, classifier confidence, internal safety levels, Garden action keys and safety events. The server pages through each table in batches of 500 and records only status, timestamps and record counts in `data_export_audits`; exported content is never copied into the audit. This synchronous path is intended for MVP-sized accounts. Move generation to a background job and private expiring object storage before supporting large accounts.
 
 Export schema version 4 also includes active/deleted Life Map items, Memory source metadata and ritual entries. It never duplicates the source record's raw content; provenance contains only the source type, source ID, reason and timestamps.
 

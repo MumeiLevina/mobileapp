@@ -25,6 +25,16 @@ Crisis responses come from a deterministic service rather than the companion mod
 
 ## Privacy controls
 
+## Personal World (Wave 3)
+
+`soft_goals`, `garden_unlocks`, `personal_milestones` and `letters` are private owner-scoped tables with RLS, server-only writes and account-deletion cascades. Soft Goals use only active, completed and archived states. Completion awards the existing Garden growth key once and unlocks Path Stones once; creation and archive do not create growth.
+
+Garden 2.0 extends the existing growth state instead of replacing it. `unlock_garden_area` persists one row per owner/feature, while `record_personal_milestone` persists one gentle milestone per owner/key. Both RPCs are idempotent. Unlocks never remove growth or react to low mood, inactivity, missed rituals, deleted sources or crisis use. Quiet Cottage records only a one-time feature activation; Quiet Room usage history remains unrecorded.
+
+Letters and Soft Goals are deliberately absent from Ask Mori retrieval, Life Patterns and automatic Memory creation. Private Conversation still passes through Safety, CrisisResponse and OutputGuard while keeping messages in memory only; leaving discards them, and Save explicitly creates one normal conversation. It creates no timeline, memory, goal, Garden unlock or milestone.
+
+The Garden scene remains 2D and uses accessible hotspots. Reduced-motion settings disable decorative motion. Home stays calm and uses the Garden as the visual gateway; Milestones and Soft Goals live under the You area.
+
 ## Daily Experience (Wave 2)
 
 Guided Journal prompts are a versioned shared curated dataset; incomplete answers remain in the existing private draft store and only the reviewed result becomes a normal journal. Ritual intentions use owner-scoped `ritual_entries`; desired feelings are not reused as current mood and ritual text is not silently added to Ask Mori context.

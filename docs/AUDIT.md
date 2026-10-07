@@ -1,6 +1,6 @@
 # Repository audit
 
-Audit updated: 2026-10-07. This document records beta-hardening status without claiming real-service or device validation.
+Audit updated: 2026-10-08. This document records beta-hardening status without claiming real-service or device validation.
 
 ## Current architecture
 
@@ -14,6 +14,7 @@ Audit updated: 2026-10-07. This document records beta-hardening status without c
 
 - **Wave 1 product features: DONE locally.** Ask Mori, Life Map, evidence-based Memory provenance, Timeline and thresholded Patterns remain covered.
 - **Wave 2 Daily Experience: DONE locally.** Guided Journals, Rituals/reminders, Mori Moments, Quiet Room, First Aid and Home integration are implemented with demo E2E. Hosted CI and physical-device verification remain external gates.
+- **Wave 3 Personal World: DONE locally.** Soft Goals, Garden 2.0, deterministic unlocks, Personal Milestones, Letters integration, Private Conversation regressions and export schema v6 are implemented and covered by unit, database and demo E2E tests. Hosted CI for the exact final documentation commit remains the closeout gate.
 
 - **Phase A — Auth / RLS hardening: DONE.** Verified-owner repository behavior, explicit RLS, session refresh and additive migration are implemented and covered locally.
 - **Phase B — Real LLM provider: DONE.** The OpenAI-compatible provider, typed failures, independent timeouts and structured-response validation are implemented and covered with controlled HTTP tests.
@@ -40,4 +41,4 @@ Audit updated: 2026-10-07. This document records beta-hardening status without c
 
 ## Current audit boundary
 
-The repository contains no staging credentials and this audit makes no claim that hosted Supabase, a production model, EAS cloud builds or physical devices passed. The service verification commands refuse a production target and use only synthetic test content. Apply every migration in filename order through `202610070005_ritual_notifications.sql` before running them.
+The repository contains no staging credentials and this audit makes no claim that hosted Supabase, a production model, EAS cloud builds or physical devices passed. The service verification commands refuse a production target and use only synthetic test content. Apply every migration in filename order through `202610070009_personal_milestones.sql` before running them. Wave 3 adds `202610070006_letters.sql`, `202610070007_soft_goals.sql`, `202610070008_garden_sanctuary.sql` and `202610070009_personal_milestones.sql`; committed migrations were not rewritten.

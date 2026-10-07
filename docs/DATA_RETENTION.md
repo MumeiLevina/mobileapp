@@ -13,6 +13,11 @@ This is the current technical behavior. It does not promise a backup-deletion de
 | Weekly reflections            | Until account deletion                                                    | Account deletion                   |
 | Notification preferences      | Until account deletion                                                    | Disable/edit; account deletion     |
 | Ritual entries                | Until account deletion                                                    | Account deletion                   |
+| Future Letters                | Until individual deletion or account deletion; deleted rows remain excluded from the active vault | Delete letter; account deletion |
+| Soft Goals                    | Until individual deletion or account deletion; completed/archived state is retained | Delete goal; account deletion |
+| Garden unlocks                | Until account deletion; source deletion does not remove the unlocked area | Account deletion |
+| Personal Milestones           | Until account deletion; acknowledgement does not remove the milestone     | Account deletion                   |
+| Private Conversation session  | Not retained unless the user explicitly chooses Save                      | Leave without saving               |
 | Guided Journal final entries  | Same as journals; incomplete drafts stay on device                        | Delete journal/draft/account       |
 | Quiet Room / First Aid choice | Not retained                                                              | Not applicable                     |
 | Export audit metadata         | Until account deletion                                                    | Account deletion                   |

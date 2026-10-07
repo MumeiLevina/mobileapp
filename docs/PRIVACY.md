@@ -13,10 +13,15 @@ This document describes the implemented product and is an internal release input
 - Content-free export audits record status, timestamps and aggregate record counts for operational accountability.
 - Guided Journal answers are stored as private journals only after Save. Incomplete answers and Morning Ritual drafts remain in private device draft storage.
 - Ritual entries retain only the selected ritual type, desired feeling, optional intention/reflection and idempotency identifier.
+- Future Letters retain the private title, content and user-chosen open time. Letter content is never automatic AI, Ask Mori, Life Patterns or Memory context.
+- Soft Goals retain user-entered titles/notes and non-punitive state. They are not automatic AI, Ask Mori, Life Patterns, Life Map or Memory context.
+- Garden unlocks and Personal Milestones retain event keys, timestamps and source references, not copied journal, letter, memory or emotional content.
 
 The application does not configure an analytics or advertising provider. It does not collect contacts, precise location, microphone recordings, camera data, health-platform data or payment data.
 
 Quiet Room usage, Mori Moments choices and First Aid selections are not persisted. Human Connection never reads contacts or requests address-book permission. First Aid danger requests deterministic crisis guidance without sending a user-authored prompt to the companion model. Ritual details are excluded from Ask Mori and Life Patterns in Wave 2.
+
+Private Conversation messages are not written to conversations, messages, memories, timeline, Soft Goals, Garden or analytics before explicit Save. Safety classification, deterministic crisis handling and output review still apply. Save converts the visible session into one normal saved conversation; leaving without Save discards it. Private Conversation never creates Garden progression or a milestone.
 
 ## Storage and access
 
@@ -30,7 +35,7 @@ Conversation input and bounded recent context can be sent by the API to the conf
 
 ## User controls
 
-The privacy center lets a user export a filtered JSON package, manage or delete memories, delete all journals or conversations, and delete the account. Exports omit vector embeddings, ownership identifiers and internal safety metadata. Account deletion removes the Supabase Auth user, relies on database cascades for owned server data, then clears local session, drafts, reminders and query caches.
+The privacy center lets a user export a filtered JSON package, manage or delete memories, delete all journals or conversations, and delete the account. Export schema v6 includes Letters, Soft Goals, Garden unlocks and Personal Milestones while omitting vector embeddings, ownership identifiers, Garden action keys and internal safety metadata. Account deletion removes the Supabase Auth user, cascades Letters, Soft Goals, Garden unlocks and Milestones with all other owned server data, then clears local session, drafts, reminders and query caches.
 
 Life Map suggestions are derived only from active memories the user already approved. A suggestion is returned as a preview and is not stored until the user chooses Add. Life Map rows remain private, owner-scoped and are included in account export and deletion.
 

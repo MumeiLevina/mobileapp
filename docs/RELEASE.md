@@ -2,6 +2,8 @@
 
 ## Implemented
 
+Wave 3 Personal World is implemented: Future Letters and explicit-save Private Conversation remain intact; Soft Goals, the Garden 2.0 sanctuary/unlock model, accessible Garden hotspots, gentle Personal Milestones and export schema v6 are connected. All new persisted rows are owner-scoped and cascade on account deletion. Letters and Soft Goals are excluded from automatic AI context, and Private Conversation creates no Garden progress.
+
 Wave 2 Daily Experience is implemented: Guided Journals, Morning/Evening Rituals, opt-in local ritual reminders, Mori Moments, Quiet Room, First Aid and the calm Home hierarchy. First Aid danger reuses the deterministic verified-resource crisis service and bypasses normal companion generation. Quiet Room and ordinary First Aid choices do not persist usage or create AI context.
 
 Expo/Nest/shared monorepo, migrations and seed, Supabase JWT guard, RLS with server-only writes, scoped repositories, consent-gated vector retrieval, safety-before-intent routing, independent output review, deterministic crisis response, local drafts, reversible preferences, native reminder scheduling, privacy center, owner-scoped JSON export, verified account deletion, critical tests and browser E2E.
@@ -23,6 +25,9 @@ Internal release inputs now live in `PRIVACY.md`, `DATA_RETENTION.md`, `AI_DISCL
 
 ## Explicitly deferred product scope
 
+- Life Chapters were deferred because they are optional and would expand scope after the stable Wave 3 closeout.
+- Voice, Voice Journal, Photo Journal, biometric App Lock and Widgets remain deferred.
+
 - Voice button is labeled unavailable; no recording/realtime voice in MVP.
 - Data export currently returns a synchronous JSON package and is intended for MVP-sized accounts. Before supporting large accounts, move generation to a background job with private object storage, short-lived signed downloads and automatic expiry. Native currently shares the JSON payload through the system share sheet; web downloads a `.json` file.
 - Cursor pagination beyond initial list windows, server push notifications and richer semantic recent-memory expiry are next iterations. Local reminders and bounded recent conversation context work now.
@@ -33,3 +38,14 @@ Internal release inputs now live in `PRIVACY.md`, `DATA_RETENTION.md`, `AI_DISCL
 Server and client demo flags are independent. A production server refuses `MOCK_AI=true`. Use TLS and secrets management for live deployment. Expo public variables must never contain server/AI keys. The app currently schedules reminders on the device, not through push tokens; nothing is sent to another person.
 
 Native drafts use versioned SecureStore chunks with a manifest committed last; web drafts use local browser storage. A sudden process kill before a write completes retains the previous committed value. Work on user-specific draft storage is isolated by Supabase user ID. Sign out/delete clears registered local drafts and reminders.
+
+## Wave 3 validation status
+
+| Level | Status |
+| --- | --- |
+| IMPLEMENTED | Soft Goals, Garden 2.0/unlocks, Personal Milestones, Letters/private-chat integration and export/delete changes are in the repository. |
+| TESTED IN DEMO | Browser E2E covers Soft Goal completion, milestones, Letter Tree, Path Stones, Reflection Lake, private-chat non-progression and schema v6 export. |
+| TESTED IN CI | Required default workflow gates must be green for the exact final commit before closeout is declared. |
+| REQUIRES REAL SUPABASE | Auth, hosted RLS/RPC behavior, migrations and deletion/export must still be verified with staging credentials. |
+| REQUIRES REAL MODEL | Provider-backed bilingual safety and response-quality evaluation still needs staging model credentials. |
+| REQUIRES NATIVE DEVICE | iOS/Android accessibility, SecureStore, reminders, reduced motion, Dynamic Type and Garden touch targets still need physical-device QA. |

@@ -60,6 +60,10 @@ Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon ke
 - Quiet Room: năm khung cảnh metadata, ngồi yên/thở/viết và timer tùy chọn; không gọi AI hay lưu lịch sử sử dụng.
 - Mori First Aid: grounding curated, breathing, Talk, Quiet Room, kết nối con người và crisis UI dùng lại `CrisisResponseService`.
 - Home là Daily Experience hub với Garden, mood, một CTA Talk, ba hành động tức thời, một ritual theo giờ địa phương và First Aid.
+- Wave 3 Personal World: Ý định nhỏ có ba trạng thái `active/completed/archived`, tối đa năm điều đang giữ và không có deadline, streak hay trạng thái thất bại.
+- Garden 2.0 là sanctuary 2D có các khu mở theo sự kiện rõ ràng: trang viết, ký ức đã duyệt, thư, Nhà yên, bài thở, nhìn lại tuần và Ý định nhỏ. Không có decay, cây chết hay phạt khi vắng mặt.
+- Thư gửi chính mình nằm trong kho riêng, chỉ mở từ ngày người dùng chọn và không tự đi vào ngữ cảnh AI. Trò chuyện riêng tư chỉ tồn tại trong phiên cho đến khi người dùng chủ động chọn Lưu.
+- “Những dấu mốc nhỏ” ghi nhận một lần cho mỗi khoảnh khắc mở khu, không có badge, XP, bảng xếp hạng hay trang thành tích. Export schema v6 bao gồm Letters, Soft Goals, Garden Unlocks và Personal Milestones.
 
 - Welcome/onboarding: mục tiêu, phong cách Mori, giới hạn AI, quyền riêng tư, lời nhắc mặc định tắt và check-in đầu tiên.
 - Bốn tab: Khu vườn, Tâm sự, Nhật ký, Của bạn. Theme sáng/tối/theo thiết bị; catalog tiếng Việt/Anh; chữ hỗ trợ dấu tiếng Việt.
