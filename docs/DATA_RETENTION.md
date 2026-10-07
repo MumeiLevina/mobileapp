@@ -12,6 +12,9 @@ This is the current technical behavior. It does not promise a backup-deletion de
 | Self-care sessions and garden | Until account deletion                                                    | Account deletion                   |
 | Weekly reflections            | Until account deletion                                                    | Account deletion                   |
 | Notification preferences      | Until account deletion                                                    | Disable/edit; account deletion     |
+| Ritual entries                | Until account deletion                                                    | Account deletion                   |
+| Guided Journal final entries  | Same as journals; incomplete drafts stay on device                        | Delete journal/draft/account       |
+| Quiet Room / First Aid choice | Not retained                                                              | Not applicable                     |
 | Export audit metadata         | Until account deletion                                                    | Account deletion                   |
 | Native/web drafts             | Until save/discard, logout or account deletion                            | Explicit discard, logout, deletion |
 | Structured operational logs   | Hosting configuration is not yet finalized                                | Operator process required          |

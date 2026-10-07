@@ -2,6 +2,8 @@
 
 ## Implemented
 
+Wave 2 Daily Experience is implemented: Guided Journals, Morning/Evening Rituals, opt-in local ritual reminders, Mori Moments, Quiet Room, First Aid and the calm Home hierarchy. First Aid danger reuses the deterministic verified-resource crisis service and bypasses normal companion generation. Quiet Room and ordinary First Aid choices do not persist usage or create AI context.
+
 Expo/Nest/shared monorepo, migrations and seed, Supabase JWT guard, RLS with server-only writes, scoped repositories, consent-gated vector retrieval, safety-before-intent routing, independent output review, deterministic crisis response, local drafts, reversible preferences, native reminder scheduling, privacy center, owner-scoped JSON export, verified account deletion, critical tests and browser E2E.
 
 No raw message/journal content is logged or sent to analytics. No analytics provider is configured. No streak penalties, diagnostic scores, emotional guilt notifications, romantic/exclusive companion claims or user-content upload feature.

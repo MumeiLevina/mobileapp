@@ -12,6 +12,9 @@ Audit updated: 2026-10-07. This document records beta-hardening status without c
 
 ## Delivery phase status
 
+- **Wave 1 product features: DONE locally.** Ask Mori, Life Map, evidence-based Memory provenance, Timeline and thresholded Patterns remain covered.
+- **Wave 2 Daily Experience: DONE locally.** Guided Journals, Rituals/reminders, Mori Moments, Quiet Room, First Aid and Home integration are implemented with demo E2E. Hosted CI and physical-device verification remain external gates.
+
 - **Phase A — Auth / RLS hardening: DONE.** Verified-owner repository behavior, explicit RLS, session refresh and additive migration are implemented and covered locally.
 - **Phase B — Real LLM provider: DONE.** The OpenAI-compatible provider, typed failures, independent timeouts and structured-response validation are implemented and covered with controlled HTTP tests.
 - **Phase C — Safety hardening: DONE.** Safety-before-intent, fail-closed classification, deterministic crisis flow, verified-resource retrieval and independent output review are implemented.
@@ -37,4 +40,4 @@ Audit updated: 2026-10-07. This document records beta-hardening status without c
 
 ## Current audit boundary
 
-The repository contains no staging credentials and this audit makes no claim that hosted Supabase, a production model, EAS cloud builds or physical devices passed. The service verification commands refuse a production target and use only synthetic test content. Apply migrations in filename order (`202610010001` through `202610060003`) before running them.
+The repository contains no staging credentials and this audit makes no claim that hosted Supabase, a production model, EAS cloud builds or physical devices passed. The service verification commands refuse a production target and use only synthetic test content. Apply every migration in filename order through `202610070005_ritual_notifications.sql` before running them.

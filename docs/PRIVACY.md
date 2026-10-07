@@ -11,8 +11,12 @@ This document describes the implemented product and is an internal release input
 - Self-care sessions, weekly reflections and garden state support user-requested activities and progress.
 - Notification preferences schedule local reminders. Mori currently has no server push-token pipeline.
 - Content-free export audits record status, timestamps and aggregate record counts for operational accountability.
+- Guided Journal answers are stored as private journals only after Save. Incomplete answers and Morning Ritual drafts remain in private device draft storage.
+- Ritual entries retain only the selected ritual type, desired feeling, optional intention/reflection and idempotency identifier.
 
 The application does not configure an analytics or advertising provider. It does not collect contacts, precise location, microphone recordings, camera data, health-platform data or payment data.
+
+Quiet Room usage, Mori Moments choices and First Aid selections are not persisted. Human Connection never reads contacts or requests address-book permission. First Aid danger requests deterministic crisis guidance without sending a user-authored prompt to the companion model. Ritual details are excluded from Ask Mori and Life Patterns in Wave 2.
 
 ## Storage and access
 

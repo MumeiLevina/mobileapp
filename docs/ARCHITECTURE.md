@@ -25,6 +25,14 @@ Crisis responses come from a deterministic service rather than the companion mod
 
 ## Privacy controls
 
+## Daily Experience (Wave 2)
+
+Guided Journal prompts are a versioned shared curated dataset; incomplete answers remain in the existing private draft store and only the reviewed result becomes a normal journal. Ritual intentions use owner-scoped `ritual_entries`; desired feelings are not reused as current mood and ritual text is not silently added to Ask Mori context.
+
+Mori Moments and Home routing are deterministic UI rules. Local time alone selects the optional morning or evening card. Quiet Room, grounding, break and human-connection flows do not call the AI provider or persist usage. First Aid danger calls `GET /first-aid/crisis`, whose controller depends directly on `CrisisResponseService`; it never enters `AIOrchestratorService`, memory retrieval or candidate creation.
+
+Local ritual reminders have independent morning/evening switches, retain the device timezone and default off. No push-token infrastructure exists.
+
 The in-app privacy center gives the user one place to export data, manage memories, delete all journals or conversations, and delete the account. Every destructive action has a separate confirmation with a clear keep-data path. Account deletion first removes the verified Supabase Auth user so database cascades delete owned server records, then clears local drafts, reminders, auth state and query caches. The client never reports success when the server deletion fails.
 
 The export service synchronously collects every retained owner-scoped row in 500-row pages with explicit field projections. It returns one versioned JSON package and excludes internal safety metadata, vector embeddings and ownership identifiers. A server-only audit table stores request status, timestamps and aggregate record counts without exported content. Web downloads the package as a JSON file; native passes the JSON payload to the system share sheet. Large-account support should replace this synchronous response with a background job and a private, short-lived download object.

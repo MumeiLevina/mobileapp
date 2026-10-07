@@ -53,6 +53,14 @@ Khóa service-role và AI chỉ nằm trong API server. Mobile chỉ có anon ke
 
 ## Các luồng đã có
 
+- Wave 1: Ask Mori với nguồn dữ liệu đã lưu, Life Map do người dùng duyệt, Memory provenance, Reflection Timeline và Life Patterns có ngưỡng bằng chứng.
+- Guided Journals: thư viện curated, bản nháp riêng trên thiết bị, review trước khi lưu thành Journal thông thường.
+- Morning Ritual và Evening Ritual tùy chọn, không streak; lời nhắc sáng/tối độc lập và mặc định tắt.
+- Mori Moments sau mood check-in: người dùng tự chọn nói, viết, Phòng yên, thở, rời màn hình hoặc liên hệ người tin tưởng.
+- Quiet Room: năm khung cảnh metadata, ngồi yên/thở/viết và timer tùy chọn; không gọi AI hay lưu lịch sử sử dụng.
+- Mori First Aid: grounding curated, breathing, Talk, Quiet Room, kết nối con người và crisis UI dùng lại `CrisisResponseService`.
+- Home là Daily Experience hub với Garden, mood, một CTA Talk, ba hành động tức thời, một ritual theo giờ địa phương và First Aid.
+
 - Welcome/onboarding: mục tiêu, phong cách Mori, giới hạn AI, quyền riêng tư, lời nhắc mặc định tắt và check-in đầu tiên.
 - Bốn tab: Khu vườn, Tâm sự, Nhật ký, Của bạn. Theme sáng/tối/theo thiết bị; catalog tiếng Việt/Anh; chữ hỗ trợ dấu tiếng Việt.
 - Mood sheet: 5 cảm xúc, cường độ, tags, ghi chú, bỏ qua chi tiết, chọn tâm sự hoặc ngồi yên.
