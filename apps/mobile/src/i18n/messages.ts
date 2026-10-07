@@ -344,4 +344,12 @@ export const english: Record<string, string> = {
   "Giữ lại dữ liệu": "Keep my data",
   "Dữ liệu đã được xóa theo yêu cầu của bạn.":
     "The selected data has been deleted.",
+  "Những ý định nhỏ của mình": "My small intentions",
+  "Những điều nhỏ mình đang giữ.": "Small things I am holding gently.",
+  "Thêm một ý định nhỏ": "Add a small intention",
+  "Giữ lại điều này": "Keep this intention",
+  "Đã làm xong": "I did this",
+  "Cất đi": "Put it away",
+  "Không có hạn chót hay chuỗi ngày. Bạn có thể hoàn thành hoặc cất đi khi thấy phù hợp.":
+    "There are no deadlines or streaks. Complete it or put it away whenever it feels right.",
 };

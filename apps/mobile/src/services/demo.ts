@@ -20,6 +20,7 @@ import {
   Profile,
   PrivateChatResult,
   RitualEntry,
+  SoftGoal,
   PATTERN_DISCLAIMER,
   TimelineFilter,
   TimelineItem,
@@ -37,6 +38,8 @@ import {
   profileSchema,
   privateMessageSchema,
   savePrivateConversationSchema,
+  createSoftGoalSchema,
+  updateSoftGoalSchema,
   ritualEntrySchema,
   askMoriSchema,
 } from "@mori/shared";
@@ -63,6 +66,7 @@ type DemoData = {
   lifeMapItems: LifeMapItem[];
   ritualEntries: RitualEntry[];
   letters: Letter[];
+  softGoals: SoftGoal[];
 };
 const entity = () => ({
   id: newId(),
@@ -103,6 +107,7 @@ const initial = (): DemoData => ({
   lifeMapItems: [],
   ritualEntries: [],
   letters: [],
+  softGoals: [],
 });
 let database: DemoData | undefined;
 async function get() {
@@ -114,6 +119,7 @@ async function get() {
     database.gardenMilestones ??= [];
     database.ritualEntries ??= [];
     database.letters ??= [];
+    database.softGoals ??= [];
     const legacyNotifications =
       database.notifications as Partial<NotificationPreference>;
     database.notifications = notificationSchema.parse({
@@ -492,6 +498,66 @@ export async function demoRequest(
       };
       db.conversations.unshift(conversation);
       result = conversation;
+    }
+  } else if (resource === "soft-goals") {
+    const find = () => db.softGoals.find((goal) => goal.id === id);
+    if (method === "GET") return db.softGoals;
+    if (method === "POST" && !id) {
+      const parsed = createSoftGoalSchema.parse(body);
+      const value = {
+        ...parsed,
+        note: parsed.note ?? "",
+        source_type: parsed.source_type ?? ("manual" as const),
+        source_id: parsed.source_id ?? null,
+      };
+      const existing = db.softGoals.find(
+        (goal) => goal.client_id === value.client_id,
+      );
+      if (existing) return existing;
+      if (db.softGoals.filter((goal) => goal.status === "active").length >= 5)
+        throw new Error(
+          "Bạn đang giữ vài điều nhỏ rồi. Có thể hoàn thành hoặc cất bớt một điều trước khi thêm mới.",
+        );
+      const goal: SoftGoal = {
+        ...entity(),
+        ...value,
+        status: "active",
+        updated_at: new Date().toISOString(),
+        completed_at: null,
+        archived_at: null,
+      };
+      db.softGoals.unshift(goal);
+      result = goal;
+    } else if (method === "PATCH") {
+      const goal = find();
+      if (!goal || goal.status !== "active")
+        throw new Error("Không tìm thấy ý định đang giữ.");
+      Object.assign(goal, updateSoftGoalSchema.parse(body), {
+        updated_at: new Date().toISOString(),
+      });
+      result = goal;
+    } else if (method === "POST" && action === "complete") {
+      const goal = find();
+      if (!goal || goal.status === "archived")
+        throw new Error("Không tìm thấy ý định đang giữ.");
+      if (goal.status === "active") {
+        goal.status = "completed";
+        goal.completed_at = new Date().toISOString();
+        goal.updated_at = goal.completed_at;
+      }
+      award(db, `soft-goal:${goal.id}`);
+      result = goal;
+    } else if (method === "POST" && action === "archive") {
+      const goal = find();
+      if (!goal) throw new Error("Không tìm thấy ý định này.");
+      goal.status = "archived";
+      goal.completed_at = null;
+      goal.archived_at = new Date().toISOString();
+      goal.updated_at = goal.archived_at;
+      result = goal;
+    } else if (method === "DELETE") {
+      db.softGoals = db.softGoals.filter((goal) => goal.id !== id);
+      result = { ok: true };
     }
   } else if (resource === "self-care") {
     if (method === "GET") return activities;

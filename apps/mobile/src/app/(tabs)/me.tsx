@@ -111,6 +111,12 @@ export default function Me() {
       <MoriButton secondary onPress={() => router.push("/patterns")}>
         Xem những nhịp lặp lại
       </MoriButton>
+      <MoriButton
+        secondary
+        onPress={() => router.push("/soft-goals" as "/patterns")}
+      >
+        Những ý định nhỏ của mình
+      </MoriButton>
       <SectionHeading title="Dữ liệu của bạn" />
       <MoriButton secondary onPress={() => router.push("/privacy")}>
         Mở trung tâm dữ liệu
