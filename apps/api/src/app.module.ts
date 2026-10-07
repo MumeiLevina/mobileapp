@@ -38,6 +38,8 @@ import { FirstAidController } from "./modules/safety/first-aid.controller";
 import { LettersController } from "./modules/letters/letters.controller";
 import { LettersService } from "./modules/letters/letters.service";
 import { PrivateConversationsController } from "./modules/conversations/private-conversations.controller";
+import { SoftGoalsController } from "./modules/soft-goals/soft-goals.controller";
+import { SoftGoalsService } from "./modules/soft-goals/soft-goals.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -56,6 +58,7 @@ import { PrivateConversationsController } from "./modules/conversations/private-
     FirstAidController,
     LettersController,
     PrivateConversationsController,
+    SoftGoalsController,
   ],
   providers: [
     DatabaseService,
@@ -73,6 +76,7 @@ import { PrivateConversationsController } from "./modules/conversations/private-
     TimelineService,
     LifePatternsService,
     LettersService,
+    SoftGoalsService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

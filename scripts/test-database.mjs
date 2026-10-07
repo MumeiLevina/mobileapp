@@ -57,6 +57,9 @@ try {
   await pg.exec(
     await readFile("supabase/migrations/202610070006_letters.sql", "utf8"),
   );
+  await pg.exec(
+    await readFile("supabase/migrations/202610070007_soft_goals.sql", "utf8"),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -133,6 +136,18 @@ try {
   );
   assert.ok(letterA);
   console.log("PASS future letters validate private owner-scoped data");
+  await pg.query(
+    "insert into soft_goals(user_id,title,client_id) values($1,'Walk gently',$2)",
+    [a, "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"],
+  );
+  await pg.query(
+    "insert into soft_goals(user_id,title,client_id) values($1,'Other owner',$2)",
+    [b, "bbbbbbbb-bbbb-4bbb-abbb-bbbbbbbbbbbb"],
+  );
+  await assert.rejects(
+    pg.query("update soft_goals set status='failed' where user_id=$1", [a]),
+  );
+  console.log("PASS soft goals allow only non-punitive states");
   const embedding = JSON.stringify(
     Array.from({ length: 1536 }, (_, i) => (i === 0 ? 1 : 0)),
   );
@@ -191,6 +206,7 @@ try {
     "memory_sources",
     "ritual_entries",
     "letters",
+    "soft_goals",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -366,6 +382,7 @@ try {
     "memory_sources",
     "ritual_entries",
     "letters",
+    "soft_goals",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows
