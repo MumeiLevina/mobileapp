@@ -30,7 +30,7 @@ describe("account data export", () => {
 
     const result = await new AccountExportService(db).create("owner");
 
-    expect(result.schemaVersion).toBe(4);
+    expect(result.schemaVersion).toBe(5);
     expect(result.data.profile).toEqual({
       display_name: "Bạn",
       locale: "vi",
@@ -46,8 +46,12 @@ describe("account data export", () => {
     const messageCall = listAllForExport.mock.calls.find(
       (call) => call[0] === "messages",
     );
+    const letterCall = listAllForExport.mock.calls.find(
+      (call) => call[0] === "letters",
+    );
     expect(memoryCall?.[2]).not.toMatch(/embedding|confidence|user_id/);
     expect(messageCall?.[2]).not.toMatch(/safety_level|user_id/);
+    expect(letterCall?.[2]).toMatch(/content|open_at|opened_at/);
     expect(db.update).toHaveBeenCalledWith(
       "data_export_audits",
       "owner",

@@ -54,6 +54,9 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile("supabase/migrations/202610070006_letters.sql", "utf8"),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -118,6 +121,18 @@ try {
     [b, "77777777-7777-4777-a777-777777777777"],
   );
   console.log("PASS ritual entries validate useful owner-scoped data");
+  const letterA = (
+    await pg.query(
+      "insert into letters(user_id,title,content,open_at,client_id) values($1,'Future me','private A',now() + interval '7 days',$2) returning id",
+      [a, "88888888-8888-4888-a888-888888888888"],
+    )
+  ).rows[0].id;
+  await pg.query(
+    "insert into letters(user_id,title,content,open_at,client_id) values($1,'Other owner','private B',now() + interval '1 month',$2)",
+    [b, "99999999-9999-4999-a999-999999999999"],
+  );
+  assert.ok(letterA);
+  console.log("PASS future letters validate private owner-scoped data");
   const embedding = JSON.stringify(
     Array.from({ length: 1536 }, (_, i) => (i === 0 ? 1 : 0)),
   );
@@ -175,6 +190,7 @@ try {
     "life_map_items",
     "memory_sources",
     "ritual_entries",
+    "letters",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -185,6 +201,11 @@ try {
   await assert.rejects(
     pg.exec(
       `insert into memories(user_id,content,category) values('${a}','unauthorized','preference')`,
+    ),
+  );
+  await assert.rejects(
+    pg.exec(
+      `insert into letters(user_id,title,content,open_at) values('${a}','unauthorized','private',now() + interval '1 day')`,
     ),
   );
   await assert.rejects(
@@ -344,6 +365,7 @@ try {
     "life_map_items",
     "memory_sources",
     "ritual_entries",
+    "letters",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

@@ -1,5 +1,6 @@
 import { z } from "zod";
 export * from "./guided-journals";
+export * from "./letters";
 export const CompanionStyle = z.enum(["gentle", "close_friend", "calm"]);
 export const ConversationMode = z.enum(["listen", "understand", "think"]);
 export const IntentType = z.enum([
@@ -320,7 +321,7 @@ export type FirstAidCrisisResponse = {
   resources: CrisisResource[];
 };
 export type AccountDataExport = {
-  schemaVersion: 4;
+  schemaVersion: 5;
   generatedAt: string;
   data: {
     profile: Record<string, unknown>;
@@ -336,6 +337,7 @@ export type AccountDataExport = {
     lifeMapItems: Record<string, unknown>[];
     memorySources: Record<string, unknown>[];
     ritualEntries: Record<string, unknown>[];
+    letters: Record<string, unknown>[];
   };
 };
 export const gardenFromPoints = (points: number): Garden => ({

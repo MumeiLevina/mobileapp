@@ -42,6 +42,7 @@ export class AccountExportService {
         lifeMapItems,
         memorySources,
         ritualEntries,
+        letters,
       ] = await Promise.all([
         this.db.one<Record<string, unknown>>("profiles", user),
         this.db.listAllForExport<Record<string, unknown>>(
@@ -96,6 +97,11 @@ export class AccountExportService {
           user,
           "id,type,desired_feeling,small_intention,reflection,client_id,created_at",
         ),
+        this.db.listAllForExport<Record<string, unknown>>(
+          "letters",
+          user,
+          "id,title,content,open_at,opened_at,created_at,updated_at,deleted_at,client_id",
+        ),
       ]);
 
       const data: AccountDataExport["data"] = {
@@ -136,6 +142,7 @@ export class AccountExportService {
         lifeMapItems,
         memorySources,
         ritualEntries,
+        letters,
       };
       const recordCounts = {
         profile: 1,
@@ -151,6 +158,7 @@ export class AccountExportService {
         lifeMapItems: lifeMapItems.length,
         memorySources: memorySources.length,
         ritualEntries: ritualEntries.length,
+        letters: letters.length,
       };
       await this.db.update("data_export_audits", user, audit.id, {
         status: "completed",
@@ -158,7 +166,7 @@ export class AccountExportService {
         completed_at: new Date().toISOString(),
       });
       return {
-        schemaVersion: 4,
+        schemaVersion: 5,
         generatedAt: new Date().toISOString(),
         data,
       };

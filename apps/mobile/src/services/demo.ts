@@ -8,6 +8,7 @@ import {
   ConversationMode,
   Garden,
   Journal,
+  Letter,
   LifeMapItem,
   LifeMapSuggestion,
   LifePatternsResponse,
@@ -56,6 +57,7 @@ type DemoData = {
   notifications: NotificationPreference;
   lifeMapItems: LifeMapItem[];
   ritualEntries: RitualEntry[];
+  letters: Letter[];
 };
 const entity = () => ({
   id: newId(),
@@ -95,6 +97,7 @@ const initial = (): DemoData => ({
   },
   lifeMapItems: [],
   ritualEntries: [],
+  letters: [],
 });
 let database: DemoData | undefined;
 async function get() {
@@ -105,6 +108,7 @@ async function get() {
     database.memorySources ??= [];
     database.gardenMilestones ??= [];
     database.ritualEntries ??= [];
+    database.letters ??= [];
     const legacyNotifications =
       database.notifications as Partial<NotificationPreference>;
     database.notifications = notificationSchema.parse({
@@ -756,7 +760,7 @@ export async function demoRequest(
     } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       generatedAt: new Date().toISOString(),
       data: {
         profile: { ...db.profile },
@@ -777,6 +781,7 @@ export async function demoRequest(
         lifeMapItems: db.lifeMapItems.map(withoutOwner),
         memorySources: db.memorySources.map(withoutOwner),
         ritualEntries: db.ritualEntries.map(withoutOwner),
+        letters: db.letters.map(withoutOwner),
       },
     };
     return accountExport;

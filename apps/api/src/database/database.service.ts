@@ -119,7 +119,8 @@ export class DatabaseService {
       | "weekly_reflections"
       | "life_map_items"
       | "memory_sources"
-      | "ritual_entries",
+      | "ritual_entries"
+      | "letters",
     user: string,
     columns: string,
   ): Promise<T[]> {
