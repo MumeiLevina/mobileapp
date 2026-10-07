@@ -40,6 +40,8 @@ import { LettersService } from "./modules/letters/letters.service";
 import { PrivateConversationsController } from "./modules/conversations/private-conversations.controller";
 import { SoftGoalsController } from "./modules/soft-goals/soft-goals.controller";
 import { SoftGoalsService } from "./modules/soft-goals/soft-goals.service";
+import { PersonalMilestonesController } from "./modules/milestones/personal-milestones.controller";
+import { PersonalMilestonesService } from "./modules/milestones/personal-milestones.service";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -59,6 +61,7 @@ import { SoftGoalsService } from "./modules/soft-goals/soft-goals.service";
     LettersController,
     PrivateConversationsController,
     SoftGoalsController,
+    PersonalMilestonesController,
   ],
   providers: [
     DatabaseService,
@@ -77,6 +80,7 @@ import { SoftGoalsService } from "./modules/soft-goals/soft-goals.service";
     LifePatternsService,
     LettersService,
     SoftGoalsService,
+    PersonalMilestonesService,
     {
       provide: LLM_PROVIDER,
       useFactory: () => {

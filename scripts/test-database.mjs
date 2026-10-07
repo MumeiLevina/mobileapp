@@ -66,6 +66,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610070009_personal_milestones.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -213,6 +219,7 @@ try {
     "ritual_entries",
     "letters",
     "soft_goals",
+    "personal_milestones",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
     assert.ok(
@@ -335,6 +342,37 @@ try {
     1,
   );
   console.log("PASS sanctuary unlocks are unique and do not add growth");
+  for (let i = 0; i < 2; i++)
+    await pg.query("select record_personal_milestone($1,$2,$3,$4)", [
+      a,
+      "first_soft_goal",
+      "soft_goal",
+      null,
+    ]);
+  await pg.query("select record_personal_milestone($1,$2,$3,$4)", [
+    b,
+    "first_soft_goal",
+    "soft_goal",
+    null,
+  ]);
+  assert.equal(
+    (
+      await pg.query(
+        "select count(*)::int as count from personal_milestones where user_id=$1 and milestone_key='first_soft_goal'",
+        [a],
+      )
+    ).rows[0].count,
+    1,
+  );
+  await assert.rejects(
+    pg.query("select record_personal_milestone($1,$2,$3,$4)", [
+      a,
+      "missed_day",
+      null,
+      null,
+    ]),
+  );
+  console.log("PASS personal milestones are owner-scoped and idempotent");
   await assert.rejects(
     pg.query("select save_weekly_reflection($1,$2,$3)", [
       a,
@@ -415,6 +453,7 @@ try {
     "ritual_entries",
     "letters",
     "soft_goals",
+    "personal_milestones",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

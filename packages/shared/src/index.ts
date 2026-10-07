@@ -2,6 +2,7 @@ import { z } from "zod";
 export * from "./guided-journals";
 export * from "./letters";
 export * from "./soft-goals";
+export * from "./personal-milestones";
 export const CompanionStyle = z.enum(["gentle", "close_friend", "calm"]);
 export const ConversationMode = z.enum(["listen", "understand", "think"]);
 export const IntentType = z.enum([

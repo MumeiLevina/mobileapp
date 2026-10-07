@@ -1,9 +1,29 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "../../database/database.service";
-import { Garden, GardenAreaKey, GardenUnlock } from "@mori/shared";
+import {
+  Garden,
+  GardenAreaKey,
+  GardenUnlock,
+  PersonalMilestoneKey,
+} from "@mori/shared";
+import { PersonalMilestonesService } from "../milestones/personal-milestones.service";
+
+const milestoneForArea: Record<GardenAreaKey, PersonalMilestoneKey> = {
+  quiet_cottage: "quiet_cottage_appeared",
+  reflection_lake: "reflection_lake_appeared",
+  memory_garden: "memory_garden_appeared",
+  letter_tree: "first_letter",
+  wind_chimes: "wind_chimes_appeared",
+  fireflies: "first_weekly_reflection",
+  path_stones: "first_soft_goal",
+  moon_hill: "moon_hill_appeared",
+};
 @Injectable()
 export class GardenService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly milestones?: PersonalMilestonesService,
+  ) {}
   async get(user: string): Promise<Garden> {
     await this.unlock(user, "quiet_cottage", "feature_activation");
     const [state, unlocks] = await Promise.all([
@@ -21,17 +41,23 @@ export class GardenService {
   award(user: string, action: string) {
     return this.db.rpc("award_growth", { p_user: user, p_action: action });
   }
-  unlock(
+  async unlock(
     user: string,
     feature: GardenAreaKey,
     sourceType: string,
     sourceId?: string,
   ) {
-    return this.db.rpc("unlock_garden_area", {
+    await this.db.rpc("unlock_garden_area", {
       p_user: user,
       p_feature: feature,
       p_source_type: sourceType,
       p_source_id: sourceId ?? null,
     });
+    await this.milestones?.record(
+      user,
+      milestoneForArea[feature],
+      sourceType,
+      sourceId,
+    );
   }
 }
