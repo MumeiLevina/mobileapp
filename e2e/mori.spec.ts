@@ -170,10 +170,11 @@ test("privacy center exports and deletes each requested data group", async ({
   );
   const path = await download.path();
   const accountExport = JSON.parse(await readFile(path!, "utf8"));
-  expect(accountExport.schemaVersion).toBe(4);
+  expect(accountExport.schemaVersion).toBe(5);
   expect(accountExport.data).toHaveProperty("ritualEntries");
   expect(accountExport.data).toHaveProperty("lifeMapItems");
   expect(accountExport.data).toHaveProperty("memorySources");
+  expect(accountExport.data).toHaveProperty("letters");
   expect(accountExport.data).not.toHaveProperty("safetyEvents");
   expect(JSON.stringify(accountExport.data.memories)).not.toContain(
     "embedding",
@@ -349,6 +350,52 @@ test("guided journal keeps a local draft and creates a journal only on save", as
   await expect(
     page.getByText("Khi mình thấy mất phương hướng", { exact: true }),
   ).toBeHidden();
+});
+
+test("Journal opens Letters, restores a private draft and creates a vault item", async ({
+  page,
+}) => {
+  await page.goto("/journal");
+  await page.getByRole("button", { name: "Thư gửi chính mình" }).click();
+  await expect(page.getByText("Một điều cho mình của mai sau.")).toBeVisible();
+  await page.getByRole("button", { name: "Viết một lá thư" }).click();
+  await page.getByLabel("Tiêu đề lá thư").fill("Cho một ngày chậm hơn");
+  await page
+    .getByLabel("Nội dung lá thư")
+    .fill("Mình hy vọng lúc đọc lại, bạn đang thở nhẹ hơn.");
+  await page.getByRole("button", { name: "1 tuần", exact: true }).click();
+
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      return stored ? (JSON.parse(stored).letters?.length ?? 0) : 0;
+    }),
+  ).toBe(0);
+  await page.reload();
+  await expect(page.getByLabel("Tiêu đề lá thư")).toHaveValue(
+    "Cho một ngày chậm hơn",
+  );
+  await expect(page.getByLabel("Nội dung lá thư")).toHaveValue(
+    "Mình hy vọng lúc đọc lại, bạn đang thở nhẹ hơn.",
+  );
+
+  await page.getByRole("button", { name: "Cất lá thư" }).click();
+  await expect(page).toHaveURL(/\/letters$/);
+  await expect(
+    page.getByText("Cho một ngày chậm hơn", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Mình hy vọng lúc đọc lại, bạn đang thở nhẹ hơn."),
+  ).toBeHidden();
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(state.letters).toHaveLength(1);
+  expect(state.letters[0].content).toBe(
+    "Mình hy vọng lúc đọc lại, bạn đang thở nhẹ hơn.",
+  );
+  expect(state.awards).toContain(`letter-seed:${state.letters[0].id}`);
 });
 
 test("morning ritual remains optional and saves only when finished", async ({
