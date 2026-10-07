@@ -207,6 +207,20 @@ try {
     "insert into life_map_items(user_id,type,title,approved_by_user) values($1,'people','private B',true)",
     [b],
   );
+  for (const user of [a, b]) {
+    await pg.query("select unlock_garden_area($1,$2,$3,$4)", [
+      user,
+      "quiet_cottage",
+      "feature_activation",
+      null,
+    ]);
+    await pg.query("select record_personal_milestone($1,$2,$3,$4)", [
+      user,
+      "quiet_cottage_appeared",
+      "feature_activation",
+      null,
+    ]);
+  }
   await pg.exec(`set role authenticated; set request.jwt.claim.sub='${a}';`);
   for (const table of [
     "profiles",
@@ -219,6 +233,7 @@ try {
     "ritual_entries",
     "letters",
     "soft_goals",
+    "garden_unlocks",
     "personal_milestones",
   ]) {
     const rows = await pg.query(`select user_id from ${table}`);
