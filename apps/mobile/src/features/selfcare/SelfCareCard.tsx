@@ -1,7 +1,7 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { MoriText } from "../../components/ui";
+import { MoriPressable, MoriText } from "../../components/ui";
 import { useTheme } from "../../theme";
 export function SelfCareCard({
   title,
@@ -16,10 +16,12 @@ export function SelfCareCard({
 }) {
   const t = useTheme();
   return (
-    <Pressable
+    <MoriPressable
       accessibilityRole="button"
+      accessibilityLabel={`${title}. ${subtitle}`}
+      guardMs={350}
       onPress={() => router.push(to as "/self-care")}
-      style={({ pressed }) => ({
+      style={(pressed) => ({
         flexDirection: "row",
         alignItems: "center",
         gap: 16,
@@ -46,6 +48,6 @@ export function SelfCareCard({
         </MoriText>
       </View>
       <Ionicons name="arrow-forward" size={18} color={t.muted} />
-    </Pressable>
+    </MoriPressable>
   );
 }

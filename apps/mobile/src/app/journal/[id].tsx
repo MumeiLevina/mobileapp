@@ -6,6 +6,7 @@ import {
   MoriButton,
   MoriInput,
   MoriText,
+  MoriConfirmSheet,
   ScreenContainer,
   ErrorNote,
   Loading,
@@ -120,6 +121,7 @@ export default function JournalEditor() {
         placeholder="Đặt tên cho trang viết…"
         value={entry.title}
         onChangeText={(title) => update({ title })}
+        editable={!save.isPending && !remove.isPending && !discard.isPending}
         maxLength={120}
         style={{ fontSize: 23 }}
       />
@@ -128,6 +130,7 @@ export default function JournalEditor() {
         placeholder="Hôm nay, mình…"
         value={entry.content}
         onChangeText={(content) => update({ content })}
+        editable={!save.isPending && !remove.isPending && !discard.isPending}
         multiline
         maxLength={20000}
         style={{ minHeight: 300, lineHeight: 27 }}
@@ -135,46 +138,50 @@ export default function JournalEditor() {
       <MoriText muted variant="small">
         Bản nháp được giữ trên thiết bị khi bạn viết.
       </MoriText>
-      <ErrorNote
-        error={
-          save.error ??
-          remove.error ??
-          existing.error ??
-          discard.error ??
-          draft.error
-        }
-      />
-      <MoriButton loading={save.isPending} onPress={() => save.mutate()}>
+      <ErrorNote error={save.error ?? existing.error ?? draft.error} />
+      <MoriButton
+        loading={save.isPending}
+        loadingLabel="Đang lưu trang viết…"
+        disabled={remove.isPending || discard.isPending}
+        onPress={() => save.mutate()}
+      >
         {copy.save}
       </MoriButton>
-      <MoriButton secondary onPress={() => setConfirm("discard")}>
+      <MoriButton
+        variant="ghost"
+        disabled={save.isPending || remove.isPending || discard.isPending}
+        onPress={() => setConfirm("discard")}
+      >
         Bỏ bản nháp
       </MoriButton>
       {id !== "new" && (
-        <MoriButton secondary onPress={() => setConfirm("delete")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={save.isPending || remove.isPending || discard.isPending}
+          onPress={() => setConfirm("delete")}
+        >
           Xóa trang viết
         </MoriButton>
       )}
-      {confirm && (
-        <>
-          <MoriText>
-            {confirm === "delete"
-              ? "Xóa trang viết này? Không thể hoàn tác."
-              : "Bỏ những thay đổi đang viết trên thiết bị?"}
-          </MoriText>
-          <MoriButton
-            loading={remove.isPending || discard.isPending}
-            onPress={() =>
-              confirm === "delete" ? remove.mutate() : discard.mutate()
-            }
-          >
-            Xác nhận
-          </MoriButton>
-          <MoriButton secondary onPress={() => setConfirm(null)}>
-            Giữ lại
-          </MoriButton>
-        </>
-      )}
+      <MoriConfirmSheet
+        visible={confirm !== null}
+        title={confirm === "delete" ? "Xóa trang viết?" : "Bỏ bản nháp này?"}
+        description={
+          confirm === "delete"
+            ? "Trang viết này sẽ bị xóa và không thể khôi phục."
+            : "Những thay đổi đang lưu trên thiết bị sẽ bị xóa."
+        }
+        confirmLabel={confirm === "delete" ? "Xóa trang viết" : "Bỏ bản nháp"}
+        loadingLabel={
+          confirm === "delete" ? "Đang xóa trang viết…" : "Đang bỏ bản nháp…"
+        }
+        loading={remove.isPending || discard.isPending}
+        error={confirm === "delete" ? remove.error : discard.error}
+        onConfirm={() =>
+          confirm === "delete" ? remove.mutate() : discard.mutate()
+        }
+        onCancel={() => setConfirm(null)}
+      />
     </ScreenContainer>
   );
 }

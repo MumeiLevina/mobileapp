@@ -361,6 +361,7 @@ export default function ConversationScreen() {
         title="Xóa cuộc trò chuyện?"
         description="Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa và không thể khôi phục."
         confirmLabel="Xóa cuộc trò chuyện"
+        loadingLabel="Đang xóa cuộc trò chuyện…"
         loading={remove.isPending}
         error={remove.error}
         onConfirm={() => remove.mutate()}

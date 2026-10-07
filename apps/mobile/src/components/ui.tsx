@@ -439,6 +439,7 @@ export function MoriConfirmSheet({
   description,
   confirmLabel,
   cancelLabel = "Giữ lại",
+  loadingLabel = "Đang thực hiện…",
   variant = "danger",
   loading = false,
   error,
@@ -450,6 +451,7 @@ export function MoriConfirmSheet({
   description: string;
   confirmLabel: string;
   cancelLabel?: string;
+  loadingLabel?: string;
   variant?: "danger" | "primary";
   loading?: boolean;
   error?: unknown;
@@ -468,7 +470,7 @@ export function MoriConfirmSheet({
         <MoriButton
           variant={variant}
           loading={loading}
-          loadingLabel={variant === "danger" ? "Đang xóa…" : undefined}
+          loadingLabel={loadingLabel}
           onPress={onConfirm}
         >
           {confirmLabel}

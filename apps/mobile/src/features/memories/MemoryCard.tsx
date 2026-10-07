@@ -5,11 +5,13 @@ export function MemoryCard({
   onEdit,
   onDelete,
   onApprove,
+  disabled = false,
 }: {
   memory: Memory;
   onEdit: () => void;
   onDelete: () => void;
   onApprove: () => void;
+  disabled?: boolean;
 }) {
   const source = memory.memory_sources?.[0];
   const sourceLabels = {
@@ -47,12 +49,14 @@ export function MemoryCard({
         </MoriText>
       )}
       {!memory.approved_by_user && (
-        <MoriButton onPress={onApprove}>Cho phép ghi nhớ</MoriButton>
+        <MoriButton disabled={disabled} onPress={onApprove}>
+          Cho phép ghi nhớ
+        </MoriButton>
       )}
-      <MoriButton secondary onPress={onEdit}>
+      <MoriButton secondary disabled={disabled} onPress={onEdit}>
         Chỉnh sửa
       </MoriButton>
-      <MoriButton secondary onPress={onDelete}>
+      <MoriButton variant="dangerGhost" disabled={disabled} onPress={onDelete}>
         Quên điều này
       </MoriButton>
     </MoriCard>

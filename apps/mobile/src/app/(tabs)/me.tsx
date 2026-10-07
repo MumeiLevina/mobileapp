@@ -7,6 +7,7 @@ import {
   MoriButton,
   MoriCard,
   MoriBottomSheet,
+  MoriNotice,
   MoriText,
   ScreenContainer,
   Choice,
@@ -36,10 +37,24 @@ export default function Me() {
   });
   const update = useMutation({
     mutationFn: (value: Partial<Profile>) =>
-      request("/profile", "PATCH", value),
-    onSuccess: () => {
-      void refresh();
+      request<Profile>("/profile", "PATCH", value),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: ["profile"] });
+      const previous = queryClient.getQueryData<Profile>(["profile"]);
+      if (previous) {
+        queryClient.setQueryData<Profile>(["profile"], {
+          ...previous,
+          ...value,
+        });
+      }
+      return { previous };
     },
+    onError: (_error, _value, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["profile"], context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["profile"] }),
   });
   const signout = useMutation({
     mutationFn: async () => {
@@ -81,6 +96,7 @@ export default function Me() {
           key={style.id}
           title={style.label}
           selected={data.data?.companion_style === style.id}
+          disabled={update.isPending}
           onPress={() =>
             update.mutate({ companion_style: style.id as CompanionStyle })
           }
@@ -113,6 +129,7 @@ export default function Me() {
           <Switch
             accessibilityLabel="Bật nhìn lại tuần"
             value={data.data?.weekly_reflection_enabled ?? false}
+            disabled={update.isPending}
             onValueChange={(value) =>
               update.mutate({ weekly_reflection_enabled: value })
             }
@@ -149,6 +166,7 @@ export default function Me() {
           key={locale}
           title={locale === "vi" ? "Tiếng Việt" : "English (core screens)"}
           selected={preferences.locale === locale}
+          disabled={update.isPending}
           onPress={() => {
             preferences.setLocale(locale);
             update.mutate({ locale });
@@ -163,17 +181,19 @@ export default function Me() {
           <MoriButton
             secondary
             loading={seed.isPending}
+            loadingLabel="Đang nạp dữ liệu mẫu…"
             onPress={() => seed.mutate()}
           >
             Nạp dữ liệu mẫu để khám phá
           </MoriButton>
-          {!!notice && <MoriText>{notice}</MoriText>}
+          {!!notice && <MoriNotice>{notice}</MoriNotice>}
         </>
       )}
       {!config.demo && (
         <MoriButton
           secondary
           loading={signout.isPending}
+          loadingLabel="Đang đăng xuất…"
           onPress={() => signout.mutate()}
         >
           Đăng xuất và xóa bản nháp thiết bị

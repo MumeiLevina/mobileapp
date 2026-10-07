@@ -1,10 +1,12 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Garden } from "@mori/shared";
 import { Ionicons } from "@expo/vector-icons";
 import {
   MoriButton,
+  MoriIconButton,
+  MoriPressable,
   MoriText,
   ScreenContainer,
   SectionHeading,
@@ -37,18 +39,11 @@ export default function Home() {
           <Ionicons name="leaf-outline" size={24} color={t.primary} />
           <MoriText style={{ fontSize: 23, letterSpacing: 4 }}>mori</MoriText>
         </View>
-        <Pressable
-          accessibilityRole="button"
+        <MoriIconButton
+          icon={t.night ? "moon-outline" : "sunny-outline"}
           accessibilityLabel="Cài đặt giao diện"
           onPress={() => router.push("/(tabs)/me")}
-          style={{ padding: 10 }}
-        >
-          <Ionicons
-            name={t.night ? "moon-outline" : "sunny-outline"}
-            size={24}
-            color={t.muted}
-          />
-        </Pressable>
+        />
       </View>
       <View style={{ paddingTop: 12, gap: 4 }}>
         <MoriText muted>{copy.hello}</MoriText>
@@ -76,11 +71,21 @@ export default function Home() {
       <SectionHeading
         title={copy.smallCare}
         action={
-          <Pressable onPress={() => router.push("/self-care")}>
+          <MoriPressable
+            accessibilityRole="button"
+            accessibilityLabel={copy.all}
+            guardMs={350}
+            onPress={() => router.push("/self-care")}
+            style={(pressed) => ({
+              minHeight: 44,
+              justifyContent: "center",
+              opacity: pressed ? 0.72 : 1,
+            })}
+          >
             <MoriText muted variant="small">
               {copy.all} ↗
             </MoriText>
-          </Pressable>
+          </MoriPressable>
         }
       />
       <View style={{ marginTop: -16 }}>

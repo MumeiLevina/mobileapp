@@ -6,6 +6,7 @@ import {
   MoriButton,
   MoriBottomSheet,
   MoriInput,
+  MoriConfirmSheet,
   MoriText,
   ScreenContainer,
   Choice,
@@ -72,6 +73,7 @@ export default function Memories() {
         trong những cuộc trò chuyện sau.
       </MoriText>
       <MoriButton
+        disabled={approve.isPending || remove.isPending}
         onPress={() => {
           setContent("");
           setCategory("preference");
@@ -106,19 +108,24 @@ export default function Memories() {
                 }}
                 onDelete={() => setDeleting(memory.id)}
                 onApprove={() => approve.mutate(memory.id)}
+                disabled={approve.isPending || remove.isPending}
               />
             ))}
           </View>
         ) : null;
       })}
       {!!list.data?.length && (
-        <MoriButton secondary onPress={() => setDeleting("all")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={approve.isPending || remove.isPending}
+          onPress={() => setDeleting("all")}
+        >
           Xóa tất cả ký ức của Mori
         </MoriButton>
       )}
       <MoriBottomSheet
         visible={editing !== null}
-        onClose={() => setEditing(null)}
+        onClose={save.isPending ? () => undefined : () => setEditing(null)}
       >
         <View style={styles.stack}>
           <MoriText variant="title">Điều bạn muốn giữ lại.</MoriText>
@@ -126,6 +133,7 @@ export default function Memories() {
             accessibilityLabel="Nội dung ký ức"
             value={content}
             onChangeText={setContent}
+            editable={!save.isPending}
             multiline
             maxLength={600}
             placeholder="Ví dụ: Mình thích nghe tiếng mưa."
@@ -135,39 +143,31 @@ export default function Memories() {
               key={cat}
               title={labels[cat]}
               selected={cat === category}
+              disabled={save.isPending}
               onPress={() => setCategory(cat)}
             />
           ))}
           <ErrorNote error={save.error} />
-          <MoriButton loading={save.isPending} onPress={() => save.mutate()}>
+          <MoriButton
+            loading={save.isPending}
+            loadingLabel="Đang lưu ký ức…"
+            onPress={() => save.mutate()}
+          >
             Lưu và cho phép ghi nhớ
           </MoriButton>
         </View>
       </MoriBottomSheet>
-      <MoriBottomSheet
+      <MoriConfirmSheet
         visible={deleting !== null}
-        onClose={() => setDeleting(null)}
-      >
-        <View style={styles.stack}>
-          <MoriText variant="title">
-            {deleting === "all" ? "Quên tất cả ký ức?" : "Quên điều này?"}
-          </MoriText>
-          <MoriText muted>
-            Thao tác này không thể hoàn tác. Nhật ký và cuộc trò chuyện gốc vẫn
-            được giữ nếu bạn chưa xóa chúng.
-          </MoriText>
-          <ErrorNote error={remove.error} />
-          <MoriButton
-            loading={remove.isPending}
-            onPress={() => remove.mutate()}
-          >
-            Xác nhận xóa
-          </MoriButton>
-          <MoriButton secondary onPress={() => setDeleting(null)}>
-            Giữ lại
-          </MoriButton>
-        </View>
-      </MoriBottomSheet>
+        title={deleting === "all" ? "Quên tất cả ký ức?" : "Quên điều này?"}
+        description="Nhật ký và cuộc trò chuyện gốc vẫn được giữ nếu bạn chưa xóa chúng. Hành động này không thể hoàn tác."
+        confirmLabel={deleting === "all" ? "Xóa tất cả ký ức" : "Xóa ký ức này"}
+        loadingLabel="Đang xóa ký ức…"
+        loading={remove.isPending}
+        error={remove.error}
+        onConfirm={() => remove.mutate()}
+        onCancel={() => setDeleting(null)}
+      />
     </ScreenContainer>
   );
 }

@@ -14,6 +14,7 @@ import {
   MoriBottomSheet,
   MoriButton,
   MoriCard,
+  MoriConfirmSheet,
   MoriInput,
   MoriText,
   ScreenContainer,
@@ -46,6 +47,7 @@ export default function LifeMapScreen() {
   const [type, setType] = useState<LifeMapType>("people");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [deleting, setDeleting] = useState<LifeMapItem | null>(null);
 
   const save = useMutation({
     mutationFn: () => {
@@ -71,8 +73,11 @@ export default function LifeMapScreen() {
     onSuccess: () => void refresh(),
   });
   const remove = useMutation({
-    mutationFn: (id: string) => request(`/life-map/${id}`, "DELETE"),
-    onSuccess: () => void refresh(),
+    mutationFn: () => request(`/life-map/${deleting!.id}`, "DELETE"),
+    onSuccess: () => {
+      setDeleting(null);
+      void refresh();
+    },
   });
 
   const open = (item?: LifeMapItem) => {
@@ -120,12 +125,14 @@ export default function LifeMapScreen() {
               <MoriText muted>{suggestion.description}</MoriText>
               <MoriButton
                 loading={addSuggestion.isPending}
+                disabled={approve.isPending || remove.isPending}
                 onPress={() => addSuggestion.mutate(suggestion)}
               >
                 Thêm
               </MoriButton>
               <MoriButton
                 secondary
+                disabled={addSuggestion.isPending}
                 onPress={() =>
                   setDismissed((current) => [...current, suggestion.source_id])
                 }
@@ -152,14 +159,26 @@ export default function LifeMapScreen() {
                   </MoriText>
                 )}
                 {!item.approved_by_user && (
-                  <MoriButton onPress={() => approve.mutate(item.id)}>
+                  <MoriButton
+                    loading={approve.isPending}
+                    disabled={remove.isPending}
+                    onPress={() => approve.mutate(item.id)}
+                  >
                     Cho phép thêm
                   </MoriButton>
                 )}
-                <MoriButton secondary onPress={() => open(item)}>
+                <MoriButton
+                  secondary
+                  disabled={approve.isPending || remove.isPending}
+                  onPress={() => open(item)}
+                >
                   Chỉnh sửa
                 </MoriButton>
-                <MoriButton secondary onPress={() => remove.mutate(item.id)}>
+                <MoriButton
+                  variant="dangerGhost"
+                  disabled={approve.isPending || remove.isPending}
+                  onPress={() => setDeleting(item)}
+                >
                   Xóa
                 </MoriButton>
               </MoriCard>
@@ -175,7 +194,7 @@ export default function LifeMapScreen() {
       )}
       <MoriBottomSheet
         visible={editing !== null}
-        onClose={() => setEditing(null)}
+        onClose={save.isPending ? () => undefined : () => setEditing(null)}
       >
         <View style={styles.stack}>
           <MoriText variant="title">Một phần trong cuộc sống của bạn.</MoriText>
@@ -183,6 +202,7 @@ export default function LifeMapScreen() {
             accessibilityLabel="Tên mục bản đồ cuộc sống"
             value={title}
             onChangeText={setTitle}
+            editable={!save.isPending}
             maxLength={120}
             placeholder="Ví dụ: Mẹ, sự bình yên, khu vườn nhỏ…"
           />
@@ -190,6 +210,7 @@ export default function LifeMapScreen() {
             accessibilityLabel="Mô tả mục bản đồ cuộc sống"
             value={description}
             onChangeText={setDescription}
+            editable={!save.isPending}
             maxLength={2000}
             multiline
             placeholder="Điều gì khiến mục này có ý nghĩa với bạn?"
@@ -199,11 +220,13 @@ export default function LifeMapScreen() {
               key={option}
               title={labels[option]}
               selected={type === option}
+              disabled={save.isPending}
               onPress={() => setType(option)}
             />
           ))}
           <MoriButton
             loading={save.isPending}
+            loadingLabel="Đang lưu vào bản đồ…"
             disabled={!title.trim()}
             onPress={() => save.mutate()}
           >
@@ -211,6 +234,21 @@ export default function LifeMapScreen() {
           </MoriButton>
         </View>
       </MoriBottomSheet>
+      <MoriConfirmSheet
+        visible={deleting !== null}
+        title="Xóa khỏi bản đồ cuộc sống?"
+        description={
+          deleting
+            ? `“${deleting.title}” sẽ bị xóa và không thể khôi phục.`
+            : "Mục này sẽ bị xóa và không thể khôi phục."
+        }
+        confirmLabel="Xóa khỏi bản đồ"
+        loadingLabel="Đang xóa khỏi bản đồ…"
+        loading={remove.isPending}
+        error={remove.error}
+        onConfirm={() => remove.mutate()}
+        onCancel={() => setDeleting(null)}
+      />
     </ScreenContainer>
   );
 }

@@ -19,7 +19,7 @@ test("onboarding → mood → conversation → approved memory → journal → c
   await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
   await expect(page.getByText("Hôm nay lòng bạn thế nào?")).toBeVisible();
   await page.screenshot({ path: "artifacts/home-light.png", fullPage: true });
-  await page.getByRole("button", { name: "Chùng xuống", exact: true }).click();
+  await page.getByRole("radio", { name: "Chùng xuống", exact: true }).click();
   await page.getByRole("checkbox", { name: "Công việc", exact: true }).click();
   await page.getByLabel("Ghi chú cảm xúc").fill("Một ngày hơi mệt.");
   await page.getByRole("button", { name: "Lưu lại", exact: true }).click();
@@ -128,7 +128,7 @@ test("journal local draft survives reload and deletion removes approved memory",
   await page
     .getByRole("button", { name: "Quên điều này", exact: true })
     .click();
-  await page.getByRole("button", { name: "Xác nhận xóa", exact: true }).click();
+  await page.getByRole("button", { name: "Xóa ký ức này", exact: true }).click();
   await expect(
     page.getByText(
       "Mori chưa ghi nhớ điều gì. Bạn không cần thêm nếu không muốn.",
@@ -165,16 +165,23 @@ test("privacy center exports and deletes each requested data group", async ({
     .getByRole("button", { name: "Xóa tất cả cuộc trò chuyện", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Xác nhận xóa cuộc trò chuyện" })
+    .getByRole("button", { name: "Xóa tất cả cuộc trò chuyện" })
+    .last()
     .click();
   await page
     .getByRole("button", { name: "Xóa tất cả nhật ký", exact: true })
     .click();
-  await page.getByRole("button", { name: "Xác nhận xóa nhật ký" }).click();
+  await page
+    .getByRole("button", { name: "Xóa tất cả nhật ký" })
+    .last()
+    .click();
   await page
     .getByRole("button", { name: "Xóa tất cả ký ức của Mori", exact: true })
     .click();
-  await page.getByRole("button", { name: "Xác nhận xóa ký ức" }).click();
+  await page
+    .getByRole("button", { name: "Xóa tất cả ký ức của Mori" })
+    .last()
+    .click();
 
   const data = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("mori-demo")!),
@@ -187,7 +194,7 @@ test("privacy center exports and deletes each requested data group", async ({
   await page
     .getByRole("button", { name: "Xóa dữ liệu demo và bắt đầu lại" })
     .click();
-  await page.getByRole("button", { name: "Xác nhận xóa tài khoản" }).click();
+  await page.getByRole("button", { name: "Xóa tài khoản và dữ liệu" }).click();
   await expect(
     page.getByRole("button", { name: "Bắt đầu", exact: true }),
   ).toBeVisible();

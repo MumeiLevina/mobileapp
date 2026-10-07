@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { View } from "react-native";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { AccountDataExport } from "@mori/shared";
 import {
   ErrorNote,
-  MoriBottomSheet,
   MoriButton,
   MoriCard,
+  MoriConfirmSheet,
+  MoriNotice,
   MoriText,
   ScreenContainer,
-  styles,
 } from "../components/ui";
 import { request, refresh } from "../services/api";
 import { saveAccountExport } from "../services/data-export";
@@ -27,23 +26,23 @@ const actionCopy: Record<
   conversations: {
     title: "Xóa tất cả cuộc trò chuyện?",
     detail: "Toàn bộ cuộc trò chuyện và tin nhắn sẽ bị xóa vĩnh viễn.",
-    confirm: "Xác nhận xóa cuộc trò chuyện",
+    confirm: "Xóa tất cả cuộc trò chuyện",
   },
   journals: {
     title: "Xóa tất cả nhật ký?",
     detail: "Toàn bộ trang viết đã lưu sẽ bị xóa vĩnh viễn.",
-    confirm: "Xác nhận xóa nhật ký",
+    confirm: "Xóa tất cả nhật ký",
   },
   memories: {
     title: "Xóa tất cả ký ức của Mori?",
     detail: "Mori sẽ không dùng những ký ức này trong các cuộc trò chuyện sau.",
-    confirm: "Xác nhận xóa ký ức",
+    confirm: "Xóa tất cả ký ức của Mori",
   },
   account: {
     title: "Xóa tài khoản và toàn bộ dữ liệu?",
     detail:
       "Nhật ký, trò chuyện, ký ức, cảm xúc, khu vườn và tài khoản sẽ bị xóa. Không thể hoàn tác.",
-    confirm: "Xác nhận xóa tài khoản",
+    confirm: "Xóa tài khoản và dữ liệu",
   },
 };
 
@@ -91,9 +90,7 @@ export default function PrivacyCenter() {
         nào được bật sẵn.
       </MoriText>
       <ErrorNote error={exportData.error ?? remove.error} />
-      {!!notice && (
-        <MoriText accessibilityLiveRegion="polite">{notice}</MoriText>
-      )}
+      {!!notice && <MoriNotice>{notice}</MoriNotice>}
 
       <MoriCard>
         <MoriText variant="subtitle">Lấy bản sao</MoriText>
@@ -103,6 +100,7 @@ export default function PrivacyCenter() {
         </MoriText>
         <MoriButton
           loading={exportData.isPending}
+          loadingLabel="Đang chuẩn bị bản xuất…"
           onPress={() => exportData.mutate()}
         >
           Xuất dữ liệu của tôi
@@ -114,47 +112,50 @@ export default function PrivacyCenter() {
         <MoriButton secondary onPress={() => router.push("/memories")}>
           Quản lý ký ức của Mori
         </MoriButton>
-        <MoriButton secondary onPress={() => setConfirming("conversations")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={remove.isPending}
+          onPress={() => setConfirming("conversations")}
+        >
           Xóa tất cả cuộc trò chuyện
         </MoriButton>
-        <MoriButton secondary onPress={() => setConfirming("journals")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={remove.isPending}
+          onPress={() => setConfirming("journals")}
+        >
           Xóa tất cả nhật ký
         </MoriButton>
-        <MoriButton secondary onPress={() => setConfirming("memories")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={remove.isPending}
+          onPress={() => setConfirming("memories")}
+        >
           Xóa tất cả ký ức của Mori
         </MoriButton>
-        <MoriButton secondary onPress={() => setConfirming("account")}>
+        <MoriButton
+          variant="dangerGhost"
+          disabled={remove.isPending}
+          onPress={() => setConfirming("account")}
+        >
           {config.demo
             ? "Xóa dữ liệu demo và bắt đầu lại"
             : "Xóa tài khoản và toàn bộ dữ liệu"}
         </MoriButton>
       </MoriCard>
 
-      <MoriBottomSheet
+      <MoriConfirmSheet
         visible={confirming !== null}
-        onClose={() => setConfirming(null)}
-      >
-        {confirming && (
-          <View style={styles.stack}>
-            <MoriText variant="title">{actionCopy[confirming].title}</MoriText>
-            <MoriText>{actionCopy[confirming].detail}</MoriText>
-            <ErrorNote error={remove.error} />
-            <MoriButton
-              loading={remove.isPending}
-              onPress={() => remove.mutate(confirming)}
-            >
-              {actionCopy[confirming].confirm}
-            </MoriButton>
-            <MoriButton
-              secondary
-              disabled={remove.isPending}
-              onPress={() => setConfirming(null)}
-            >
-              Giữ lại dữ liệu
-            </MoriButton>
-          </View>
-        )}
-      </MoriBottomSheet>
+        title={confirming ? actionCopy[confirming].title : ""}
+        description={confirming ? actionCopy[confirming].detail : ""}
+        confirmLabel={confirming ? actionCopy[confirming].confirm : ""}
+        loadingLabel="Đang xóa dữ liệu…"
+        cancelLabel="Giữ lại dữ liệu"
+        loading={remove.isPending}
+        error={remove.error}
+        onConfirm={() => confirming && remove.mutate(confirming)}
+        onCancel={() => setConfirming(null)}
+      />
     </ScreenContainer>
   );
 }

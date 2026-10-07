@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Journal } from "@mori/shared";
@@ -9,7 +9,9 @@ import {
   Loading,
   MoriButton,
   MoriCard,
+  MoriIconButton,
   MoriInput,
+  MoriPressable,
   MoriText,
   ScreenContainer,
 } from "../../components/ui";
@@ -67,16 +69,15 @@ export default function JournalList() {
           onChangeText={setSearch}
           style={{ flex: 1 }}
         />
-        <Pressable
+        <MoriIconButton
+          icon="calendar-outline"
           accessibilityLabel="Lịch nhật ký"
+          selected={calendar}
           onPress={() => {
             setCalendar(!calendar);
             setDay(null);
           }}
-          style={{ padding: 16, backgroundColor: t.soft, borderRadius: 16 }}
-        >
-          <Ionicons name="calendar-outline" size={22} color={t.primary} />
-        </Pressable>
+        />
       </View>
       {calendar && (
         <MoriCard>
@@ -87,7 +88,8 @@ export default function JournalList() {
               justifyContent: "space-between",
             }}
           >
-            <Pressable
+            <MoriIconButton
+              icon="chevron-back"
               accessibilityLabel="Tháng trước"
               onPress={() => {
                 setMonth(
@@ -95,17 +97,15 @@ export default function JournalList() {
                 );
                 setDay(null);
               }}
-              style={{ padding: 8 }}
-            >
-              <Ionicons name="chevron-back" size={22} color={t.text} />
-            </Pressable>
+            />
             <MoriText>
               {month.toLocaleDateString("vi-VN", {
                 month: "long",
                 year: "numeric",
               })}
             </MoriText>
-            <Pressable
+            <MoriIconButton
+              icon="chevron-forward"
               accessibilityLabel="Tháng sau"
               onPress={() => {
                 setMonth(
@@ -113,10 +113,7 @@ export default function JournalList() {
                 );
                 setDay(null);
               }}
-              style={{ padding: 8 }}
-            >
-              <Ionicons name="chevron-forward" size={22} color={t.text} />
-            </Pressable>
+            />
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
@@ -155,17 +152,21 @@ export default function JournalList() {
                 );
               });
               return (
-                <Pressable
+                <MoriPressable
                   key={n}
+                  accessibilityRole="button"
                   accessibilityLabel={`Ngày ${n}${hasEntry ? ", có nhật ký" : ""}`}
+                  accessibilityState={{ selected: day === n }}
+                  feedback="selection"
                   onPress={() => setDay(day === n ? null : n)}
-                  style={{
-                    width: "14.28%",
+                  wrapperStyle={{ width: "14.28%" }}
+                  style={(pressed) => ({
                     minHeight: 44,
                     paddingVertical: 9,
                     borderRadius: 12,
                     backgroundColor: day === n ? t.soft : "transparent",
-                  }}
+                    opacity: pressed ? 0.72 : 1,
+                  })}
                 >
                   <MoriText
                     style={{
@@ -176,7 +177,7 @@ export default function JournalList() {
                   >
                     {n}
                   </MoriText>
-                </Pressable>
+                </MoriPressable>
               );
             })}
           </View>
@@ -193,9 +194,13 @@ export default function JournalList() {
         </View>
       )}
       {entries?.map((entry) => (
-        <Pressable
+        <MoriPressable
           key={entry.id}
+          accessibilityRole="button"
+          accessibilityLabel={`${entry.title}, ${new Date(entry.created_at).toLocaleDateString("vi-VN")}`}
+          guardMs={350}
           onPress={() => router.push(`/journal/${entry.id}`)}
+          style={(pressed) => ({ opacity: pressed ? 0.82 : 1 })}
         >
           <MoriCard>
             <MoriText variant="small" muted>
@@ -218,7 +223,7 @@ export default function JournalList() {
               ↗
             </MoriText>
           </MoriCard>
-        </Pressable>
+        </MoriPressable>
       ))}
     </ScreenContainer>
   );
