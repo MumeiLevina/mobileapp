@@ -335,3 +335,76 @@ test("guided journal keeps a local draft and creates a journal only on save", as
     page.getByText("Khi mình thấy mất phương hướng", { exact: true }),
   ).toBeHidden();
 });
+
+test("morning ritual remains optional and saves only when finished", async ({
+  page,
+}) => {
+  await page.goto("/ritual/morning");
+  await expect(page.getByText("Một khởi đầu vừa đủ.")).toBeVisible();
+
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      return stored ? (JSON.parse(stored).ritualEntries?.length ?? 0) : 0;
+    }),
+  ).toBe(0);
+
+  await page.getByRole("radio", { name: "Nhẹ nhàng" }).click();
+  await expect(page.getByRole("radio", { name: "Nhẹ nhàng" })).toBeChecked();
+  await page
+    .getByLabel("Ý định nhỏ cho hôm nay")
+    .fill("Đi bộ chậm trong mười phút.");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const key = Object.keys(localStorage).find((item) =>
+          item.includes("ritual.morning"),
+        );
+        if (!key) return null;
+        const draft = JSON.parse(localStorage.getItem(key)!);
+        return {
+          desiredFeeling: draft.desiredFeeling,
+          smallIntention: draft.smallIntention,
+        };
+      }),
+    )
+    .toEqual({
+      desiredFeeling: "gentle",
+      smallIntention: "Đi bộ chậm trong mười phút.",
+    });
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "Nhẹ nhàng" })).toBeChecked();
+  await expect(page.getByLabel("Ý định nhỏ cho hôm nay")).toHaveValue(
+    "Đi bộ chậm trong mười phút.",
+  );
+
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      return stored ? (JSON.parse(stored).ritualEntries?.length ?? 0) : 0;
+    }),
+  ).toBe(0);
+
+  await page.getByRole("button", { name: "Bắt đầu ngày mới" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const stored = localStorage.getItem("mori-demo");
+        return stored ? (JSON.parse(stored).ritualEntries?.length ?? 0) : 0;
+      }),
+    )
+    .toBe(1);
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(state.ritualEntries[0]).toMatchObject({
+    user_id: "demo",
+    type: "morning",
+    desired_feeling: "gentle",
+    small_intention: "Đi bộ chậm trong mười phút.",
+  });
+  expect(state.ritualEntries[0]).not.toHaveProperty("streak");
+  expect(state.ritualEntries[0]).not.toHaveProperty("missed");
+  expect(state.garden.growth_points).toBe(1);
+});
