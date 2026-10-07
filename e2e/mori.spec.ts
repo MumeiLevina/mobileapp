@@ -1,5 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, Page, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+
+async function completeOnboarding(page: Page) {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Bắt đầu", exact: true }).click();
+  await page.getByRole("radio", { name: "Một nơi để tâm sự" }).click();
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+  await page.getByRole("radio", { name: /Tĩnh lặng/ }).click();
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+  await page.getByRole("button", { name: "Mình đã hiểu", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Tiếp tục với lựa chọn của mình" })
+    .click();
+  await page.getByRole("button", { name: "Để sau, vào khu vườn" }).click();
+  await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
+}
 test("onboarding → mood → conversation → approved memory → journal → care → garden", async ({
   page,
 }) => {
@@ -430,4 +445,96 @@ test("quiet room works without AI, memory or conversation storage", async ({
   });
   expect(privateState).toEqual({ conversations: 0, memories: 0 });
   await page.getByRole("button", { name: "Rời phòng yên" }).click();
+});
+
+test("Home mood check-in routes through Mori Moments to Quiet Room", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.getByRole("radio", { name: "Dễ chịu" }).click();
+  await page.getByRole("button", { name: "Chỉ lưu cảm xúc" }).click();
+  await expect(
+    page.getByText("Bạn muốn điều gì lúc này?", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Ngồi yên", exact: true }).click();
+  await expect(page).toHaveURL(/\/quiet-room$/);
+  await expect(page.getByText("Phòng yên.", { exact: true })).toBeVisible();
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(state.conversations).toEqual([]);
+  expect(state.memories).toEqual([]);
+});
+
+test("Home exposes the local morning ritual and returns after completion", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeDate = Date;
+    class FixedDate extends NativeDate {
+      constructor(...args: ConstructorParameters<typeof Date>) {
+        super(...(args.length ? args : ["2026-10-07T08:00:00"]));
+      }
+      static now() {
+        return new NativeDate("2026-10-07T08:00:00").getTime();
+      }
+    }
+    globalThis.Date = FixedDate as DateConstructor;
+  });
+  await completeOnboarding(page);
+  await page.getByRole("button", { name: "Mở Morning Ritual" }).click();
+  await page.getByRole("radio", { name: "Bình yên" }).click();
+  await page.getByRole("button", { name: "Bắt đầu ngày mới" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("Cho khoảnh khắc này").last()).toBeVisible();
+});
+
+test("Evening Ritual routes Write, Breathe and Quiet without AI", async ({
+  page,
+}) => {
+  await page.goto("/ritual/evening");
+  await page.getByRole("button", { name: "Viết vài dòng" }).click();
+  await expect(page).toHaveURL(/\/journal\/new$/);
+  await page.goto("/ritual/evening");
+  await page.getByRole("button", { name: "Thở 2 phút" }).click();
+  await expect(page).toHaveURL(/\/activity\/breathing$/);
+  await page.goto("/ritual/evening");
+  await page.getByRole("button", { name: "Ngồi yên một chút" }).click();
+  await expect(page).toHaveURL(/\/quiet-room$/);
+});
+
+test("First Aid routes grounding, Talk, Quiet, connection and deterministic danger", async ({
+  page,
+}) => {
+  await page.goto("/first-aid");
+  await page
+    .getByRole("button", { name: "Giúp mình quay về hiện tại" })
+    .click();
+  await expect(page.getByText("5 điều bạn có thể nhìn thấy")).toBeVisible();
+  await page.goto("/first-aid");
+  await page.getByRole("button", { name: "Mình muốn nói" }).click();
+  await expect(page).toHaveURL(/\/talk$/);
+  await page.goto("/first-aid");
+  await page.getByRole("button", { name: "Mình chỉ muốn ngồi yên" }).click();
+  await expect(page).toHaveURL(/\/quiet-room$/);
+  await page.goto("/first-aid");
+  await page
+    .getByRole("button", { name: "Mình muốn tìm một người để liên hệ" })
+    .click();
+  await expect(page.getByText(/Mori không đọc danh bạ/)).toBeVisible();
+  await page.goto("/first-aid");
+  await page
+    .getByRole("button", { name: "Mình có thể đang gặp nguy hiểm" })
+    .click();
+  await expect(
+    page.getByText("Ưu tiên sự an toàn của bạn lúc này."),
+  ).toBeVisible();
+  await expect(page.getByText(/liên hệ dịch vụ cấp cứu/).first()).toBeVisible();
+  const stored = await page.evaluate(() => localStorage.getItem("mori-demo"));
+  if (stored) {
+    const state = JSON.parse(stored);
+    expect(state.conversations).toEqual([]);
+    expect(state.memories).toEqual([]);
+    expect(state.journals).toEqual([]);
+  }
 });
