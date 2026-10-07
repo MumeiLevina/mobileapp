@@ -5,23 +5,23 @@ content or production data. `NOT RUN` means there is no execution evidence.
 
 ## Candidate
 
-| Field                  | Recorded value                             |
-| ---------------------- | ------------------------------------------ |
-| Commit SHA             | NOT RECORDED — real validation has not run |
-| Date                   | 2026-10-08                                 |
-| Environment            | Local credential-free preparation only     |
-| API deployment         | NOT RUN                                    |
-| Supabase project alias | NOT RUN                                    |
-| LLM provider           | NOT RUN                                    |
-| LLM model              | NOT RUN                                    |
-| Embedding model        | NOT RUN                                    |
-| Android build          | NOT RUN                                    |
+| Field                  | Recorded value                                                          |
+| ---------------------- | ----------------------------------------------------------------------- |
+| Commit SHA             | `3ccac18` (credential-free CI candidate; hosted validation has not run) |
+| Date                   | 2026-10-08                                                              |
+| Environment            | Local credential-free preparation only                                  |
+| API deployment         | NOT RUN                                                                 |
+| Supabase project alias | NOT RUN                                                                 |
+| LLM provider           | NOT RUN                                                                 |
+| LLM model              | NOT RUN                                                                 |
+| Embedding model        | NOT RUN                                                                 |
+| Android build          | NOT RUN                                                                 |
 
 ## Results
 
 | Gate                                     | Result   | Evidence                                                                   |
 | ---------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| Default CI                               | NOT RUN  | Run the full sequence on the final commit.                                 |
+| Default CI                               | PASS     | Local credential-free sequence on `3ccac18`: all required commands passed. |
 | Dependency audit                         | REVIEWED | 64 findings: 49 high, 15 moderate, 0 critical; no forced incompatible fix. |
 | Configuration preflight with real values | NOT RUN  | Required variables are absent in this workspace.                           |
 | Hosted Supabase integration              | NOT RUN  | No staging URL or credentials are available.                               |
@@ -38,8 +38,13 @@ Repository tooling now includes full Wave 1–3 hosted RLS/cascade coverage,
 schema compatibility probes, real API smoke checks, Private Conversation
 non-persistence and idempotent-save checks, export v6 checks, provider checks,
 and supported-path account deletion. These checks being present is not a hosted
-PASS. Record final local CI and dependency audit results here only after they
-are executed on the final commit.
+PASS.
+
+The local run completed 173 unit tests, 52/52 deterministic safety cases with
+0 critical false negatives, 32 mobile tests and 15/15 browser E2E tests. The
+database migration/RLS script, API build and web export also passed. The hosted
+Supabase and provider suites were skipped because their explicit run flags and
+credentials were absent; they are recorded as `NOT RUN` above.
 
 ## Known issues and blockers
 
