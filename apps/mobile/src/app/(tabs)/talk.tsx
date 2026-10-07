@@ -63,6 +63,17 @@ export default function Talk() {
       >
         {copy.talkCta}
       </MoriButton>
+      <MoriButton
+        secondary
+        icon="eye-off-outline"
+        disabled={start.isPending}
+        onPress={() => router.push("/private-conversation" as "/ask-mori")}
+      >
+        Trò chuyện riêng tư
+      </MoriButton>
+      <MoriText muted variant="small">
+        Không lưu sau khi bạn rời đi, trừ khi bạn chủ động chọn Lưu.
+      </MoriText>
       <MoriText muted variant="small">
         {copy.boundary}
       </MoriText>

@@ -18,6 +18,7 @@ import {
   Mood,
   NotificationPreference,
   Profile,
+  PrivateChatResult,
   RitualEntry,
   PATTERN_DISCLAIMER,
   TimelineFilter,
@@ -34,6 +35,8 @@ import {
   moodSchema,
   notificationSchema,
   profileSchema,
+  privateMessageSchema,
+  savePrivateConversationSchema,
   ritualEntrySchema,
   askMoriSchema,
 } from "@mori/shared";
@@ -322,6 +325,49 @@ export async function demoRequest(
         reason: "Được bạn trực tiếp thêm vào ký ức của Mori.",
       });
       result = memory;
+    }
+  } else if (resource === "private-conversations") {
+    if (id === "messages") {
+      const value = privateMessageSchema.parse(body);
+      const folded = value.content
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+      const crisis =
+        /(tu tu|muon chet|khong muon song|kill myself|suicid|tu sat|giet nguoi|hurt someone)/.test(
+          folded,
+        );
+      return {
+        message: {
+          id: value.client_id,
+          role: "assistant",
+          content: crisis
+            ? "Điều bạn chia sẻ nghe rất nghiêm trọng. Nếu đang gặp nguy hiểm ngay lúc này, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc một người bạn tin tưởng. Bạn có đang an toàn ngay lúc này không?"
+            : "Mình đang lắng nghe. Điều gì trong chuyện này đang ở lại với bạn nhiều nhất?",
+        },
+        safetyLevel: crisis ? "crisis" : "normal",
+      } satisfies PrivateChatResult;
+    }
+    if (id === "save") {
+      const value = savePrivateConversationSchema.parse(body);
+      const conversation: Conversation = {
+        ...entity(),
+        title: "Một cuộc trò chuyện riêng đã lưu",
+        mode: value.mode,
+      };
+      db.conversations.unshift(conversation);
+      db.messages.push(
+        ...value.messages.map((message): Message => ({
+          ...entity(),
+          conversation_id: conversation.id,
+          role: message.role,
+          content: message.content,
+          client_id: message.id,
+          safety_level: "normal",
+        })),
+      );
+      result = conversation;
     }
   } else if (resource === "conversations") {
     if (method === "GET") {
