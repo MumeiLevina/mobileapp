@@ -181,11 +181,14 @@ test("privacy center exports and deletes each requested data group", async ({
   );
   const path = await download.path();
   const accountExport = JSON.parse(await readFile(path!, "utf8"));
-  expect(accountExport.schemaVersion).toBe(5);
+  expect(accountExport.schemaVersion).toBe(6);
   expect(accountExport.data).toHaveProperty("ritualEntries");
   expect(accountExport.data).toHaveProperty("lifeMapItems");
   expect(accountExport.data).toHaveProperty("memorySources");
   expect(accountExport.data).toHaveProperty("letters");
+  expect(accountExport.data).toHaveProperty("softGoals");
+  expect(accountExport.data).toHaveProperty("gardenUnlocks");
+  expect(accountExport.data).toHaveProperty("personalMilestones");
   expect(accountExport.data).not.toHaveProperty("safetyEvents");
   expect(JSON.stringify(accountExport.data.memories)).not.toContain(
     "embedding",
@@ -507,6 +510,19 @@ test("You creates and completes a gentle intention without pressure copy", async
   await openGarden(page);
   await page.getByTestId("garden-hotspot-soft-goals").click();
   await expect(page).toHaveURL(/\/soft-goals$/);
+  await page.goto("/me");
+  await page.getByRole("button", { name: "Những dấu mốc nhỏ" }).click();
+  await expect(
+    page.getByText("Bạn đã hoàn thành ý định nhỏ đầu tiên.", { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("mori-demo")!).personalMilestones.filter(
+        (item: { milestone_key: string }) =>
+          item.milestone_key === "first_soft_goal",
+      ).length,
+    ),
+  ).toBe(1);
 });
 
 test("morning ritual remains optional and saves only when finished", async ({
