@@ -414,6 +414,12 @@ export async function demoRequest(
     if (method === "GET") return db.notifications;
     db.notifications = notificationSchema.parse(body);
     result = db.notifications;
+  } else if (resource === "first-aid" && id === "crisis") {
+    return {
+      message:
+        "Sự an toàn của bạn lúc này là điều cần ưu tiên. Nếu bạn đang gặp nguy hiểm, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc đến cơ sở cấp cứu gần nhất. Nếu có thể, hãy tránh xa những thứ có thể gây hại và liên hệ một người bạn tin tưởng để họ ở bên bạn.",
+      resources: [],
+    };
   } else if (resource === "reflections" && id === "timeline") {
     const filter = TimelineFilter.parse(queryParams.get("filter") ?? "all");
     const moodNames: Record<Mood["mood"], string> = {

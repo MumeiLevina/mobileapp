@@ -315,6 +315,10 @@ export type ChatResult = {
   activity?: Activity;
   crisisResources?: CrisisResource[];
 };
+export type FirstAidCrisisResponse = {
+  message: string;
+  resources: CrisisResource[];
+};
 export type AccountDataExport = {
   schemaVersion: 4;
   generatedAt: string;
