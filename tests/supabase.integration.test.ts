@@ -6,6 +6,42 @@ import { DatabaseService } from "../apps/api/src/database/database.service";
 const enabled = process.env.RUN_SUPABASE_INTEGRATION_TESTS === "true";
 const integration = enabled ? describe : describe.skip;
 
+const ownerReadableTables = [
+  "profiles",
+  "mood_entries",
+  "journals",
+  "memories",
+  "conversations",
+  "messages",
+  "self_care_sessions",
+  "garden_states",
+  "weekly_reflections",
+  "notification_preferences",
+  "life_map_items",
+  "memory_sources",
+  "ritual_entries",
+  "letters",
+  "soft_goals",
+  "garden_unlocks",
+  "personal_milestones",
+] as const;
+
+const cascadedTables = [
+  ...ownerReadableTables,
+  "safety_events",
+  "data_export_audits",
+] as const;
+
+function requireSafeTarget() {
+  if (!["development", "staging"].includes(process.env.STAGING_TARGET ?? ""))
+    throw new Error(
+      "STAGING_TARGET must be development or staging; production is refused",
+    );
+  const hostname = new URL(process.env.SUPABASE_INTEGRATION_URL!).hostname;
+  if (/(^|[.-])(prod|production|live)([.-]|$)/i.test(hostname))
+    throw new Error("Supabase integration URL looks like a production target");
+}
+
 integration("real Supabase Auth, provisioning and RLS", () => {
   const url = process.env.SUPABASE_INTEGRATION_URL!;
   const anon = process.env.SUPABASE_INTEGRATION_ANON_KEY!;
@@ -33,6 +69,7 @@ integration("real Supabase Auth, provisioning and RLS", () => {
   beforeAll(async () => {
     if (!url || !anon || !serviceKey)
       throw new Error("Supabase integration environment is incomplete");
+    requireSafeTarget();
     admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -78,12 +115,36 @@ integration("real Supabase Auth, provisioning and RLS", () => {
     if (loginA.error || loginB.error) throw loginA.error ?? loginB.error;
     accessTokenA = loginA.data.session?.access_token ?? "";
 
+    const activity = await admin
+      .from("self_care_activities")
+      .select("id")
+      .eq("enabled", true)
+      .limit(1)
+      .single();
+    if (activity.error)
+      throw new Error(
+        "Staging seed must include an enabled self-care activity",
+      );
+
     const conversation = await admin
       .from("conversations")
       .insert({ user_id: idB, title: "synthetic private B" })
       .select("id")
       .single();
     if (conversation.error) throw conversation.error;
+
+    const memory = await admin
+      .from("memories")
+      .insert({
+        user_id: idB,
+        content: "synthetic private B",
+        category: "preference",
+        approved_by_user: true,
+        approved_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (memory.error) throw memory.error;
 
     const writes = await Promise.all([
       admin.from("journals").insert({
@@ -92,13 +153,6 @@ integration("real Supabase Auth, provisioning and RLS", () => {
         content: "synthetic integration fixture",
         source: "manual",
         client_id: crypto.randomUUID(),
-      }),
-      admin.from("memories").insert({
-        user_id: idB,
-        content: "synthetic private B",
-        category: "preference",
-        approved_by_user: true,
-        approved_at: new Date().toISOString(),
       }),
       admin.from("messages").insert({
         user_id: idB,
@@ -125,14 +179,66 @@ integration("real Supabase Auth, provisioning and RLS", () => {
         title: "synthetic private B",
         approved_by_user: true,
       }),
+      admin.from("memory_sources").insert({
+        user_id: idB,
+        memory_id: memory.data.id,
+        source_type: "manual",
+        reason: "Synthetic integration fixture",
+      }),
+      admin.from("self_care_sessions").insert({
+        user_id: idB,
+        activity_id: activity.data.id,
+        completed_at: new Date().toISOString(),
+      }),
+      admin.from("weekly_reflections").insert({
+        user_id: idB,
+        week_start: "2026-10-05",
+        content: "SYNTHETIC STAGING WEEKLY REFLECTION",
+      }),
+      admin.from("safety_events").insert({
+        user_id: idB,
+        level: "normal",
+        requires_escalation: false,
+      }),
+      admin.from("ritual_entries").insert({
+        user_id: idB,
+        type: "morning",
+        desired_feeling: "gentle",
+        small_intention: "SYNTHETIC STAGING RITUAL",
+        client_id: crypto.randomUUID(),
+      }),
+      admin.from("letters").insert({
+        user_id: idB,
+        title: "SYNTHETIC STAGING LETTER",
+        content: "SYNTHETIC STAGING CONTENT",
+        open_at: new Date(Date.now() + 86_400_000).toISOString(),
+        client_id: crypto.randomUUID(),
+      }),
+      admin.from("soft_goals").insert({
+        user_id: idB,
+        title: "SYNTHETIC STAGING SOFT GOAL",
+        client_id: crypto.randomUUID(),
+      }),
+      admin.from("garden_unlocks").insert({
+        user_id: idB,
+        action_key: "area:quiet_cottage",
+        feature_key: "quiet_cottage",
+        unlocked_at: new Date().toISOString(),
+        source_type: "feature_activation",
+      }),
+      admin.from("personal_milestones").insert({
+        user_id: idB,
+        milestone_key: "quiet_cottage_appeared",
+        source_type: "feature_activation",
+      }),
     ]);
     const failed = writes.find((write) => write.error);
     if (failed?.error) throw failed.error;
   }, 30_000);
 
   afterAll(async () => {
-    if (idA) await admin.auth.admin.deleteUser(idA);
-    if (idB) await admin.auth.admin.deleteUser(idB);
+    if (admin && idA) await admin.auth.admin.deleteUser(idA);
+    if (admin && idB) await admin.auth.admin.deleteUser(idB);
   });
 
   test("email/password signup provisions profile, garden and preferences", async () => {
@@ -174,50 +280,55 @@ integration("real Supabase Auth, provisioning and RLS", () => {
     expect((await userA.auth.getSession()).data.session).toBeNull();
   });
 
-  test.each([
-    "profiles",
-    "mood_entries",
-    "journals",
-    "memories",
-    "conversations",
-    "messages",
-    "garden_states",
-    "notification_preferences",
-    "life_map_items",
-    "memory_sources",
-  ])("User A cannot read User B rows from %s", async (table) => {
+  test.each(ownerReadableTables)(
+    "User A cannot read User B rows from %s",
+    async (table) => {
+      await ensureUserASession();
+      const result = await userA.from(table).select("*").eq("user_id", idB);
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([]);
+    },
+  );
+
+  test("User A cannot read User B application user row", async () => {
     await ensureUserASession();
-    const result = await userA.from(table).select("*").eq("user_id", idB);
+    const result = await userA.from("users").select("id").eq("id", idB);
     expect(result.error).toBeNull();
     expect(result.data).toEqual([]);
   });
 
-  test("browser clients cannot read server-only export audits", async () => {
+  test.each(["data_export_audits", "safety_events"])(
+    "browser clients cannot read server-only %s",
+    async (table) => {
+      await ensureUserASession();
+      const result = await userA.from(table).select("*").eq("user_id", idB);
+      expect(result.data ?? []).toEqual([]);
+      expect(result.error).not.toBeNull();
+    },
+  );
+
+  test.each(["soft_goals", "garden_unlocks", "personal_milestones"])(
+    "browser clients cannot insert into server-written %s",
+    async (table) => {
+      await ensureUserASession();
+      const result = await userA.from(table).insert({ user_id: idA });
+      expect(result.error).not.toBeNull();
+    },
+  );
+
+  test("browser clients cannot update a server-written Soft Goal", async () => {
     await ensureUserASession();
     const result = await userA
-      .from("data_export_audits")
-      .select("*")
-      .eq("user_id", idB);
-    expect(result.data ?? []).toEqual([]);
+      .from("soft_goals")
+      .update({ title: "UNAUTHORIZED" })
+      .eq("user_id", idA);
     expect(result.error).not.toBeNull();
   });
 
   test("account deletion cascades every seeded application row", async () => {
     const deleted = await admin.auth.admin.deleteUser(idB);
     expect(deleted.error).toBeNull();
-    for (const table of [
-      "profiles",
-      "mood_entries",
-      "journals",
-      "memories",
-      "conversations",
-      "messages",
-      "garden_states",
-      "notification_preferences",
-      "data_export_audits",
-      "life_map_items",
-      "memory_sources",
-    ]) {
+    for (const table of cascadedTables) {
       const result = await admin
         .from(table)
         .select("user_id")
@@ -225,6 +336,9 @@ integration("real Supabase Auth, provisioning and RLS", () => {
       expect(result.error).toBeNull();
       expect(result.data).toEqual([]);
     }
+    expect((await admin.from("users").select("id").eq("id", idB)).data).toEqual(
+      [],
+    );
     idB = "";
   });
 });
