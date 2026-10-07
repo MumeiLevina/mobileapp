@@ -48,6 +48,12 @@ try {
   await pg.exec(
     await readFile("supabase/migrations/202610070004_rituals.sql", "utf8"),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610070005_ritual_notifications.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -59,6 +65,33 @@ try {
     (await pg.query("select * from public.profiles")).rows.length,
     2,
   );
+  const notificationDefaults = (
+    await pg.query(
+      "select morning_enabled, morning_hour, evening_enabled, evening_hour, timezone from notification_preferences where user_id=$1",
+      [a],
+    )
+  ).rows[0];
+  assert.deepEqual(notificationDefaults, {
+    morning_enabled: false,
+    morning_hour: 8,
+    evening_enabled: false,
+    evening_hour: 20,
+    timezone: "Asia/Ho_Chi_Minh",
+  });
+  await pg.query(
+    "update notification_preferences set morning_enabled=true, morning_hour=7, timezone='Asia/Tokyo' where user_id=$1",
+    [a],
+  );
+  assert.deepEqual(
+    (
+      await pg.query(
+        "select morning_enabled, morning_hour, timezone from notification_preferences where user_id=$1",
+        [a],
+      )
+    ).rows[0],
+    { morning_enabled: true, morning_hour: 7, timezone: "Asia/Tokyo" },
+  );
+  console.log("PASS ritual reminders default off and preserve timezone");
   console.log("PASS migration, auth trigger and initial profile/garden");
   await pg.query(
     "insert into journals(user_id,title,content,source,client_id) values($1,'guided','private answer','guided',$2)",

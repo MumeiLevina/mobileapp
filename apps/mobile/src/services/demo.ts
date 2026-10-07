@@ -86,6 +86,12 @@ const initial = (): DemoData => ({
     hour: 20,
     minute: 0,
     timezone: "Asia/Ho_Chi_Minh",
+    morning_enabled: false,
+    morning_hour: 8,
+    morning_minute: 0,
+    evening_enabled: false,
+    evening_hour: 20,
+    evening_minute: 0,
   },
   lifeMapItems: [],
   ritualEntries: [],
@@ -99,6 +105,37 @@ async function get() {
     database.memorySources ??= [];
     database.gardenMilestones ??= [];
     database.ritualEntries ??= [];
+    const legacyNotifications =
+      database.notifications as Partial<NotificationPreference>;
+    database.notifications = notificationSchema.parse({
+      ...legacyNotifications,
+      morning_enabled:
+        legacyNotifications.morning_enabled ??
+        legacyNotifications.period === "morning",
+      morning_hour:
+        legacyNotifications.morning_hour ??
+        (legacyNotifications.period === "morning"
+          ? legacyNotifications.hour
+          : undefined),
+      morning_minute:
+        legacyNotifications.morning_minute ??
+        (legacyNotifications.period === "morning"
+          ? legacyNotifications.minute
+          : undefined),
+      evening_enabled:
+        legacyNotifications.evening_enabled ??
+        legacyNotifications.period === "evening",
+      evening_hour:
+        legacyNotifications.evening_hour ??
+        (legacyNotifications.period === "evening"
+          ? legacyNotifications.hour
+          : undefined),
+      evening_minute:
+        legacyNotifications.evening_minute ??
+        (legacyNotifications.period === "evening"
+          ? legacyNotifications.minute
+          : undefined),
+    });
   }
   return database;
 }

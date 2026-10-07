@@ -99,6 +99,12 @@ export const notificationSchema = z.object({
   hour: z.number().int().min(0).max(23),
   minute: z.number().int().min(0).max(59),
   timezone: z.string().max(80),
+  morning_enabled: z.boolean().default(false),
+  morning_hour: z.number().int().min(0).max(23).default(8),
+  morning_minute: z.number().int().min(0).max(59).default(0),
+  evening_enabled: z.boolean().default(false),
+  evening_hour: z.number().int().min(0).max(23).default(20),
+  evening_minute: z.number().int().min(0).max(59).default(0),
 });
 export const RitualType = z.enum(["morning", "evening"]);
 export const DesiredFeeling = z.enum([
