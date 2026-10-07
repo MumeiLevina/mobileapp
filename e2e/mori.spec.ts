@@ -398,6 +398,59 @@ test("Journal opens Letters, restores a private draft and creates a vault item",
   expect(state.awards).toContain(`letter-seed:${state.letters[0].id}`);
 });
 
+test("private conversation leaves no history unless Save is explicit", async ({
+  page,
+}) => {
+  await page.goto("/talk");
+  await page.getByRole("button", { name: "Trò chuyện riêng tư" }).click();
+  await expect(
+    page.getByText("Không lưu sau khi bạn rời đi", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Nội dung riêng tư")
+    .fill("Một điều chỉ cho phiên này.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(
+    page.getByText("Mình đang lắng nghe.", { exact: false }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      if (!stored) return [0, 0];
+      const state = JSON.parse(stored);
+      return [state.conversations.length, state.messages.length];
+    }),
+  ).toEqual([0, 0]);
+  await page.getByLabel("Rời cuộc trò chuyện riêng tư").click();
+  await page.getByRole("button", { name: "Rời đi mà không lưu" }).click();
+  await expect(page).toHaveURL(/\/talk$/);
+  expect(
+    await page.evaluate(() => {
+      const stored = localStorage.getItem("mori-demo");
+      if (!stored) return [0, 0];
+      const state = JSON.parse(stored);
+      return [state.conversations.length, state.messages.length];
+    }),
+  ).toEqual([0, 0]);
+
+  await page.getByRole("button", { name: "Trò chuyện riêng tư" }).click();
+  await page
+    .getByLabel("Nội dung riêng tư")
+    .fill("Mình chọn giữ lại phiên này.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await page.getByLabel("Rời cuộc trò chuyện riêng tư").click();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(page).toHaveURL(/\/conversation\//);
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(saved.conversations).toHaveLength(1);
+  expect(saved.messages).toHaveLength(2);
+  expect(
+    saved.messages.map((message: { content: string }) => message.content),
+  ).toContain("Mình chọn giữ lại phiên này.");
+});
+
 test("morning ritual remains optional and saves only when finished", async ({
   page,
 }) => {
