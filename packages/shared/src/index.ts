@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./guided-journals";
 export const CompanionStyle = z.enum(["gentle", "close_friend", "calm"]);
 export const ConversationMode = z.enum(["listen", "understand", "think"]);
 export const IntentType = z.enum([
@@ -79,7 +80,9 @@ export const moodSchema = z.object({
 export const journalSchema = z.object({
   title: z.string().trim().min(1).max(120),
   content: z.string().trim().min(1).max(20000),
-  source: z.enum(["manual", "conversation", "reflection"]).default("manual"),
+  source: z
+    .enum(["manual", "conversation", "reflection", "guided"])
+    .default("manual"),
   client_id: z.string().uuid(),
 });
 export const memorySchema = z.object({

@@ -39,6 +39,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610070003_guided_journals.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -51,6 +57,22 @@ try {
     2,
   );
   console.log("PASS migration, auth trigger and initial profile/garden");
+  await pg.query(
+    "insert into journals(user_id,title,content,source,client_id) values($1,'guided','private answer','guided',$2)",
+    [a, "55555555-5555-4555-a555-555555555555"],
+  );
+  assert.equal(
+    (
+      await pg.query(
+        "select count(*)::int as count from journals where user_id=$1 and source='guided'",
+        [a],
+      )
+    ).rows[0].count,
+    1,
+  );
+  console.log(
+    "PASS guided journals reuse private owner-scoped journal storage",
+  );
   const embedding = JSON.stringify(
     Array.from({ length: 1536 }, (_, i) => (i === 0 ? 1 : 0)),
   );
