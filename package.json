@@ -26,6 +26,7 @@
     "eval:safety": "jest --runInBand tests/evals/safety.eval.test.ts",
     "eval:safety:staging": "jest --runInBand tests/evals/provider-safety.eval.test.ts",
     "verify:staging": "node scripts/verify-staging.mjs",
+    "preflight:staging": "node scripts/preflight-staging.mjs",
     "preview:web": "node scripts/serve-web.mjs"
   },
   "devDependencies": {
