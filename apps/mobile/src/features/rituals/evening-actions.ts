@@ -12,7 +12,7 @@ export type EveningRitualAction =
 export function eveningDestination(action: EveningRitualAction) {
   if (action === "write") return "/journal/new" as const;
   if (action === "breathe") return "/activity/breathing" as const;
-  if (action === "quiet") return "/activity/rain" as const;
+  if (action === "quiet") return "/quiet-room" as const;
   if (action === "finish") return "/(tabs)" as const;
   return null;
 }

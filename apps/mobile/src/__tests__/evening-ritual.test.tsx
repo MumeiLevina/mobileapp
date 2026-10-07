@@ -8,7 +8,7 @@ test("evening ritual actions use deterministic non-AI destinations", () => {
   expect(eveningDestination(EveningRitualAction.breathe)).toBe(
     "/activity/breathing",
   );
-  expect(eveningDestination(EveningRitualAction.quiet)).toBe("/activity/rain");
+  expect(eveningDestination(EveningRitualAction.quiet)).toBe("/quiet-room");
   expect(eveningDestination(EveningRitualAction.finish)).toBe("/(tabs)");
 });
 

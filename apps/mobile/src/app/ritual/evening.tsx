@@ -26,7 +26,7 @@ export default function EveningRitual() {
       return;
     }
     const destination = eveningDestination(action);
-    if (destination) router.replace(destination);
+    if (destination) router.replace(destination as "/self-care");
   };
 
   return (
