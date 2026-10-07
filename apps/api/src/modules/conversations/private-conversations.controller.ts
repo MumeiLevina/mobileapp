@@ -2,7 +2,6 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import {
   Conversation,
-  Message,
   privateMessageSchema,
   savePrivateConversationSchema,
 } from "@mori/shared";
@@ -32,25 +31,13 @@ export class PrivateConversationsController {
   }
 
   @Post("save")
-  async save(@UserId() user: string, @Body() body: unknown) {
+  save(@UserId() user: string, @Body() body: unknown) {
     const value = parse(savePrivateConversationSchema, body);
-    const conversation = await this.db.insert<Conversation>(
-      "conversations",
-      user,
-      {
-        mode: value.mode,
-        title: "Một cuộc trò chuyện riêng đã lưu",
-      },
-    );
-    for (const message of value.messages) {
-      await this.db.insert<Message>("messages", user, {
-        conversation_id: conversation.id,
-        role: message.role,
-        content: message.content,
-        client_id: message.id,
-        safety_level: "normal",
-      });
-    }
-    return conversation;
+    return this.db.rpc<Conversation>("save_private_conversation", {
+      p_user: user,
+      p_client_id: value.client_id,
+      p_mode: value.mode,
+      p_messages: value.messages,
+    });
   }
 }

@@ -49,11 +49,7 @@ test("explicit save converts the session into owner-scoped normal records", asyn
     created_at: new Date().toISOString(),
   };
   const db = {
-    insert: jest
-      .fn()
-      .mockResolvedValueOnce(conversation)
-      .mockResolvedValueOnce(userMessage)
-      .mockResolvedValueOnce(assistantMessage),
+    rpc: jest.fn().mockResolvedValue(conversation),
   } as unknown as DatabaseService;
   const controller = new PrivateConversationsController(
     db,
@@ -61,32 +57,15 @@ test("explicit save converts the session into owner-scoped normal records", asyn
   );
 
   await controller.save("owner", {
+    client_id: "44444444-4444-4444-a444-444444444444",
     mode: "listen",
     messages: [userMessage, assistantMessage],
   });
 
-  expect(db.insert).toHaveBeenNthCalledWith(1, "conversations", "owner", {
-    mode: "listen",
-    title: "Một cuộc trò chuyện riêng đã lưu",
+  expect(db.rpc).toHaveBeenCalledWith("save_private_conversation", {
+    p_user: "owner",
+    p_client_id: "44444444-4444-4444-a444-444444444444",
+    p_mode: "listen",
+    p_messages: [userMessage, assistantMessage],
   });
-  expect(db.insert).toHaveBeenNthCalledWith(
-    2,
-    "messages",
-    "owner",
-    expect.objectContaining({
-      conversation_id: conversation.id,
-      role: "user",
-      content: userMessage.content,
-    }),
-  );
-  expect(db.insert).toHaveBeenNthCalledWith(
-    3,
-    "messages",
-    "owner",
-    expect.objectContaining({
-      conversation_id: conversation.id,
-      role: "assistant",
-      content: assistantMessage.content,
-    }),
-  );
 });

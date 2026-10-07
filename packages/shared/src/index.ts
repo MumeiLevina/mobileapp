@@ -109,6 +109,7 @@ export const privateMessageSchema = z.object({
   history: z.array(ephemeralMessageSchema).max(12).default([]),
 });
 export const savePrivateConversationSchema = z.object({
+  client_id: z.string().uuid(),
   mode: ConversationMode,
   messages: z.array(ephemeralMessageSchema).min(2).max(100),
 });

@@ -26,6 +26,7 @@ import { useT } from "../i18n";
 
 export default function PrivateConversation() {
   const copy = useT();
+  const sessionId = useRef(newId());
   const [mode, setMode] = useState<ConversationMode>("listen");
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<EphemeralMessage[]>([]);
@@ -61,6 +62,7 @@ export default function PrivateConversation() {
   const save = useMutation({
     mutationFn: () =>
       request<Conversation>("/private-conversations/save", "POST", {
+        client_id: sessionId.current,
         mode,
         messages,
       }),

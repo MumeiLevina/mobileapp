@@ -78,6 +78,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610080002_private_save_idempotency.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -461,6 +467,39 @@ try {
   console.log(
     "PASS composite ownership foreign key and atomic idempotent conversation exchange",
   );
+  const privateSession = "cccccccc-cccc-4ccc-accc-cccccccccccc";
+  const privateMessages = JSON.stringify([
+    {
+      id: "dddddddd-dddd-4ddd-addd-dddddddddddd",
+      role: "user",
+      content: "private session input",
+    },
+    {
+      id: "eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee",
+      role: "assistant",
+      content: "private session reply",
+    },
+  ]);
+  for (let i = 0; i < 2; i++)
+    await pg.query(
+      "select * from save_private_conversation($1,$2,$3,$4::jsonb)",
+      [a, privateSession, "listen", privateMessages],
+    );
+  const savedPrivate = await pg.query(
+    "select id from conversations where user_id=$1 and client_id=$2",
+    [a, privateSession],
+  );
+  assert.equal(savedPrivate.rows.length, 1);
+  assert.equal(
+    (
+      await pg.query(
+        "select * from messages where user_id=$1 and conversation_id=$2",
+        [a, savedPrivate.rows[0].id],
+      )
+    ).rows.length,
+    2,
+  );
+  console.log("PASS private conversation save retry is atomic and idempotent");
   await pg.query("delete from auth.users where id=$1", [a]);
   for (const table of [
     "profiles",
