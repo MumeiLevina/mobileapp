@@ -21,7 +21,7 @@ Internal release inputs now live in `PRIVACY.md`, `DATA_RETENTION.md`, `AI_DISCL
 - EAS development, internal preview and store-ready production profiles are configured under `apps/mobile/eas.json`. No APK, AAB or iOS archive has been built or installed yet; complete `docs/NATIVE_QA.md` before closed beta.
 - TODO: Clinical/editorial review of crisis language and curated self-care library; populate and operationally re-verify the region-based emergency resource directory. The schema and verified-only retrieval path are implemented, but no unverified hotline numbers are seeded or hardcoded.
 - TODO: Adapt the internal specifications into reviewed public policy/support URLs; name the selected AI subprocessors and regions; configure operational log retention, backup expiry, age suitability and the incident/support process before real users.
-- TODO: Recheck dependency advisories against compatible Expo/Jest releases before beta distribution. On 2026-10-07, `npm audit` reports 64 transitive findings (49 high, 15 moderate) and no critical finding; Expo's CLI/build graph is included in the installed dependency tree. The high findings are `braces` through Jest/Metro glob tooling and `node-forge` through Expo code-signing tooling. Moderate findings are `decode-uri-component` through Expo Router, `sprintf-js` through Istanbul/Jest tooling and `uuid` through Expo's Xcode tooling. None is a direct Mori dependency. The reported automatic fixes force breaking Expo/Jest changes, including an Expo 44 downgrade, so no forced audit fix was applied. Treat malformed external deep links as untrusted and update through an Expo-compatible release rather than overriding the lockfile blindly.
+- TODO: Recheck dependency advisories against compatible Expo/Jest releases before beta distribution. On 2026-10-08, the latest completed `npm audit` reports 64 findings (49 high, 15 moderate) and no critical finding. It flags top-level Expo, React Native, Expo Router, Reanimated, Worklets and Jest graph entries because of affected packages in their dependency chains. Suggested fixes include incompatible framework/test-runner changes and an Expo 44 downgrade, so no forced audit fix was applied. Treat external deep links as untrusted, keep staging isolated, and update through an Expo-compatible release rather than overriding the lockfile blindly.
 
 ## Explicitly deferred product scope
 
@@ -41,11 +41,11 @@ Native drafts use versioned SecureStore chunks with a manifest committed last; w
 
 ## Wave 3 validation status
 
-| Level | Status |
-| --- | --- |
-| IMPLEMENTED | Soft Goals, Garden 2.0/unlocks, Personal Milestones, Letters/private-chat integration and export/delete changes are in the repository. |
-| TESTED IN DEMO | Browser E2E covers Soft Goal completion, milestones, Letter Tree, Path Stones, Reflection Lake, private-chat non-progression and schema v6 export. |
-| TESTED IN CI | Required default workflow gates must be green for the exact final commit before closeout is declared. |
-| REQUIRES REAL SUPABASE | Auth, hosted RLS/RPC behavior, migrations and deletion/export must still be verified with staging credentials. |
-| REQUIRES REAL MODEL | Provider-backed bilingual safety and response-quality evaluation still needs staging model credentials. |
-| REQUIRES NATIVE DEVICE | iOS/Android accessibility, SecureStore, reminders, reduced motion, Dynamic Type and Garden touch targets still need physical-device QA. |
+| Level                  | Status                                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IMPLEMENTED            | Soft Goals, Garden 2.0/unlocks, Personal Milestones, Letters/private-chat integration and export/delete changes are in the repository.             |
+| TESTED IN DEMO         | Browser E2E covers Soft Goal completion, milestones, Letter Tree, Path Stones, Reflection Lake, private-chat non-progression and schema v6 export. |
+| TESTED IN CI           | Required default workflow gates must be green for the exact final commit before closeout is declared.                                              |
+| REQUIRES REAL SUPABASE | Auth, hosted RLS/RPC behavior, migrations and deletion/export must still be verified with staging credentials.                                     |
+| REQUIRES REAL MODEL    | Provider-backed bilingual safety and response-quality evaluation still needs staging model credentials.                                            |
+| REQUIRES NATIVE DEVICE | iOS/Android accessibility, SecureStore, reminders, reduced motion, Dynamic Type and Garden touch targets still need physical-device QA.            |

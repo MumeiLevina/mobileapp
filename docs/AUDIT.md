@@ -41,4 +41,11 @@ Audit updated: 2026-10-08. This document records beta-hardening status without c
 
 ## Current audit boundary
 
-The repository contains no staging credentials and this audit makes no claim that hosted Supabase, a production model, EAS cloud builds or physical devices passed. The service verification commands refuse a production target and use only synthetic test content. Apply every migration in filename order through `202610070009_personal_milestones.sql` before running them. Wave 3 adds `202610070006_letters.sql`, `202610070007_soft_goals.sql`, `202610070008_garden_sanctuary.sql` and `202610070009_personal_milestones.sql`; committed migrations were not rewritten.
+The repository contains no staging credentials and this audit makes no claim
+that hosted Supabase, a production model, EAS cloud builds or physical devices
+passed. The service verification commands refuse a production target and use
+only synthetic test content. Apply every migration in filename order; the
+current latest file is `202610080002_private_save_idempotency.sql`. The two
+validation fixes keep safety events server-only and make explicit Private
+Conversation saves atomic and idempotent. Committed migrations were not
+rewritten.

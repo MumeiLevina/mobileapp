@@ -19,8 +19,15 @@ Record platform, OS version, device model, app version/build number, API environ
 - [ ] Simulate a lost chat response and retry without editing; confirm one user message and one assistant message.
 - [ ] Approve a pending memory, edit it, verify later retrieval and delete it.
 - [ ] Create, edit, search and delete a journal entry.
+- [ ] Complete a Guided Journal; confirm answers stay in the intended draft and saved journal only.
+- [ ] Complete Morning and Evening Rituals; verify retry creates no duplicate completion or growth.
+- [ ] Open First Aid choices; verify danger uses the crisis path and ordinary choices remain non-persistent.
+- [ ] Create a future Letter, edit its draft, verify list metadata hides content, and open it only when eligible.
+- [ ] Create and complete a Soft Goal; verify one growth award and one Path Stones unlock after retry.
+- [ ] Confirm Personal Milestones appear once and use gentle, non-punitive copy.
 - [ ] Enter a journal draft, kill/restart the app and confirm the complete draft returns.
 - [ ] Enter a chat draft, kill/restart the app and confirm the complete draft returns.
+- [ ] Repeat kill/restart recovery for Guided Journal, Letter and any persisted Ritual draft.
 - [ ] Generate a journal draft from a conversation; confirm nothing is saved until Save is selected.
 - [ ] Start, pause/resume and complete self-care activities; test breathing with reduced motion.
 - [ ] Confirm garden growth is idempotent and missing a day causes no penalty copy.
@@ -30,6 +37,14 @@ Record platform, OS version, device model, app version/build number, API environ
 - [ ] Delete all conversations and confirm messages disappear.
 - [ ] Delete all memories and confirm retrieval no longer uses them.
 - [ ] Delete the account; confirm server data, local session, drafts, reminders and caches are cleared.
+
+## Private Conversation on device
+
+- [ ] Start a Private Conversation, send messages, background and foreground the app, then leave without saving.
+- [ ] Confirm normal conversation history, memories, timeline and Garden progress are unchanged.
+- [ ] Kill and reopen the app; confirm the discarded private conversation is absent.
+- [ ] Start another private conversation and choose Save; confirm normal history contains it exactly once.
+- [ ] Interrupt the Save request and retry; confirm one conversation and one copy of each message.
 
 ## Keyboard and input
 
@@ -58,6 +73,19 @@ Record platform, OS version, device model, app version/build number, API environ
 - [ ] Trigger output-review unavailability; confirm safe fallback.
 - [ ] Restore network and retry the same `client_id`; confirm no duplicate exchange.
 - [ ] Retry mood and journal saves with the same `client_id`; confirm no duplicate record.
+- [ ] Retry Soft Goal creation/completion and Private Conversation conversion with the same client IDs; confirm no duplicate rows or growth.
+
+## Garden 2.0 touch targets
+
+- [ ] Open Letter Tree, Reflection Lake, Memory Garden, Quiet Cottage, Path Stones and every other unlocked area.
+- [ ] Repeat on a small screen, 200% font size, dark mode, reduced motion and TalkBack.
+- [ ] Confirm every hotspot has a usable touch target, spoken label and visible focus; no action depends on a tiny decorative target.
+
+## Notifications
+
+- [ ] Verify permission denied and allowed flows for weekly reflection, Morning Ritual and Evening Ritual reminders.
+- [ ] If the current build schedules future-letter delivery, verify its time and tap destination; otherwise record it as not implemented rather than passed.
+- [ ] Change timezone, reboot/reopen where practical and verify schedules update without duplicate or guilt-based copy.
 
 ## Safety
 
