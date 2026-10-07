@@ -1015,7 +1015,7 @@ export async function demoRequest(
     } satisfies AskMoriResponse;
   } else if (resource === "account" && id === "export") {
     const accountExport: AccountDataExport = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       generatedAt: new Date().toISOString(),
       data: {
         profile: { ...db.profile },
@@ -1037,6 +1037,9 @@ export async function demoRequest(
         memorySources: db.memorySources.map(withoutOwner),
         ritualEntries: db.ritualEntries.map(withoutOwner),
         letters: db.letters.map(withoutOwner),
+        softGoals: db.softGoals.map(withoutOwner),
+        gardenUnlocks: db.gardenUnlocks.map((unlock) => ({ ...unlock })),
+        personalMilestones: db.personalMilestones.map(withoutOwner),
       },
     };
     return accountExport;

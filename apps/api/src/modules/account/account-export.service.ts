@@ -43,6 +43,9 @@ export class AccountExportService {
         memorySources,
         ritualEntries,
         letters,
+        softGoals,
+        gardenUnlocks,
+        personalMilestones,
       ] = await Promise.all([
         this.db.one<Record<string, unknown>>("profiles", user),
         this.db.listAllForExport<Record<string, unknown>>(
@@ -102,6 +105,21 @@ export class AccountExportService {
           user,
           "id,title,content,open_at,opened_at,created_at,updated_at,deleted_at,client_id",
         ),
+        this.db.listAllForExport<Record<string, unknown>>(
+          "soft_goals",
+          user,
+          "id,title,note,status,source_type,source_id,created_at,updated_at,completed_at,archived_at",
+        ),
+        this.db.listAllForExport<Record<string, unknown>>(
+          "garden_unlocks",
+          user,
+          "id,feature_key,unlocked_at,source_type,source_id,created_at",
+        ),
+        this.db.listAllForExport<Record<string, unknown>>(
+          "personal_milestones",
+          user,
+          "id,milestone_key,created_at,acknowledged_at,source_type,source_id",
+        ),
       ]);
 
       const data: AccountDataExport["data"] = {
@@ -143,6 +161,9 @@ export class AccountExportService {
         memorySources,
         ritualEntries,
         letters,
+        softGoals,
+        gardenUnlocks,
+        personalMilestones,
       };
       const recordCounts = {
         profile: 1,
@@ -159,6 +180,9 @@ export class AccountExportService {
         memorySources: memorySources.length,
         ritualEntries: ritualEntries.length,
         letters: letters.length,
+        softGoals: softGoals.length,
+        gardenUnlocks: gardenUnlocks.length,
+        personalMilestones: personalMilestones.length,
       };
       await this.db.update("data_export_audits", user, audit.id, {
         status: "completed",
@@ -166,7 +190,7 @@ export class AccountExportService {
         completed_at: new Date().toISOString(),
       });
       return {
-        schemaVersion: 5,
+        schemaVersion: 6,
         generatedAt: new Date().toISOString(),
         data,
       };

@@ -30,7 +30,7 @@ describe("account data export", () => {
 
     const result = await new AccountExportService(db).create("owner");
 
-    expect(result.schemaVersion).toBe(5);
+    expect(result.schemaVersion).toBe(6);
     expect(result.data.profile).toEqual({
       display_name: "Bạn",
       locale: "vi",
@@ -49,9 +49,18 @@ describe("account data export", () => {
     const letterCall = listAllForExport.mock.calls.find(
       (call) => call[0] === "letters",
     );
+    const softGoalCall = listAllForExport.mock.calls.find(
+      (call) => call[0] === "soft_goals",
+    );
+    const unlockCall = listAllForExport.mock.calls.find(
+      (call) => call[0] === "garden_unlocks",
+    );
     expect(memoryCall?.[2]).not.toMatch(/embedding|confidence|user_id/);
     expect(messageCall?.[2]).not.toMatch(/safety_level|user_id/);
     expect(letterCall?.[2]).toMatch(/content|open_at|opened_at/);
+    expect(softGoalCall?.[2]).toMatch(/title|status|completed_at/);
+    expect(softGoalCall?.[2]).not.toMatch(/user_id|client_id/);
+    expect(unlockCall?.[2]).not.toMatch(/action_key|user_id/);
     expect(db.update).toHaveBeenCalledWith(
       "data_export_audits",
       "owner",
@@ -61,6 +70,9 @@ describe("account data export", () => {
         record_counts: expect.objectContaining({
           memories: 1,
           messages: 1,
+          softGoals: 1,
+          gardenUnlocks: 1,
+          personalMilestones: 1,
         }),
       }),
     );

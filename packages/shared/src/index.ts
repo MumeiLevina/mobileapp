@@ -363,7 +363,7 @@ export type FirstAidCrisisResponse = {
   resources: CrisisResource[];
 };
 export type AccountDataExport = {
-  schemaVersion: 5;
+  schemaVersion: 6;
   generatedAt: string;
   data: {
     profile: Record<string, unknown>;
@@ -380,6 +380,9 @@ export type AccountDataExport = {
     memorySources: Record<string, unknown>[];
     ritualEntries: Record<string, unknown>[];
     letters: Record<string, unknown>[];
+    softGoals: Record<string, unknown>[];
+    gardenUnlocks: Record<string, unknown>[];
+    personalMilestones: Record<string, unknown>[];
   };
 };
 export const gardenFromPoints = (points: number): Garden => ({

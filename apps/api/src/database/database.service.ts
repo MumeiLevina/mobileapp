@@ -120,7 +120,10 @@ export class DatabaseService {
       | "life_map_items"
       | "memory_sources"
       | "ritual_entries"
-      | "letters",
+      | "letters"
+      | "soft_goals"
+      | "garden_unlocks"
+      | "personal_milestones",
     user: string,
     columns: string,
   ): Promise<T[]> {
