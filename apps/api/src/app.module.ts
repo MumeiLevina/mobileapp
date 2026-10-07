@@ -37,6 +37,7 @@ import { RitualsController } from "./modules/rituals/rituals.controller";
 import { FirstAidController } from "./modules/safety/first-aid.controller";
 import { LettersController } from "./modules/letters/letters.controller";
 import { LettersService } from "./modules/letters/letters.service";
+import { PrivateConversationsController } from "./modules/conversations/private-conversations.controller";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
@@ -54,6 +55,7 @@ import { LettersService } from "./modules/letters/letters.service";
     RitualsController,
     FirstAidController,
     LettersController,
+    PrivateConversationsController,
   ],
   providers: [
     DatabaseService,

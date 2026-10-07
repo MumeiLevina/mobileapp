@@ -151,3 +151,41 @@ test("retrying the same client ID returns one saved assistant exchange", async (
   expect(repository.rpc).toHaveBeenCalledTimes(1);
   expect(generate).toHaveBeenCalledTimes(1);
 });
+
+test("private message runs safety and output guard without persistence or memory", async () => {
+  const { service, repository, memories, provider } = setup();
+  const generate = jest.spyOn(provider, "generateText");
+  const result = await service.processPrivateMessage(
+    "user",
+    "Hôm nay mình hơi mệt.",
+    "listen",
+    "11111111-1111-4111-a111-111111111111",
+    [],
+  );
+
+  expect(result.message.role).toBe("assistant");
+  expect(generate).toHaveBeenCalledTimes(1);
+  expect(memories.retrieveMemories).not.toHaveBeenCalled();
+  expect(memories.add).not.toHaveBeenCalled();
+  expect(repository.insert).not.toHaveBeenCalled();
+  expect(repository.rpc).not.toHaveBeenCalled();
+  expect(repository.list).not.toHaveBeenCalled();
+});
+
+test("private crisis uses deterministic crisis flow without companion or persistence", async () => {
+  const { service, repository, memories, provider } = setup();
+  const generate = jest.spyOn(provider, "generateText");
+  const result = await service.processPrivateMessage(
+    "user",
+    "Tôi muốn tự tử ngay bây giờ",
+    "listen",
+    "22222222-2222-4222-a222-222222222222",
+    [],
+  );
+
+  expect(result.safetyLevel).toBe("crisis");
+  expect(generate).not.toHaveBeenCalled();
+  expect(memories.retrieveMemories).not.toHaveBeenCalled();
+  expect(repository.insert).not.toHaveBeenCalled();
+  expect(repository.rpc).not.toHaveBeenCalled();
+});

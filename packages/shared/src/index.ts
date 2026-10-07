@@ -95,6 +95,27 @@ export const messageSchema = z.object({
   mode: ConversationMode,
   client_id: z.string().uuid(),
 });
+export const ephemeralMessageSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().min(1).max(12000),
+});
+export const privateMessageSchema = z.object({
+  content: z.string().trim().min(1).max(6000),
+  mode: ConversationMode,
+  client_id: z.string().uuid(),
+  history: z.array(ephemeralMessageSchema).max(12).default([]),
+});
+export const savePrivateConversationSchema = z.object({
+  mode: ConversationMode,
+  messages: z.array(ephemeralMessageSchema).min(2).max(100),
+});
+export type EphemeralMessage = z.infer<typeof ephemeralMessageSchema>;
+export type PrivateChatResult = {
+  message: EphemeralMessage;
+  safetyLevel: SafetyLevel;
+  crisisResources?: CrisisResource[];
+};
 export const notificationSchema = z.object({
   period: z.enum(["off", "morning", "evening", "custom"]),
   hour: z.number().int().min(0).max(23),
