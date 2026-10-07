@@ -23,7 +23,7 @@ test("onboarding → mood → conversation → approved memory → journal → c
   await page.getByRole("checkbox", { name: "Công việc", exact: true }).click();
   await page.getByLabel("Ghi chú cảm xúc").fill("Một ngày hơi mệt.");
   await page.getByRole("button", { name: "Lưu lại", exact: true }).click();
-  await page.getByRole("button", { name: "Về khu vườn", exact: true }).click();
+  await page.getByRole("button", { name: "Để sau", exact: true }).click();
   await page
     .getByRole("button", { name: "Tâm sự cùng Mori", exact: true })
     .click();
