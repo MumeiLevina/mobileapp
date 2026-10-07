@@ -17,6 +17,7 @@ export function GardenHotspot({
   const theme = useTheme();
   return (
     <MoriPressable
+      testID={`garden-hotspot-${to.slice(1).replaceAll("/", "-")}`}
       accessibilityRole="button"
       accessibilityLabel={`${label}, mở khu vực`}
       onPress={() => router.push(to as "/timeline")}

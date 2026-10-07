@@ -392,7 +392,6 @@ export const gardenFromPoints = (points: number): Garden => ({
   ],
   sanctuary_areas: [
     "quiet_cottage",
-    ...(points >= 12 ? (["reflection_lake", "fireflies"] as const) : []),
     ...(points >= 25 ? (["moon_hill"] as const) : []),
   ],
 });

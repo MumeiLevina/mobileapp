@@ -15,6 +15,17 @@ async function completeOnboarding(page: Page) {
   await page.getByRole("button", { name: "Để sau, vào khu vườn" }).click();
   await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
 }
+
+async function openGarden(page: Page) {
+  await page.evaluate(() => {
+    const stored = localStorage.getItem("mori-demo");
+    if (!stored) return;
+    const state = JSON.parse(stored);
+    state.profile.onboarded = true;
+    localStorage.setItem("mori-demo", JSON.stringify(state));
+  });
+  await page.goto("/");
+}
 test("onboarding → mood → conversation → approved memory → journal → care → garden", async ({
   page,
 }) => {
@@ -339,6 +350,11 @@ test("guided journal keeps a local draft and creates a journal only on save", as
   expect(saved.source).toBe("guided");
   expect(saved.content).toContain("một bước thật nhỏ");
 
+  await openGarden(page);
+  await page.getByTestId("garden-hotspot-timeline").click();
+  await expect(page).toHaveURL(/\/timeline$/);
+  await page.goto("/journal");
+
   await page
     .getByRole("button", { name: /Khi mình thấy mất phương hướng,/ })
     .click();
@@ -396,12 +412,20 @@ test("Journal opens Letters, restores a private draft and creates a vault item",
     "Mình hy vọng lúc đọc lại, bạn đang thở nhẹ hơn.",
   );
   expect(state.awards).toContain(`letter-seed:${state.letters[0].id}`);
+
+  await openGarden(page);
+  await page.getByTestId("garden-hotspot-letters").click();
+  await expect(page).toHaveURL(/\/letters$/);
 });
 
 test("private conversation leaves no history unless Save is explicit", async ({
   page,
 }) => {
   await page.goto("/talk");
+  const initialGrowth = await page.evaluate(() => {
+    const stored = localStorage.getItem("mori-demo");
+    return stored ? JSON.parse(stored).garden.growth_points : 0;
+  });
   await page.getByRole("button", { name: "Trò chuyện riêng tư" }).click();
   await expect(
     page.getByText("Không lưu sau khi bạn rời đi", { exact: true }),
@@ -449,6 +473,8 @@ test("private conversation leaves no history unless Save is explicit", async ({
   expect(
     saved.messages.map((message: { content: string }) => message.content),
   ).toContain("Mình chọn giữ lại phiên này.");
+  expect(saved.garden.growth_points).toBe(initialGrowth);
+  expect(saved.gardenUnlocks).toHaveLength(0);
 });
 
 test("You creates and completes a gentle intention without pressure copy", async ({
@@ -477,6 +503,10 @@ test("You creates and completes a gentle intention without pressure copy", async
   expect(state.softGoals[0].status).toBe("completed");
   expect(state.awards).toContain(`soft-goal:${state.softGoals[0].id}`);
   expect(state.garden.growth_points).toBe(1);
+
+  await openGarden(page);
+  await page.getByTestId("garden-hotspot-soft-goals").click();
+  await expect(page).toHaveURL(/\/soft-goals$/);
 });
 
 test("morning ritual remains optional and saves only when finished", async ({

@@ -17,6 +17,11 @@ test("all moods, including low mood, have the same growth eligibility", () => {
     ).toBe(true);
   expect(gardenFromPoints(5).tree_level).toBe(2);
   expect(gardenFromPoints(25).unlocked_items).toContain("moon");
+  expect(gardenFromPoints(12).sanctuary_areas).toEqual(["quiet_cottage"]);
+  expect(gardenFromPoints(25).sanctuary_areas).toEqual([
+    "quiet_cottage",
+    "moon_hill",
+  ]);
 });
 test("rejects invalid mood and private metadata injection", () => {
   expect(
