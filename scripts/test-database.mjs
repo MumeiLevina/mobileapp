@@ -72,6 +72,12 @@ try {
       "utf8",
     ),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610080001_safety_events_server_only.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -247,6 +253,7 @@ try {
       `insert into memories(user_id,content,category) values('${a}','unauthorized','preference')`,
     ),
   );
+  await assert.rejects(pg.query("select * from safety_events"));
   await assert.rejects(
     pg.exec(
       `insert into letters(user_id,title,content,open_at) values('${a}','unauthorized','private',now() + interval '1 day')`,
