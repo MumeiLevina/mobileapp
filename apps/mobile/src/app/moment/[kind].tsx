@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { MoriButton, MoriText, ScreenContainer } from "../../components/ui";
+import { HumanConnection } from "../../features/support/HumanConnection";
 import { useTheme } from "../../theme";
 
 export default function MomentSuggestion() {
@@ -9,13 +10,19 @@ export default function MomentSuggestion() {
   const theme = useTheme();
   const reachOut = kind === "reach-out";
 
+  if (reachOut) {
+    return (
+      <ScreenContainer back>
+        <HumanConnection back="/(tabs)" />
+      </ScreenContainer>
+    );
+  }
+
   return (
     <ScreenContainer back>
       <View
         accessible
-        accessibilityLabel={
-          reachOut ? "Kết nối với một người" : "Tạm rời màn hình"
-        }
+        accessibilityLabel={"Tạm rời màn hình"}
         style={{
           width: 82,
           height: 82,
@@ -23,28 +30,46 @@ export default function MomentSuggestion() {
           alignItems: "center",
           justifyContent: "center",
           alignSelf: "center",
-          backgroundColor: reachOut ? theme.peach : theme.soft,
+          backgroundColor: theme.soft,
           marginTop: 28,
         }}
       >
         <Ionicons
-          name={reachOut ? "people-outline" : "phone-portrait-outline"}
+          name="phone-portrait-outline"
           size={38}
           color={theme.primary}
         />
       </View>
       <MoriText variant="title" style={{ textAlign: "center" }}>
-        {reachOut
-          ? "Nghĩ tới một người khiến bạn thấy an toàn."
-          : "Bạn có thể rời màn hình một chút."}
+        Có thể bạn không cần thêm gì từ màn hình lúc này.
       </MoriText>
       <MoriText muted style={{ textAlign: "center" }}>
-        {reachOut
-          ? "Một tin nhắn ngắn như “Bạn có rảnh nói chuyện một chút không?” cũng đã đủ để bắt đầu."
-          : "Đặt điện thoại xuống, nhìn ra xa hoặc bước đi vài phút. Không cần quay lại ngay."}
+        Chọn một điều nhỏ, hoặc chỉ đặt điện thoại xuống. Không cần quay lại
+        ngay.
       </MoriText>
+      <MoriButton
+        variant="secondary"
+        icon="phone-portrait-outline"
+        onPress={() => undefined}
+      >
+        Đặt điện thoại xuống
+      </MoriButton>
+      <MoriButton
+        variant="secondary"
+        icon="water-outline"
+        onPress={() => undefined}
+      >
+        Uống một chút nước
+      </MoriButton>
+      <MoriButton
+        variant="secondary"
+        icon="walk-outline"
+        onPress={() => undefined}
+      >
+        Đi ra ngoài một lát
+      </MoriButton>
       <MoriButton onPress={() => router.replace("/(tabs)")}>
-        {reachOut ? "Mình đã nghĩ ra một người" : "Trở về khi mình sẵn sàng"}
+        Quay lại Mori
       </MoriButton>
     </ScreenContainer>
   );
