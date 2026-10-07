@@ -35,7 +35,7 @@ describe("onboarding navigation", () => {
 
     expect(
       screen.getByLabelText("Một nơi để tâm sự").props.accessibilityState,
-    ).toEqual({ selected: true, disabled: false });
+    ).toMatchObject({ checked: true, disabled: false });
   });
 
   test("AI boundary copy renders as natural text", async () => {
