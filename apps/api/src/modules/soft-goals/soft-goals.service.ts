@@ -68,6 +68,7 @@ export class SoftGoalsService {
             updated_at: now.toISOString(),
           });
     await this.garden.award(user, `soft-goal:${goal.id}`);
+    await this.garden.unlock(user, "path_stones", "soft_goal", goal.id);
     return completed;
   }
 

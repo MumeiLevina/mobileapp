@@ -62,6 +62,13 @@ type DemoData = {
     completed_at?: string;
   }[];
   gardenMilestones: { id: string; action_key: string; created_at: string }[];
+  gardenUnlocks: {
+    id: string;
+    feature_key: Garden["sanctuary_areas"][number];
+    unlocked_at: string;
+    source_type: string;
+    source_id: string | null;
+  }[];
   notifications: NotificationPreference;
   lifeMapItems: LifeMapItem[];
   ritualEntries: RitualEntry[];
@@ -92,6 +99,7 @@ const initial = (): DemoData => ({
   awards: [],
   sessions: [],
   gardenMilestones: [],
+  gardenUnlocks: [],
   notifications: {
     period: "off",
     hour: 20,
@@ -117,6 +125,7 @@ async function get() {
     database.lifeMapItems ??= [];
     database.memorySources ??= [];
     database.gardenMilestones ??= [];
+    database.gardenUnlocks ??= [];
     database.ritualEntries ??= [];
     database.letters ??= [];
     database.softGoals ??= [];
@@ -163,7 +172,30 @@ function award(db: DemoData, key: string) {
       created_at: new Date().toISOString(),
     });
     db.garden = gardenFromPoints(db.garden.growth_points + 1);
+    db.garden.sanctuary_areas = [
+      ...new Set([
+        ...db.garden.sanctuary_areas,
+        ...db.gardenUnlocks.map((unlock) => unlock.feature_key),
+      ]),
+    ];
   }
+}
+function unlock(
+  db: DemoData,
+  feature: Garden["sanctuary_areas"][number],
+  sourceType: string,
+  sourceId: string | null = null,
+) {
+  if (!db.gardenUnlocks.some((item) => item.feature_key === feature))
+    db.gardenUnlocks.push({
+      id: newId(),
+      feature_key: feature,
+      unlocked_at: new Date().toISOString(),
+      source_type: sourceType,
+      source_id: sourceId,
+    });
+  if (!db.garden.sanctuary_areas.includes(feature))
+    db.garden.sanctuary_areas.push(feature);
 }
 const record = (input: unknown) => input as Record<string, unknown>;
 const withoutOwner = <T extends { user_id?: string }>(value: T) => {
@@ -217,6 +249,7 @@ export async function demoRequest(
       if (!db.journals.some((j) => j.id === entry.id))
         db.journals.unshift(entry);
       award(db, `journal:${entry.id}`);
+      unlock(db, "reflection_lake", "journal", entry.id);
       result = entry;
     }
   } else if (resource === "letters") {
@@ -284,6 +317,7 @@ export async function demoRequest(
       };
       if (!existing) db.letters.unshift(item);
       award(db, `letter-seed:${item.id}`);
+      unlock(db, "letter_tree", "letter", item.id);
       result = item;
     }
   } else if (resource === "memories") {
@@ -308,6 +342,7 @@ export async function demoRequest(
       if (!memory) throw new Error("Không tìm thấy ký ức.");
       memory.approved_by_user = true;
       memory.approved_at = new Date().toISOString();
+      unlock(db, "memory_garden", "memory", memory.id);
       result = memory;
     } else if (method === "PATCH") {
       const memory = db.memories.find((m) => m.id === id);
@@ -330,6 +365,7 @@ export async function demoRequest(
         source_id: null,
         reason: "Được bạn trực tiếp thêm vào ký ức của Mori.",
       });
+      unlock(db, "memory_garden", "memory", memory.id);
       result = memory;
     }
   } else if (resource === "private-conversations") {
@@ -546,6 +582,7 @@ export async function demoRequest(
         goal.updated_at = goal.completed_at;
       }
       award(db, `soft-goal:${goal.id}`);
+      unlock(db, "path_stones", "soft_goal", goal.id);
       result = goal;
     } else if (method === "POST" && action === "archive") {
       const goal = find();
@@ -580,6 +617,8 @@ export async function demoRequest(
       session.completed = true;
       session.completed_at = new Date().toISOString();
       award(db, `selfcare:${session.id}`);
+      if (id === "breathing")
+        unlock(db, "wind_chimes", "self_care", session.id);
       result = { ok: true };
     }
   } else if (resource === "rituals") {
@@ -708,6 +747,7 @@ export async function demoRequest(
       const week = new Date();
       week.setUTCDate(week.getUTCDate() - ((week.getUTCDay() + 6) % 7));
       award(db, `weekly:${week.toISOString().slice(0, 10)}`);
+      unlock(db, "fireflies", "weekly_reflection");
       await AsyncStorage.setItem("mori-demo", JSON.stringify(db));
       return { ok: true };
     }

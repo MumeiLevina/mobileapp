@@ -78,7 +78,10 @@ describe("soft goals", () => {
         .mockResolvedValueOnce(completed),
       update: jest.fn().mockResolvedValue(completed),
     } as unknown as DatabaseService;
-    const garden = { award: jest.fn() } as unknown as GardenService;
+    const garden = {
+      award: jest.fn(),
+      unlock: jest.fn(),
+    } as unknown as GardenService;
     const service = new SoftGoalsService(db, garden);
 
     await service.complete("owner", goal().id, now);
@@ -89,6 +92,12 @@ describe("soft goals", () => {
     expect(garden.award).toHaveBeenCalledWith(
       "owner",
       `soft-goal:${goal().id}`,
+    );
+    expect(garden.unlock).toHaveBeenCalledWith(
+      "owner",
+      "path_stones",
+      "soft_goal",
+      goal().id,
     );
   });
 

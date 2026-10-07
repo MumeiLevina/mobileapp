@@ -290,10 +290,29 @@ export type Message = Entity & {
   client_id?: string;
   safety_level?: SafetyLevel;
 };
+export const GardenAreaKey = z.enum([
+  "reflection_lake",
+  "memory_garden",
+  "letter_tree",
+  "quiet_cottage",
+  "wind_chimes",
+  "fireflies",
+  "path_stones",
+  "moon_hill",
+]);
+export type GardenAreaKey = z.infer<typeof GardenAreaKey>;
+export type GardenUnlock = {
+  id: string;
+  feature_key: GardenAreaKey;
+  unlocked_at: string;
+  source_type: string;
+  source_id: string | null;
+};
 export type Garden = {
   growth_points: number;
   tree_level: number;
   unlocked_items: string[];
+  sanctuary_areas: GardenAreaKey[];
 };
 export type Activity = {
   id: string;
@@ -370,6 +389,11 @@ export const gardenFromPoints = (points: number): Garden => ({
     ...(points >= 5 ? ["flowers"] : []),
     ...(points >= 12 ? ["fireflies", "lake"] : []),
     ...(points >= 25 ? ["bench", "moon"] : []),
+  ],
+  sanctuary_areas: [
+    "quiet_cottage",
+    ...(points >= 12 ? (["reflection_lake", "fireflies"] as const) : []),
+    ...(points >= 25 ? (["moon_hill"] as const) : []),
   ],
 });
 export const activities: Activity[] = [

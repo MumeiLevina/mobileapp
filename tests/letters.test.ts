@@ -30,6 +30,7 @@ describe("future-self letters", () => {
     } as unknown as DatabaseService;
     const garden = {
       award: jest.fn().mockResolvedValue(undefined),
+      unlock: jest.fn().mockResolvedValue(undefined),
     } as unknown as GardenService;
     const service = new LettersService(db, garden);
     const value = {
@@ -51,6 +52,12 @@ describe("future-self letters", () => {
     expect(garden.award).toHaveBeenCalledWith(
       "owner",
       `letter-seed:${stored.id}`,
+    );
+    expect(garden.unlock).toHaveBeenCalledWith(
+      "owner",
+      "letter_tree",
+      "letter",
+      stored.id,
     );
   });
 

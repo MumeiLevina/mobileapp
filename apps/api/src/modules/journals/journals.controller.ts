@@ -33,6 +33,7 @@ export class JournalsController {
         })
       : await this.db.insert<Journal>("journals", user, value);
     await this.garden.award(user, `journal:${entry.id}`);
+    await this.garden.unlock(user, "reflection_lake", "journal", entry.id);
     return entry;
   }
   @Patch(":id") async update(

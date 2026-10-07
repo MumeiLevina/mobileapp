@@ -69,6 +69,7 @@ export class ReflectionsController {
       p_week: week,
       p_content: reflection.content,
     });
+    await this.garden.unlock(user, "fireflies", "weekly_reflection");
     return { ok: true };
   }
 }

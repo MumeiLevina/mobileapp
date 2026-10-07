@@ -43,6 +43,7 @@ export class LettersService {
     const letter =
       existing[0] ?? (await this.db.insert<Letter>("letters", user, value));
     await this.garden.award(user, `letter-seed:${letter.id}`);
+    await this.garden.unlock(user, "letter_tree", "letter", letter.id);
     return letter;
   }
 

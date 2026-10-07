@@ -55,6 +55,8 @@ export class SelfCareController {
         completed_at: new Date().toISOString(),
       });
     await this.garden.award(user, `selfcare:${session_id}`);
+    if (id === "breathing")
+      await this.garden.unlock(user, "wind_chimes", "self_care", session_id);
     return { ok: true };
   }
 }

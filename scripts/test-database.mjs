@@ -60,6 +60,12 @@ try {
   await pg.exec(
     await readFile("supabase/migrations/202610070007_soft_goals.sql", "utf8"),
   );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610070008_garden_sanctuary.sql",
+      "utf8",
+    ),
+  );
   await pg.exec(await readFile("supabase/seed.sql", "utf8"));
   assert.equal(
     (await pg.query("select * from self_care_activities where enabled")).rows
@@ -303,6 +309,32 @@ try {
     1,
   );
   console.log("PASS idempotent garden growth");
+  for (let i = 0; i < 2; i++)
+    await pg.query("select unlock_garden_area($1,$2,$3,$4)", [
+      a,
+      "path_stones",
+      "soft_goal",
+      null,
+    ]);
+  assert.equal(
+    (
+      await pg.query(
+        "select count(*)::int as count from garden_unlocks where user_id=$1 and feature_key='path_stones'",
+        [a],
+      )
+    ).rows[0].count,
+    1,
+  );
+  assert.equal(
+    (
+      await pg.query(
+        "select growth_points from garden_states where user_id=$1",
+        [a],
+      )
+    ).rows[0].growth_points,
+    1,
+  );
+  console.log("PASS sanctuary unlocks are unique and do not add growth");
   await assert.rejects(
     pg.query("select save_weekly_reflection($1,$2,$3)", [
       a,

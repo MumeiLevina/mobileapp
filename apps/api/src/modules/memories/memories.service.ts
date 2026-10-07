@@ -2,12 +2,14 @@ import { Inject, Injectable } from "@nestjs/common";
 import { Memory, memorySchema } from "@mori/shared";
 import { z } from "zod";
 import { DatabaseService } from "../../database/database.service";
+import { GardenService } from "../garden/garden.service";
 import { LLM_PROVIDER, LLMProvider } from "../../ai/providers/provider";
 @Injectable()
 export class MemoriesService {
   constructor(
     private readonly db: DatabaseService,
     @Inject(LLM_PROVIDER) private readonly provider: LLMProvider,
+    private readonly garden?: GardenService,
   ) {}
   list(user: string) {
     return this.db.listMemoriesWithSources<Memory>(user);
@@ -60,17 +62,21 @@ export class MemoriesService {
       await this.db.remove("memories", user, memory.id).catch(() => undefined);
       throw error;
     }
+    if (approved)
+      await this.garden?.unlock(user, "memory_garden", "memory", memory.id);
     return memory;
   }
   async approve(user: string, id: string) {
     const memory = await this.db.one<Memory>("memories", user, id, true);
     const embedding = await this.provider.embed(memory.content);
-    return this.db.update<Memory>("memories", user, id, {
+    const approved = await this.db.update<Memory>("memories", user, id, {
       approved_by_user: true,
       approved_at: new Date().toISOString(),
       embedding,
       updated_at: new Date().toISOString(),
     });
+    await this.garden?.unlock(user, "memory_garden", "memory", id);
+    return approved;
   }
   async edit(user: string, id: string, value: z.infer<typeof memorySchema>) {
     const memory = await this.db.one<Memory>("memories", user, id, true);
