@@ -21,6 +21,8 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 import { useTheme } from "../../theme";
+import { GardenAreaKey } from "@mori/shared";
+import { GardenHotspot } from "./GardenHotspot";
 function Tree({
   x,
   y,
@@ -57,10 +59,14 @@ export function GardenScene({
   level = 1,
   large = false,
   rain = false,
+  areas = [],
+  interactive = false,
 }: {
   level?: number;
   large?: boolean;
   rain?: boolean;
+  areas?: GardenAreaKey[];
+  interactive?: boolean;
 }) {
   const t = useTheme();
   const reduced = useReducedMotion();
@@ -85,9 +91,10 @@ export function GardenScene({
     opacity: 0.3 + movement.value * 0.5,
     transform: [{ translateY: -movement.value * 7 }],
   }));
+  const unlocked = new Set(areas);
   return (
     <View
-      accessible
+      accessible={!interactive}
       accessibilityLabel={`Khu vườn yên bình, cây ở giai đoạn ${level}.`}
       style={{
         height: large ? 310 : 250,
@@ -134,6 +141,40 @@ export function GardenScene({
           scale={0.58}
           color={t.night ? "#34523E" : "#91A681"}
         />
+        {unlocked.has("quiet_cottage") && (
+          <G transform="translate(278 153)">
+            <Path
+              d="M-27 22 L-27 -10 L0 -30 L27 -10 L27 22Z"
+              fill={t.night ? "#796E58" : "#D8C9A8"}
+            />
+            <Path
+              d="M-33 -8 L0 -36 L33 -8"
+              stroke={t.night ? "#A99A77" : "#8D795F"}
+              strokeWidth="6"
+              fill="none"
+            />
+            <Rect
+              x="-7"
+              y="4"
+              width="14"
+              height="18"
+              rx="3"
+              fill={t.night ? "#E0D49A" : "#776653"}
+            />
+          </G>
+        )}
+        {unlocked.has("letter_tree") && (
+          <G transform="translate(64 210)">
+            <Path d="M0 16 L0 -27" stroke="#6C7150" strokeWidth="3" />
+            <Circle cy="-31" r="18" fill={t.night ? "#71805F" : "#95A978"} />
+            <Path
+              d="M-8 -35 L8 -35 L8 -24 L-8 -24Z M-8 -35 L0 -29 L8 -35"
+              fill="#F7E8D2"
+              stroke="#9B806B"
+              strokeWidth="1"
+            />
+          </G>
+        )}
         <Tree
           x={347}
           y={179}
@@ -196,8 +237,13 @@ export function GardenScene({
               />
             </G>
           ))}
-        <Ellipse cx="191" cy="250" rx="8" ry="4" fill="#AAA88B" />
-        <Ellipse cx="181" cy="255" rx="6" ry="3" fill="#C1BDA1" />
+        {unlocked.has("path_stones") && (
+          <G>
+            <Ellipse cx="191" cy="250" rx="8" ry="4" fill="#AAA88B" />
+            <Ellipse cx="181" cy="255" rx="6" ry="3" fill="#C1BDA1" />
+            <Ellipse cx="169" cy="262" rx="6" ry="3" fill="#AAA88B" />
+          </G>
+        )}
         {rain &&
           Array.from({ length: 25 }, (_, i) => (
             <Path
@@ -223,7 +269,7 @@ export function GardenScene({
           />
         </Svg>
       </Animated.View>
-      {t.night && (
+      {t.night && unlocked.has("fireflies") && (
         <Animated.View
           pointerEvents="none"
           style={[{ position: "absolute", inset: 0 }, fireflyStyle]}
@@ -240,6 +286,54 @@ export function GardenScene({
             ))}
           </Svg>
         </Animated.View>
+      )}
+      {interactive && unlocked.has("letter_tree") && (
+        <GardenHotspot
+          label="Cây thư"
+          icon="💌"
+          to="/letters"
+          style={{ left: 10, bottom: 12 }}
+        />
+      )}
+      {interactive && unlocked.has("quiet_cottage") && (
+        <GardenHotspot
+          label="Nhà yên"
+          icon="🏡"
+          to="/quiet-room"
+          style={{ right: 12, top: 78 }}
+        />
+      )}
+      {interactive && unlocked.has("reflection_lake") && (
+        <GardenHotspot
+          label="Mặt hồ"
+          icon="🪷"
+          to="/timeline"
+          style={{ right: 55, bottom: 10 }}
+        />
+      )}
+      {interactive && unlocked.has("memory_garden") && (
+        <GardenHotspot
+          label="Ký ức"
+          icon="🌸"
+          to="/memories"
+          style={{ left: 84, top: 92 }}
+        />
+      )}
+      {interactive && unlocked.has("path_stones") && (
+        <GardenHotspot
+          label="Lối nhỏ"
+          icon="· · ·"
+          to="/soft-goals"
+          style={{ left: 155, bottom: 4 }}
+        />
+      )}
+      {interactive && unlocked.has("wind_chimes") && (
+        <GardenHotspot
+          label="Chuông gió"
+          icon="🎐"
+          to="/activity/breathing"
+          style={{ left: 12, top: 34 }}
+        />
       )}
     </View>
   );

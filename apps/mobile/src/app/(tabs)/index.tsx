@@ -52,7 +52,11 @@ export default function Home() {
         <MoriText muted>{copy.hello}</MoriText>
         <MoriText variant="title">{copy.heart}</MoriText>
       </View>
-      <GardenScene level={garden.data?.tree_level ?? 1} />
+      <GardenScene
+        level={garden.data?.tree_level ?? 1}
+        areas={garden.data?.sanctuary_areas ?? []}
+        interactive
+      />
       <MoriText muted variant="small" style={{ textAlign: "center" }}>
         {copy.gardenNote}
       </MoriText>
