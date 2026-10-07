@@ -451,6 +451,34 @@ test("private conversation leaves no history unless Save is explicit", async ({
   ).toContain("Mình chọn giữ lại phiên này.");
 });
 
+test("You creates and completes a gentle intention without pressure copy", async ({
+  page,
+}) => {
+  await page.goto("/me");
+  await page.getByRole("button", { name: "Những ý định nhỏ của mình" }).click();
+  await expect(page.getByText("Những điều nhỏ mình đang giữ.")).toBeVisible();
+  await page.getByRole("button", { name: "Thêm một ý định nhỏ" }).click();
+  await page.getByLabel("Tên ý định nhỏ").fill("Đi bộ 10 phút");
+  await page
+    .getByLabel("Ghi chú cho ý định")
+    .fill("Chỉ khi cơ thể thấy phù hợp.");
+  await page.getByRole("button", { name: "Giữ lại điều này" }).click();
+  await expect(page.getByText("Đi bộ 10 phút", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/streak|quá hạn|thất bại|failed|overdue/i),
+  ).toBeHidden();
+
+  await page.getByRole("button", { name: "Đã làm xong" }).click();
+  await expect(page.getByText("Đã dành thời gian")).toBeVisible();
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(state.softGoals).toHaveLength(1);
+  expect(state.softGoals[0].status).toBe("completed");
+  expect(state.awards).toContain(`soft-goal:${state.softGoals[0].id}`);
+  expect(state.garden.growth_points).toBe(1);
+});
+
 test("morning ritual remains optional and saves only when finished", async ({
   page,
 }) => {
