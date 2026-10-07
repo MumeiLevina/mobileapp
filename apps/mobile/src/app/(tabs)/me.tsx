@@ -117,6 +117,12 @@ export default function Me() {
       >
         Những ý định nhỏ của mình
       </MoriButton>
+      <MoriButton
+        secondary
+        onPress={() => router.push("/personal-milestones" as "/patterns")}
+      >
+        Những dấu mốc nhỏ
+      </MoriButton>
       <SectionHeading title="Dữ liệu của bạn" />
       <MoriButton secondary onPress={() => router.push("/privacy")}>
         Mở trung tâm dữ liệu

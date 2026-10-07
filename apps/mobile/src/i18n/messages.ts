@@ -1,5 +1,39 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "THẾ GIỚI CỦA MÌNH": "MY PERSONAL WORLD",
+  "Những dấu mốc nhỏ": "Small milestones",
+  "Một vài khoảnh khắc đáng nhớ, không có thứ hạng hay điều gì phải đuổi theo.":
+    "A few meaningful moments, with no ranking and nothing to chase.",
+  "Mình đã nhìn thấy": "I have seen this",
+  "Những dấu mốc sẽ nhẹ nhàng xuất hiện khi thế giới của bạn dần mở ra.":
+    "Milestones will appear gently as your world unfolds.",
+  "Nhà yên đã có mặt trong khu vườn.":
+    "The Quiet Cottage has appeared in your garden.",
+  "Một góc nhỏ để trở về khi bạn muốn chậm lại.":
+    "A small place to return to when you want to slow down.",
+  "Hồ phản chiếu đã xuất hiện.": "Reflection Lake has appeared.",
+  "Những trang viết của bạn đã mở ra góc này.":
+    "Your journal pages opened this corner.",
+  "Vườn ký ức đã xuất hiện.": "The Memory Garden has appeared.",
+  "Chỉ những ký ức bạn cho phép mới ở lại đây.":
+    "Only memories you approve may stay here.",
+  "Bạn đã viết lá thư đầu tiên cho chính mình.":
+    "You wrote your first letter to yourself.",
+  "Lá thư vẫn riêng tư trong Cây thư.":
+    "The letter remains private in the Letter Tree.",
+  "Chuông gió đã xuất hiện.": "The wind chimes have appeared.",
+  "Một nhịp thở chậm đã để lại âm thanh nhỏ trong vườn.":
+    "A slow breath left a quiet sound in the garden.",
+  "Bạn đã dành thời gian nhìn lại tuần đầu tiên.":
+    "You took time for your first weekly reflection.",
+  "Đom đóm vừa ghé qua khu vườn.": "Fireflies have visited the garden.",
+  "Bạn đã hoàn thành ý định nhỏ đầu tiên.":
+    "You completed your first small intention.",
+  "Một viên đá nhỏ đã xuất hiện trên lối đi.":
+    "A small stone appeared along the path.",
+  "Đồi trăng đã xuất hiện.": "Moon Hill has appeared.",
+  "Một khoảng rộng hơn đang dần mở ra trong thế giới của bạn.":
+    "A wider space is gradually opening in your world.",
   "Mình đã dành một lúc nhìn lại": "I have taken a moment to reflect",
   "BẮT ĐẦU TỪ BẠN": "BEGIN WITH YOU",
   "Bạn muốn Mori ở đây để làm gì?": "What would you like Mori to be here for?",

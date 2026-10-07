@@ -17,6 +17,8 @@ import {
   Message,
   Mood,
   NotificationPreference,
+  PersonalMilestone,
+  PersonalMilestoneKey,
   Profile,
   PrivateChatResult,
   RitualEntry,
@@ -74,6 +76,7 @@ type DemoData = {
   ritualEntries: RitualEntry[];
   letters: Letter[];
   softGoals: SoftGoal[];
+  personalMilestones: PersonalMilestone[];
 };
 const entity = () => ({
   id: newId(),
@@ -116,6 +119,7 @@ const initial = (): DemoData => ({
   ritualEntries: [],
   letters: [],
   softGoals: [],
+  personalMilestones: [],
 });
 let database: DemoData | undefined;
 async function get() {
@@ -129,6 +133,7 @@ async function get() {
     database.ritualEntries ??= [];
     database.letters ??= [];
     database.softGoals ??= [];
+    database.personalMilestones ??= [];
     const legacyNotifications =
       database.notifications as Partial<NotificationPreference>;
     database.notifications = notificationSchema.parse({
@@ -186,7 +191,7 @@ function unlock(
   sourceType: string,
   sourceId: string | null = null,
 ) {
-  if (!db.gardenUnlocks.some((item) => item.feature_key === feature))
+  if (!db.gardenUnlocks.some((item) => item.feature_key === feature)) {
     db.gardenUnlocks.push({
       id: newId(),
       feature_key: feature,
@@ -194,6 +199,27 @@ function unlock(
       source_type: sourceType,
       source_id: sourceId,
     });
+    const keys: Record<
+      Garden["sanctuary_areas"][number],
+      PersonalMilestoneKey
+    > = {
+      quiet_cottage: "quiet_cottage_appeared",
+      reflection_lake: "reflection_lake_appeared",
+      memory_garden: "memory_garden_appeared",
+      letter_tree: "first_letter",
+      wind_chimes: "wind_chimes_appeared",
+      fireflies: "first_weekly_reflection",
+      path_stones: "first_soft_goal",
+      moon_hill: "moon_hill_appeared",
+    };
+    db.personalMilestones.unshift({
+      ...entity(),
+      milestone_key: keys[feature],
+      acknowledged_at: null,
+      source_type: sourceType,
+      source_id: sourceId,
+    });
+  }
   if (!db.garden.sanctuary_areas.includes(feature))
     db.garden.sanctuary_areas.push(feature);
 }
@@ -226,8 +252,10 @@ export async function demoRequest(
     if (!db.moods.some((m) => m.id === mood.id)) db.moods.unshift(mood);
     award(db, `mood:${mood.id}`);
     result = mood;
-  } else if (resource === "garden") return db.garden;
-  else if (resource === "journals") {
+  } else if (resource === "garden") {
+    unlock(db, "quiet_cottage", "feature_activation");
+    result = db.garden;
+  } else if (resource === "journals") {
     if (method === "GET") return db.journals;
     if (method === "DELETE") {
       db.journals = id ? db.journals.filter((j) => j.id !== id) : [];
@@ -535,6 +563,12 @@ export async function demoRequest(
       db.conversations.unshift(conversation);
       result = conversation;
     }
+  } else if (resource === "personal-milestones") {
+    if (method === "GET") return db.personalMilestones;
+    const milestone = db.personalMilestones.find((item) => item.id === id);
+    if (!milestone) throw new Error("Không tìm thấy dấu mốc này.");
+    milestone.acknowledged_at ??= new Date().toISOString();
+    result = milestone;
   } else if (resource === "soft-goals") {
     const find = () => db.softGoals.find((goal) => goal.id === id);
     if (method === "GET") return db.softGoals;
