@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { notificationSchema } from "@mori/shared";
 import { privateStorage } from "../lib/storage";
-import { scheduleReminder } from "./notifications";
+import { cancelAllMoriNotifications } from "./notifications";
 let queue = Promise.resolve();
 export function registerDraft(user: string, key: string) {
   queue = queue.then(async () => {
@@ -22,12 +21,5 @@ export async function clearUserDeviceData(user: string) {
   ) as string[];
   for (const key of keys) await privateStorage.removeItem(key);
   await AsyncStorage.removeItem(index);
-  await scheduleReminder(
-    notificationSchema.parse({
-      period: "off",
-      hour: 20,
-      minute: 0,
-      timezone: "Asia/Ho_Chi_Minh",
-    }),
-  );
+  await cancelAllMoriNotifications();
 }

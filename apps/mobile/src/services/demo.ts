@@ -25,6 +25,8 @@ import {
   activities,
   gardenFromPoints,
   journalSchema,
+  letterCreateSchema,
+  letterUpdateSchema,
   lifeMapSchema,
   lifeMapSuggestionSchema,
   memorySchema,
@@ -207,6 +209,73 @@ export async function demoRequest(
         db.journals.unshift(entry);
       award(db, `journal:${entry.id}`);
       result = entry;
+    }
+  } else if (resource === "letters") {
+    const active = () => db.letters.filter((letter) => !letter.deleted_at);
+    const find = () => active().find((letter) => letter.id === id);
+    if (method === "GET" && !id) {
+      return active().map(
+        ({
+          user_id: _user,
+          content: _content,
+          client_id: _client,
+          ...item
+        }) => ({
+          ...item,
+          status: item.opened_at
+            ? ("opened" as const)
+            : Date.parse(item.open_at) <= Date.now()
+              ? ("ready" as const)
+              : ("upcoming" as const),
+        }),
+      );
+    }
+    if (method === "GET" && action === "edit") {
+      const item = find();
+      if (!item) throw new Error("Không tìm thấy lá thư.");
+      return item;
+    }
+    if (method === "POST" && action === "open") {
+      const item = find();
+      if (!item) throw new Error("Không tìm thấy lá thư.");
+      if (Date.parse(item.open_at) > Date.now())
+        throw new Error("Lá thư này chưa đến ngày mở.");
+      item.opened_at ??= new Date().toISOString();
+      item.updated_at = new Date().toISOString();
+      award(db, `letter-flower:${item.id}`);
+      result = item;
+    } else if (method === "DELETE") {
+      const item = find();
+      if (!item) throw new Error("Không tìm thấy lá thư.");
+      item.deleted_at = new Date().toISOString();
+      item.updated_at = item.deleted_at;
+      result = item;
+    } else if (method === "PATCH") {
+      const item = find();
+      if (!item) throw new Error("Không tìm thấy lá thư.");
+      if (item.opened_at || Date.parse(item.open_at) <= Date.now())
+        throw new Error("Lá thư đã sẵn sàng nên không thể sửa nữa.");
+      Object.assign(item, letterUpdateSchema.parse(body), {
+        updated_at: new Date().toISOString(),
+      });
+      result = item;
+    } else if (method === "POST" && !id) {
+      const value = letterCreateSchema.parse(body);
+      if (Date.parse(value.open_at) <= Date.now())
+        throw new Error("Hãy chọn một ngày trong tương lai.");
+      const existing = value.client_id
+        ? active().find((item) => item.client_id === value.client_id)
+        : undefined;
+      const item: Letter = existing ?? {
+        ...entity(),
+        ...value,
+        updated_at: new Date().toISOString(),
+        opened_at: null,
+        deleted_at: null,
+      };
+      if (!existing) db.letters.unshift(item);
+      award(db, `letter-seed:${item.id}`);
+      result = item;
     }
   } else if (resource === "memories") {
     if (method === "GET")

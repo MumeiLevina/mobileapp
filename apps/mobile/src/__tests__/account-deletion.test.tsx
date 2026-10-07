@@ -5,13 +5,13 @@ import {
 } from "../services/account-deletion";
 import { clearUserDeviceData, registerDraft } from "../services/cleanup";
 import { privateStorage } from "../lib/storage";
-import { scheduleReminder } from "../services/notifications";
+import { cancelAllMoriNotifications } from "../services/notifications";
 
 jest.mock("../lib/storage", () => ({
   privateStorage: { removeItem: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock("../services/notifications", () => ({
-  scheduleReminder: jest.fn().mockResolvedValue(undefined),
+  cancelAllMoriNotifications: jest.fn().mockResolvedValue(undefined),
 }));
 
 beforeEach(async () => {
@@ -30,9 +30,7 @@ test("device cleanup removes registered drafts and cancels reminders", async () 
   );
   expect(privateStorage.removeItem).toHaveBeenCalledWith("mori.owner.chat.one");
   expect(await AsyncStorage.getItem("mori-drafts.owner")).toBeNull();
-  expect(scheduleReminder).toHaveBeenCalledWith(
-    expect.objectContaining({ period: "off" }),
-  );
+  expect(cancelAllMoriNotifications).toHaveBeenCalledTimes(1);
 });
 
 test("account deletion clears local data, local auth, cache and session", async () => {

@@ -79,6 +79,13 @@ export default function JournalList() {
       >
         Xem dòng thời gian của mình
       </MoriButton>
+      <MoriButton
+        secondary
+        icon="mail-outline"
+        onPress={() => router.push("/letters" as "/timeline")}
+      >
+        Thư gửi chính mình
+      </MoriButton>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <MoriInput
           accessibilityLabel={copy.search}
