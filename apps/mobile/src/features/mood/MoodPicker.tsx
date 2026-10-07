@@ -18,6 +18,7 @@ import { useT } from "../../i18n";
 import { newId } from "../../lib/id";
 import { request, refresh } from "../../services/api";
 import { interactionFeedback } from "../../services/interaction-feedback";
+import { momentDestination, MomentAction } from "../moments/moment-actions";
 import Svg, { Circle, Path } from "react-native-svg";
 export const moods: {
   value: MoodType;
@@ -165,6 +166,15 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
       onComplete?.();
     }
   };
+  const chooseMoment = (action: MomentAction) => {
+    const destination = momentDestination(action);
+    setMood(null);
+    setSaved(false);
+    setNote("");
+    setSelected([]);
+    setId(newId());
+    router.push(destination as "/self-care");
+  };
   return (
     <>
       <View
@@ -190,27 +200,52 @@ export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
             <>
               <MoriText variant="title">Cảm ơn bạn đã lắng nghe mình.</MoriText>
               <MoriText muted>
-                Không có cảm xúc nào cần phải sửa ngay lúc này.
+                Bạn muốn điều gì lúc này? Không có cảm xúc nào cần phải sửa
+                ngay.
               </MoriText>
               <MoriButton
-                onPress={() => {
-                  close();
-                  router.push("/(tabs)/talk");
-                }}
+                icon="chatbubble-ellipses-outline"
+                onPress={() => chooseMoment(MomentAction.talk)}
               >
-                {copy.talkCta}
+                Nói một chút
               </MoriButton>
               <MoriButton
-                secondary
-                onPress={() => {
-                  close();
-                  router.push("/activity/rain");
-                }}
+                variant="secondary"
+                icon="book-outline"
+                onPress={() => chooseMoment(MomentAction.write)}
               >
-                {copy.stay}
+                Viết ra
               </MoriButton>
-              <MoriButton secondary onPress={close}>
-                Về khu vườn
+              <MoriButton
+                variant="secondary"
+                icon="rainy-outline"
+                onPress={() => chooseMoment(MomentAction.quiet)}
+              >
+                Ngồi yên
+              </MoriButton>
+              <MoriButton
+                variant="secondary"
+                icon="leaf-outline"
+                onPress={() => chooseMoment(MomentAction.breathe)}
+              >
+                Thở
+              </MoriButton>
+              <MoriButton
+                variant="secondary"
+                icon="phone-portrait-outline"
+                onPress={() => chooseMoment(MomentAction.break)}
+              >
+                Rời màn hình một chút
+              </MoriButton>
+              <MoriButton
+                variant="secondary"
+                icon="people-outline"
+                onPress={() => chooseMoment(MomentAction.reachOut)}
+              >
+                Tìm một người mình tin tưởng
+              </MoriButton>
+              <MoriButton variant="ghost" onPress={close}>
+                Để sau
               </MoriButton>
             </>
           ) : (

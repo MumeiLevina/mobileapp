@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MoodPicker } from "../features/mood/MoodPicker";
 import { request } from "../services/api";
 import { usePreferences } from "../store/preferences";
+import { router } from "expo-router";
 
 jest.mock("../services/api", () => ({
   request: jest.fn().mockResolvedValue({}),
@@ -43,6 +44,10 @@ test("quick mood save omits tags and note", async () => {
       optional_note: "",
     }),
   );
+  expect(router.push).not.toHaveBeenCalled();
+  expect(
+    screen.getByText("Bạn muốn điều gì lúc này?", { exact: false }),
+  ).toBeTruthy();
   await view.unmount();
   queryClient.clear();
 });
