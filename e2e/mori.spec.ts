@@ -408,3 +408,26 @@ test("morning ritual remains optional and saves only when finished", async ({
   expect(state.ritualEntries[0]).not.toHaveProperty("missed");
   expect(state.garden.growth_points).toBe(1);
 });
+
+test("quiet room works without AI, memory or conversation storage", async ({
+  page,
+}) => {
+  await page.goto("/quiet-room");
+  await expect(page.getByText("Phòng yên.", { exact: true })).toBeVisible();
+  await page.getByRole("radio", { name: "Chỉ ngồi yên" }).click();
+  await page.getByRole("radio", { name: "Không hẹn giờ" }).click();
+  await page.getByRole("button", { name: "Vào phòng yên" }).click();
+  await expect(page.getByText("Không cần làm gì cả.")).toBeVisible();
+
+  const privateState = await page.evaluate(() => {
+    const stored = localStorage.getItem("mori-demo");
+    if (!stored) return { conversations: 0, memories: 0 };
+    const data = JSON.parse(stored);
+    return {
+      conversations: data.conversations?.length ?? 0,
+      memories: data.memories?.length ?? 0,
+    };
+  });
+  expect(privateState).toEqual({ conversations: 0, memories: 0 });
+  await page.getByRole("button", { name: "Rời phòng yên" }).click();
+});
