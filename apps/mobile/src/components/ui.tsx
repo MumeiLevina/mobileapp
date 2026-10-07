@@ -524,7 +524,8 @@ export function Choice({
     <MoriPressable
       accessibilityRole="radio"
       accessibilityLabel={tr(title)}
-      accessibilityState={{ selected, disabled }}
+      aria-checked={selected}
+      accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
       feedback="selection"
       onPress={onPress}
@@ -573,10 +574,11 @@ export function MoriChip({
     <MoriPressable
       accessibilityRole={role}
       accessibilityLabel={tr(label)}
+      aria-checked={selected}
       accessibilityState={
         role === "checkbox"
           ? { checked: selected, disabled }
-          : { selected, disabled }
+          : { checked: selected, disabled }
       }
       disabled={disabled}
       feedback="selection"

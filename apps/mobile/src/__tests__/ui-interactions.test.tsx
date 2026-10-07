@@ -40,8 +40,8 @@ describe("shared interaction primitives", () => {
     await render(<Choice title="Chỉ lắng nghe" selected onPress={onPress} />);
 
     const choice = screen.getByRole("radio");
-    expect(choice.props.accessibilityState).toEqual({
-      selected: true,
+    expect(choice.props.accessibilityState).toMatchObject({
+      checked: true,
       disabled: false,
     });
     await fireEvent.press(choice);

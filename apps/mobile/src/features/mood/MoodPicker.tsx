@@ -76,7 +76,8 @@ export function MoodButton({
     <MoriPressable
       accessibilityRole="radio"
       accessibilityLabel={mood.label}
-      accessibilityState={{ selected }}
+      aria-checked={selected}
+      accessibilityState={{ checked: selected }}
       feedback="selection"
       onPress={onPress}
       wrapperStyle={{ flex: 1 }}
