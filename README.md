@@ -1,5 +1,10 @@
 # Mori
 
+Mori Live: [architecture and audit](docs/MORI_LIVE_ARCHITECTURE.md),
+[Windows mock setup](docs/MORI_LIVE_SETUP.md),
+[milestone status and test evidence](docs/MORI_LIVE_STATUS.md).
+Start the verified Milestone A transport demo with `npm run live:smoke`.
+
 Ứng dụng AI emotional companion + self-care, ưu tiên tiếng Việt. Expo React Native + NestJS + Supabase PostgreSQL/pgvector. Mori không phải bác sĩ hay nhà trị liệu, không chẩn đoán và không tối ưu thời gian người dùng ở trong ứng dụng.
 
 ## Chạy ngay bản demo

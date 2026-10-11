@@ -9,6 +9,10 @@
     "react": "19.2.3"
   },
   "scripts": {
+    "live:build": "npm run build -w @mori/live-protocol && npm run build -w @mori/live-desktop",
+    "live:mock": "npm run live:build && npm run mock -w @mori/live-desktop",
+    "live:smoke": "npm run live:build && npm run smoke -w @mori/live-desktop",
+    "test:live": "jest --runInBand tests/live-bridge.test.ts",
     "dev:mobile": "node scripts/expo.mjs start",
     "dev:web": "node scripts/expo.mjs start --web",
     "export:web": "node scripts/expo.mjs export --platform web",

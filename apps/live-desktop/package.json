@@ -1,0 +1,14 @@
+{
+  "name": "@mori/live-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "mock": "node dist/main.js",
+    "smoke": "node dist/smoke.js"
+  },
+  "dependencies": {
+    "@mori/live-protocol": "0.1.0"
+  }
+}
