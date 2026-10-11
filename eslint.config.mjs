@@ -6,6 +6,8 @@ export default ts.config(
       "**/dist/**",
       "**/node_modules/**",
       "**/.expo/**",
+      "**/.live2d-private/**",
+      "apps/mobile/android/**",
       ".npm-cache/**",
     ],
   },

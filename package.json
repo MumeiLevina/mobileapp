@@ -9,6 +9,13 @@
     "react": "19.2.3"
   },
   "scripts": {
+    "live:build": "npm run build -w @mori/live-protocol && npm run build -w @mori/live-desktop",
+    "live:api": "npm run build:api && node --env-file-if-exists=apps/api/.env.live apps/api/dist/apps/api/src/live.main.js",
+    "live:api:smoke": "npm run build:api && npm run live:build && node scripts/verify-mori-public-live.mjs",
+    "test:live-api": "jest --runInBand tests/live-api.test.ts",
+    "live:mock": "npm run live:build && npm run mock -w @mori/live-desktop",
+    "live:smoke": "npm run live:build && npm run smoke -w @mori/live-desktop",
+    "test:live": "jest --runInBand tests/live-bridge.test.ts",
     "dev:mobile": "node scripts/expo.mjs start",
     "dev:web": "node scripts/expo.mjs start --web",
     "export:web": "node scripts/expo.mjs export --platform web",
@@ -18,7 +25,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint apps packages",
     "test": "jest --runInBand",
-    "build:api": "npm run build -w @mori/shared && npm run build -w @mori/api",
+    "build:api": "npm run build -w @mori/shared && npm run build -w @mori/live-protocol && npm run build -w @mori/api",
     "test:mobile": "npm exec -w @mori/mobile -- jest --config jest.config.cjs --runInBand",
     "test:e2e": "npm run export:web && playwright test",
     "test:database": "node scripts/test-database.mjs",
@@ -27,7 +34,10 @@
     "eval:safety:staging": "jest --runInBand tests/evals/provider-safety.eval.test.ts",
     "verify:staging": "node scripts/verify-staging.mjs",
     "preflight:staging": "node scripts/preflight-staging.mjs",
-    "preview:web": "node scripts/serve-web.mjs"
+    "preview:web": "node scripts/serve-web.mjs",
+    "live2d:prepare": "node scripts/prepare-live2d.mjs",
+    "live2d:verify": "node scripts/verify-live2d-renderer.mjs",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -38,6 +48,7 @@
     "@types/node": "^24.0.0",
     "eslint": "^9.39.0",
     "jest": "^29.7.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.9.9",
     "react": "19.2.3",
     "ts-jest": "^29.4.0",

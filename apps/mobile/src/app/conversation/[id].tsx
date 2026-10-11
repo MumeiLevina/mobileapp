@@ -37,6 +37,11 @@ import { useSession } from "../../store/session";
 import { registerDraft } from "../../services/cleanup";
 import { interactionFeedback } from "../../services/interaction-feedback";
 import { SelfCareCard } from "../../features/selfcare/SelfCareCard";
+import { SnowNekoAvatar } from "../../features/avatar/SnowNekoAvatar";
+import {
+  resolveAvatarState,
+  speakingDurationMs,
+} from "../../features/avatar/controller";
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const copy = useT();
@@ -53,6 +58,10 @@ export default function ConversationScreen() {
   >([]);
   const [activity, setActivity] = useState<ChatResult["activity"]>();
   const [voiceNote, setVoiceNote] = useState(false);
+  const [responseCue, setResponseCue] = useState(false);
+  const speakingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const scroll = useRef<ScrollView>(null);
   const data = useQuery({
     queryKey: ["conversation", id],
@@ -79,8 +88,27 @@ export default function ConversationScreen() {
       setActivity(result.activity);
       setCrisis(["crisis", "elevated"].includes(result.safetyLevel));
       setCrisisResources(result.crisisResources ?? []);
+      setResponseCue(true);
+      if (speakingTimer.current) clearTimeout(speakingTimer.current);
+      speakingTimer.current = setTimeout(
+        () => setResponseCue(false),
+        speakingDurationMs(result.message.content, false),
+      );
       await refresh();
     },
+  });
+  useEffect(
+    () => () => {
+      if (speakingTimer.current) clearTimeout(speakingTimer.current);
+    },
+    [],
+  );
+  const avatarState = resolveAvatarState({
+    hasDraft: Boolean(draft.text.trim()),
+    requestPending: send.isPending,
+    responseJustArrived: responseCue,
+    crisis,
+    failed: send.isError,
   });
   const memory = useMutation({
     mutationFn: (approve: boolean) =>
@@ -166,6 +194,7 @@ export default function ConversationScreen() {
           }
           contentContainerStyle={{ paddingBottom: 20 }}
         >
+          <SnowNekoAvatar state={avatarState} crisis={crisis} />
           <ErrorNote error={data.error} retry={() => void data.refetch()} />
           {data.data?.messages.length === 0 && (
             <View style={{ paddingVertical: 38, gap: 15 }}>

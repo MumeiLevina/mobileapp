@@ -4,6 +4,7 @@ module.exports = {
   testMatch: ["**/tests/**/*.test.ts"],
   modulePathIgnorePatterns: ["<rootDir>/.kilo/"],
   moduleNameMapper: {
+    "^@mori/live-protocol$": "<rootDir>/packages/live-protocol/src/index.ts",
     "^@mori/shared$": "<rootDir>/packages/shared/src/index.ts",
   },
   transform: {

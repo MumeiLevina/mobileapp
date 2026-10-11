@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { LLMProvider, PromptMessage } from "./provider";
 export class MockLLMProvider implements LLMProvider {
-  async generateText(messages: PromptMessage[]) {
+  async generateText(messages: PromptMessage[]): Promise<string> {
     const instructions = messages
       .filter((m) => m.role === "system")
       .map((m) => m.content)

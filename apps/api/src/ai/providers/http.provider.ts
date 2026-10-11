@@ -24,6 +24,18 @@ export interface ProviderLogger {
   warn(fields: ProviderLogFields): void;
 }
 
+export type HttpProviderConfig = Pick<
+  Config,
+  | "NODE_ENV"
+  | "LLM_BASE_URL"
+  | "LLM_API_KEY"
+  | "LLM_MODEL"
+  | "LLM_EMBEDDING_MODEL"
+  | "LLM_TEXT_TIMEOUT_MS"
+  | "LLM_CLASSIFICATION_TIMEOUT_MS"
+  | "LLM_EMBEDDING_TIMEOUT_MS"
+>;
+
 const defaultLogger: ProviderLogger = pino({ level: "info" });
 
 const chatResponseSchema = z.object({
@@ -44,8 +56,9 @@ const embeddingResponseSchema = z.object({
 
 export class HttpLLMProvider implements LLMProvider {
   constructor(
-    private readonly config: Config,
+    private readonly config: HttpProviderConfig,
     private readonly logger: ProviderLogger = defaultLogger,
+    private readonly signal?: AbortSignal,
   ) {}
 
   private async post(
@@ -69,7 +82,9 @@ export class HttpLLMProvider implements LLMProvider {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: this.signal
+          ? AbortSignal.any([this.signal, AbortSignal.timeout(timeoutMs)])
+          : AbortSignal.timeout(timeoutMs),
       });
       httpStatus = response.status;
 

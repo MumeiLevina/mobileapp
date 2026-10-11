@@ -159,6 +159,28 @@ describe("HttpLLMProvider", () => {
     await expect(request()).rejects.toBeInstanceOf(ProviderUnavailableError);
   });
 
+  test("public turn cancellation aborts the underlying provider fetch", async () => {
+    const abort = new AbortController();
+    let transportSignal: AbortSignal | undefined;
+    fetchMock.mockImplementation(async (_url, init) => {
+      transportSignal = init?.signal ?? undefined;
+      return new Promise<Response>((_resolve, reject) => {
+        transportSignal?.addEventListener(
+          "abort",
+          () => reject(new DOMException("cancelled", "AbortError")),
+          { once: true },
+        );
+      });
+    });
+    const provider = new HttpLLMProvider(config(), logger, abort.signal);
+    const pending = provider.generateText([
+      { role: "user", content: privatePrompt },
+    ]);
+    abort.abort();
+    await expect(pending).rejects.toBeInstanceOf(ProviderTimeoutError);
+    expect(transportSignal?.aborted).toBe(true);
+  });
+
   test("rejects malformed chat and embedding responses", async () => {
     const provider = new HttpLLMProvider(config(), logger);
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { choices: [] }));
