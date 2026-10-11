@@ -16,7 +16,10 @@ const frame = element("avatar");
 if (location.pathname === "/avatar") {
   document.body.classList.add("avatar-only");
   const params = new URLSearchParams(location.search);
-  const bounded = (name, fallback, min, max) => { const n = Number(params.get(name) ?? fallback); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback; };
+  const bounded = (name, fallback, min, max) => {
+    const n = Number(params.get(name) ?? fallback);
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+  };
   frame.style.transform = `translate(${bounded("x", 0, -50, 50)}%, ${bounded("y", 0, -50, 50)}%) scale(${bounded("scale", 1, 0.25, 2)})`;
 }
 const player = new VoicePlayer({
@@ -93,6 +96,9 @@ element("login").addEventListener("submit", async (event) => {
       ) {
         if (value.state === "thinking") {
           safeFallback = false;
+          // A newly accepted server turn is an explicit new playback attempt,
+          // including turns submitted from the separate operator dashboard.
+          suppressVoice = operatorPaused || document.hidden;
           stop();
           state("thinking");
         }
@@ -119,16 +125,30 @@ element("login").addEventListener("submit", async (event) => {
           if (player.current) command({ type: "clearExpression" });
           else stop();
         }, 2000);
-      } else if (value.type === "operator" && ["pause", "stop", "mute", "start", "resume"].includes(value.action)) {
+      } else if (
+        value.type === "operator" &&
+        ["pause", "stop", "mute", "start", "resume"].includes(value.action)
+      ) {
         operatorPaused = ["pause", "stop", "mute"].includes(value.action);
         suppressVoice = operatorPaused;
-        if (operatorPaused) { player.stop(); stop(); }
+        if (operatorPaused) {
+          player.stop();
+          stop();
+        }
         command({ type: "pause", paused: operatorPaused || document.hidden });
         element("send").disabled = operatorPaused || !rendererReady;
         element("status").textContent = value.action;
       } else if (value.type === "voice.audio") {
         if (suppressVoice) {
-          socket.send(JSON.stringify({ version: 1, type: "voice.speech.cancelled", turnId: value.turnId, speechId: value.speechId, position: 0 }));
+          socket.send(
+            JSON.stringify({
+              version: 1,
+              type: "voice.speech.cancelled",
+              turnId: value.turnId,
+              speechId: value.speechId,
+              position: 0,
+            }),
+          );
           return;
         }
         player.play(value).catch(() => {
@@ -241,6 +261,9 @@ navigator.mediaDevices
     element("device").disabled = true;
   });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { suppressVoice = true; player.stop(); }
+  if (document.hidden) {
+    suppressVoice = true;
+    player.stop();
+  }
   command({ type: "pause", paused: document.hidden || operatorPaused });
 });

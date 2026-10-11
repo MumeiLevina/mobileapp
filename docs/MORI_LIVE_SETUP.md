@@ -1,5 +1,99 @@
 # Mori Live — Windows setup
 
+## C/D/E local quick start (2026-10-11)
+
+Run from the repository root in PowerShell. No keys are needed for the first run:
+
+```powershell
+./scripts/setup-mori-live.ps1 -SyncPython
+npm run live:renderer:prepare
+npm run build:api
+./scripts/start-mori-live.ps1 -Voice mock
+```
+
+The setup installs uv 0.8.22 if missing via the available bootstrap Python, then
+`python -m uv sync --frozen --python 3.11` installs supported Python 3.11 and the
+unchanged upstream lock. Python 3.14 is only the bootstrap, never the runtime.
+The renderer reads `C:\Users\hantu\.codex\mori` by default in this workspace.
+Else set `MORI_LIVE2D_ROOT` to your private SDK/model parent before preparing.
+Desktop output is ignored `.mori-live/renderer/dist`; Android output is untouched.
+
+Choose a separate 32–256 character ASCII operator code when prompted. Use a
+random password-manager value using letters, digits, `_` and `-`; keep it private.
+The API bearer is separately generated inside the launcher and never shown in
+the browser/URL. The launcher starts both processes; Ctrl+C closes the public API
+through its normal repository shutdown. It never deletes or resets the public store.
+After an OS crash, follow the existing writer.lock recovery instructions below.
+
+Open `http://127.0.0.1:4320/` for the combined test view, or use:
+
+- `http://127.0.0.1:4320/operator` — dashboard, no audio output.
+- `http://127.0.0.1:4320/avatar` — transparent audio/renderer page, one connection.
+
+Log in with the operator code. Only ONE combined/avatar page can be connected;
+close the combined test view before connecting an OBS Browser Source. The
+dashboard can remain open. Both audio and renderer are local, not hosted publicly.
+MOCK tone is deliberately not a Vietnamese voice. Click Send/Test after the
+avatar is ready. Pause/Stop/Emergency Mute cancel the current speech; Resume never
+replays it. A failed/expired backend session requires explicit runtime restart;
+do not delete the budget store to recover. Audio device selection is browser-
+dependent; default system output always remains available. No microphone prompt.
+
+### Azure Hoài My — optional real speech
+
+Set credentials in the SAME PowerShell process, without putting the key in shell
+history, source files, URLs or chat:
+
+```powershell
+$ttsSecret = Read-Host 'Azure Speech key' -AsSecureString
+$env:MORI_TTS_KEY = [System.Net.NetworkCredential]::new('', $ttsSecret).Password
+$env:MORI_TTS_REGION = Read-Host 'Azure resource region (for example southeastasia)'
+$env:MORI_TTS_VOICE = 'vi-VN-HoaiMyNeural'
+./scripts/start-mori-live.ps1 -Voice azure
+```
+
+Azure is the default choice if `-Voice` is omitted; missing key/region produces an
+explicit `tts_mock_fallback` event and MOCK label, without a cloud request.
+Configured Azure HTTP/auth/timeout failures do NOT silently become mock speech.
+The Nest mode is independent and defaults to MOCK, so real TTS can speak a safe
+deterministic response without cloud LLM usage. STAGING/REAL LLM still requires
+all the original provider/pricing configuration below.
+
+Uses the [official Azure REST API](https://learn.microsoft.com/azure/ai-services/speech-service/rest-text-to-speech)
+with XML-escaped text and bounded 24kHz, mono, 16-bit PCM WAV; the
+[voice list](https://learn.microsoft.com/azure/cognitive-services/speech-service/language-support?tabs=tts)
+includes Vietnamese female `vi-VN-HoaiMyNeural`. Maximum 1,200 input characters,
+30s synthesis deadline and 90s audio duration, no automatic provider retry.
+Audio is deleted after delivery/failed playback; crash leftovers may remain in
+ignored `.mori-live/audio`. Restrict that directory's Windows ACL to the operator.
+Set Azure account spending/quota limits separately: Nest's LLM reservations do
+NOT account for Azure speech charges. No exact cloud usage invoice is fabricated.
+
+Replacement providers implement upstream `TTSInterface.async_generate_audio`
+and return the validated WAV contract. ElevenLabs Flash v2.5, Fish Audio and local
+TTS are future adapters, not implemented or tested providers. No new LLM brain.
+
+### Reproducible checks
+
+```powershell
+npm run test:python
+npm run lint:python
+npm run live:voice:smoke
+node scripts/verify-mori-launcher.mjs
+# Optional text-only C path, using the existing mobile private renderer:
+npm run live2d:prepare
+npm run live:python:smoke
+```
+
+Smoke tests create only temporary synthetic public stores and remove those after
+stopping their own processes. They do not modify the operator's store. Screenshots
+and runtime evidence remain private under `.mori-live`; do not commit them.
+If Chromium is missing, run `npx playwright install chromium`.
+Real Azure speech, physical speaker output and an OBS clip remain separate manual
+acceptance tests. See [OBS procedure](MORI_LIVE_OBS.md).
+
+## Historical A/B setup and backend configuration
+
 Milestone B adds the Nest **PUBLIC_LIVE API** below. Milestone A's transport-only
 fixture remains available on port 4318. Neither provides voice, a desktop avatar,
 YouTube or OBS yet. MOCK uses deterministic responses, not a real safety model.

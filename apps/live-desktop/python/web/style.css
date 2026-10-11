@@ -25,8 +25,20 @@ label {
 #status {
   min-height: 2em;
 }
-.avatar-only.avatar-ready { margin:0; background:transparent; overflow:hidden; }
-.avatar-only.avatar-ready main { max-width:none; }
+.avatar-only.avatar-ready {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.avatar-only.avatar-ready main {
+  max-width: none;
+}
 .avatar-only.avatar-ready main > :not(#runtime),
-.avatar-only.avatar-ready #runtime > :not(#avatar) { display:none; }
-.avatar-only.avatar-ready #avatar { width:100vw; height:100vh; display:block; }
+.avatar-only.avatar-ready #runtime > :not(#avatar) {
+  display: none;
+}
+.avatar-only.avatar-ready #avatar {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}

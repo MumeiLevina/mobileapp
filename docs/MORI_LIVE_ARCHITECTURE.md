@@ -191,3 +191,27 @@ Generated output rights require provider-specific review; no automatic training.
 
 Real OBS, OAuth, paid TTS, device and licensed-model checks cannot be substituted
 with mock test results. Record verified and pending work in MORI_LIVE_STATUS.md.
+
+## C/D/E implementation notes
+
+`apps/live-desktop/python/launch.py` verifies the pinned clean upstream checkout
+before imports. `MoriLiveAgentAdapter` imports only upstream's interface and output
+dataclasses, never ServiceContext/AgentFactory/stock server. Separate browser
+session auth and a restricted router mediate local controls and static assets.
+One renderer WebSocket owns playback; `/operator` uses authenticated CSRF-checked
+HTTP controls, so it cannot produce a second audio stream. The status endpoint
+reads Nest's authenticated `/v1/live/status` and never reads private app storage.
+
+TTS provider boundary is upstream `TTSInterface`; Azure is official HTTPS with
+escaped SSML, mock is a clearly labelled 1.5-second tone. Future ElevenLabs/Fish/
+local providers must return bounded PCM WAV and pass the same queue/cancel tests.
+Provider failure never creates new LLM content. Browser `playing/timeupdate/ended`
+events drive speech state; AnalyserNode RMS drives the real ParamMouthOpenY after
+idle/blink/breath/physics layers. Mouth closes immediately on stop. Desktop builds
+use `.mori-live/renderer`, not Android's visual-speaking renderer. Cubism expression
+fade-out is applied separately; crisis/reduced-motion clear expressions promptly.
+
+The supervisor wraps the unchanged public module with IPC shutdown to release
+writer.lock and preserve cumulative reservations. Restart never deletes data or
+replays completed speech. No public transcript archive or training export exists
+yet; all responses still mark training eligibility prohibited.

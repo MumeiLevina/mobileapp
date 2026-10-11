@@ -40,7 +40,9 @@ export class PublicLiveService {
       throw new LiveFailure(403, "FORBIDDEN");
     const snapshot = this.repository.snapshot();
     return liveStatusSchema.parse({
-      version: 1, context: "PUBLIC_LIVE", type: "live.status",
+      version: 1,
+      context: "PUBLIC_LIVE",
+      type: "live.status",
       mode: this.config.MORI_LIVE_MODE,
       reservedMicros: snapshot.spentMicros,
       budgetMicros: Math.floor(this.config.MORI_LIVE_BUDGET_USD * 1_000_000),

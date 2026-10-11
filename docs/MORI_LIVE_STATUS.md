@@ -1,5 +1,88 @@
 # Mori Live delivery status
 
+## Latest continuation — D implemented/tested in mock, E browser verified
+
+Date: 2026-10-11. The user selected Azure Speech `vi-VN-HoaiMyNeural` and explicitly
+authorized continuing local development without an Azure key. Accordingly, D/E
+development proceeded with labelled mock audio; **real voice/OBS acceptance is
+NOT claimed**. Branch remains `experiment/live2d-snow-neko`. On continuation HEAD
+was `6e6da35` (the preceding work had been committed externally); this agent has
+not created commits or merged main.
+
+### Delivered
+
+- C: actual pinned Python adapter and Nest roundtrip remain verified. An operator
+  regression found by the end-to-end test was fixed: a cancelled preview turn no
+  longer prevents a NEW dashboard-submitted turn from playing.
+- D: replaceable upstream TTSInterface provider; official Azure REST transport
+  reads `MORI_TTS_KEY`/`MORI_TTS_REGION`, defaults to Hoài My, escapes SSML and
+  validates bounded WAV. Missing credentials explicitly choose mock; configured
+  provider errors fail closed. No ElevenLabs/Fish/local implementation is claimed.
+- D: one active speech, synthesis/playback deadlines, actual browser playback
+  events, RMS/noise gate/smoothing, real Cubism mouth parameter override, volume,
+  supported output-device selection, interruption and emergency mute. Desktop
+  private renderer build is separate from the unchanged Android behavior.
+- E: transparent responsive `/avatar`, `/operator` dashboard with start/pause/
+  resume/stop/mute/test, connection/avatar/emotion/current text/mode/error status.
+  One audio renderer prevents duplicate capture. Authenticated read-only Nest
+  status shows durable reservation/budget; actual provider tokens remain explicitly
+  unavailable. No changes to private memory, orchestrator, safety or output guard.
+- Supervisor start/shutdown preserves public data and releases writer.lock.
+  Optional Windows CI workflow tests synthetic fixtures without proprietary assets.
+  Audit, Windows quick start, Azure configuration and OBS manual procedure updated.
+
+### Executed evidence
+
+- `npm ci`: passed (actual package manager; no dependency/integrity edits).
+- `npm run typecheck`, `npm run lint`: passed.
+- Root Jest: 207 tests / 25 suites passed; 53 tests / 2 suites skipped by existing
+  external-integration gates. One new assertion initially matched `context` as
+  `text`; it was corrected to check exact field names and provider-secret absence.
+- Mobile: 47 tests / 18 suites passed. Live bridge: 10 passed. Public Live: 22 passed.
+- Existing mock fixture smoke, actual Nest MOCK smoke, API build and Expo web
+  export all passed. Export remains 1,618 modules.
+- `npm run test:python`: 29 Python tests plus 6 browser-player logic tests passed,
+  including wrong auth, mismatch, expiry, duplicates, cancellation, disconnect,
+  missing assets, CSRF, controls, silent/short/long/bad audio, overlap, delayed
+  synthesis, real timeout paths, mock Azure HTTP failures and SSML escaping.
+- `npm run lint:python`: passed using pinned ruff 0.9.1.
+- `node scripts/verify-mori-launcher.mjs`: actual Nest/Python startup and controlled
+  shutdown passed; public store retained and writer.lock removed normally.
+- Real Chromium + real Nest + real Python + Snow Neko, with MOCK tone: passed.
+  Final sample: model ready 1,388ms, 27fps sampled, ~64MB JS heap (not RSS),
+  19,324 character-colored pixels. A 1.5s tone began ~320ms after test input;
+  both commanded and actual Cubism mouth parameter rose to ~0.073 then zero.
+  Emergency mute, crisis expression suppression, transparent 1280×720 page
+  (817,196 fully transparent pixels) and reconnect without replay passed.
+  These are local observations, not cloud TTS or OBS performance claims.
+  Private evidence: `.mori-live/voice-mock-verification.json` and its screenshot
+  directory (`avatar-transparent.png` is beside `snow-neko.png`).
+
+### Gates / remaining work
+
+Azure credentials were absent from the accessible process environment; actual
+Hoài My speech, pronunciation and physical audio-device output are **NOT RUN**.
+OBS was not found on PATH or in standard Program Files locations. A real OBS
+Browser Source/audio-routing check and local recording are **NOT RUN**; follow
+MORI_LIVE_OBS.md or provide the installed OBS path. CI workflow dispatch is **NOT RUN**.
+Android physical-device/regression APK testing in this desktop milestone is **NOT RUN**.
+
+F/G have **NOT STARTED**, because the original execution policy requires a working
+local OBS integration before YouTube and later archive/export. No OAuth credentials
+are requested yet. No YouTube/Facebook ingestion, public event archive, reviewed
+JSONL export or model training is claimed. Existing public backend storage still
+lacks G's retention/redaction/review controls: use synthetic data, not unattended
+real viewer chat. Keep all training eligibility prohibited. Future self-hosted
+inference remains through the existing Nest provider boundary, never avatar Python.
+
+Changed implementation groups across C–E: `apps/live-desktop/python/` (adapter,
+protocol, model audit, restricted server, providers/player, dashboard and tests),
+read-only status in `apps/api/src/modules/live/` and `packages/live-protocol/`,
+desktop preparation/launcher/verification scripts, package scripts, live API test,
+manual Python CI workflow and the four Mori Live docs plus MORI_LIVE_AUDIT.md.
+No model/Core files or secrets are tracked. Dependency advisories remain triaged,
+not fixed; see MORI_LIVE_AUDIT.md before any public deployment.
+
 ## Milestone C update — 2026-10-11
 
 IMPLEMENTED / VERIFIED locally: actual upstream `AgentInterface` and

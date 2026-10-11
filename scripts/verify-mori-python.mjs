@@ -112,7 +112,10 @@ try {
         window.__maxMouth,
         window.__moriAudioMouth || 0,
       );
-      window.__maxAppliedMouth = Math.max(window.__maxAppliedMouth, window.__moriAppliedMouth || 0);
+      window.__maxAppliedMouth = Math.max(
+        window.__maxAppliedMouth,
+        window.__moriAppliedMouth || 0,
+      );
       requestAnimationFrame(mouthFrame);
     };
     requestAnimationFrame(mouthFrame);
@@ -194,9 +197,14 @@ try {
     const finish = sent.find((e) => e.type === "voice.speech.finished");
     assert.ok(start && finish);
     const maxMouth = await frame.evaluate(() => window.__maxMouth);
-    const maxAppliedMouth = await frame.evaluate(() => window.__maxAppliedMouth);
+    const maxAppliedMouth = await frame.evaluate(
+      () => window.__maxAppliedMouth,
+    );
     assert.ok(maxMouth > 0.01, `Expected audio-driven mouth, got ${maxMouth}`);
-    assert.ok(maxAppliedMouth > 0.01, `Expected actual Cubism mouth parameter, got ${maxAppliedMouth}`);
+    assert.ok(
+      maxAppliedMouth > 0.01,
+      `Expected actual Cubism mouth parameter, got ${maxAppliedMouth}`,
+    );
     assert.equal(await frame.evaluate(() => window.__moriAudioMouth), 0);
     voiceEvidence = {
       mockToneOnly: true,
@@ -229,12 +237,10 @@ try {
   await page.locator("#cancel").click();
   await page.waitForTimeout(2500);
   assert.equal(await frame.evaluate(() => window.__moriState.state), "idle");
-  const screenshot = await page
-    .locator("#avatar")
-    .screenshot({
-      path: join(temporary, "snow-neko.png"),
-      omitBackground: true,
-    });
+  const screenshot = await page.locator("#avatar").screenshot({
+    path: join(temporary, "snow-neko.png"),
+    omitBackground: true,
+  });
   const png = PNG.sync.read(screenshot);
   let visible = 0;
   for (let i = 0; i < png.data.length; i += 4) {
@@ -257,22 +263,49 @@ try {
     await operatorPage.goto(`${url}/operator`);
     await operatorPage.locator("#token").fill(operatorToken);
     await operatorPage.locator("#login button").click();
-    await operatorPage.waitForFunction(() => document.getElementById("budget").textContent.includes("$"));
+    await operatorPage.waitForFunction(() =>
+      document.getElementById("budget").textContent.includes("$"),
+    );
     await operatorPage.locator("#text").fill("Xin chào mọi người");
     await operatorPage.locator("#test button").click();
-    await page.waitForFunction(() => window.__sent.filter((e) => e.type === "voice.speech.started").length === 2);
+    await page.waitForFunction(
+      () =>
+        window.__sent.filter((e) => e.type === "voice.speech.started")
+          .length === 2,
+    );
     await operatorPage.locator('[data-action="mute"]').click();
-    await page.waitForFunction(() => document.getElementById("avatar").contentWindow.__moriAudioMouth === 0);
+    await page.waitForFunction(
+      () =>
+        document.getElementById("avatar").contentWindow.__moriAudioMouth === 0,
+    );
     await page.waitForTimeout(250);
     assert.equal(await frame.evaluate(() => window.__moriAppliedMouth), 0);
-    assert.equal(await page.evaluate(() => window.__sent.filter((e) => e.type === "voice.speech.finished").length), 1);
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.__sent.filter((e) => e.type === "voice.speech.finished")
+            .length,
+      ),
+      1,
+    );
     await operatorPage.locator('[data-action="resume"]').click();
     await operatorPage.locator("#text").fill("Mình muốn biến mất");
     await operatorPage.locator("#test button").click();
-    await page.waitForFunction(() => window.__sent.filter((e) => e.type === "voice.speech.finished").length === 2);
+    await page.waitForFunction(
+      () =>
+        window.__sent.filter((e) => e.type === "voice.speech.finished")
+          .length === 2,
+    );
     await page.waitForTimeout(2200);
     assert.equal(await frame.evaluate(() => window.__moriState.crisis), true);
-    assert.equal(await page.evaluate(() => window.__events.filter((e) => e.type === "response").at(-1).expression), null);
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.__events.filter((e) => e.type === "response").at(-1)
+            .expression,
+      ),
+      null,
+    );
     voiceEvidence.emergencyMute = true;
     voiceEvidence.crisisAnimationSuppressed = true;
     await operatorPage.close();
@@ -280,13 +313,28 @@ try {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.locator("#token").fill(operatorToken);
     await page.locator("#login button").click();
-    await page.waitForFunction(() => document.body.classList.contains("avatar-ready"), null, { timeout: 65000 });
+    await page.waitForFunction(
+      () => document.body.classList.contains("avatar-ready"),
+      null,
+      { timeout: 65000 },
+    );
     await page.waitForTimeout(500);
-    const transparent = PNG.sync.read(await page.screenshot({ path: join(temporary, "avatar-transparent.png"), omitBackground: true }));
+    const transparent = PNG.sync.read(
+      await page.screenshot({
+        path: join(temporary, "avatar-transparent.png"),
+        omitBackground: true,
+      }),
+    );
     let clear = 0;
-    for (let i = 3; i < transparent.data.length; i += 4) if (transparent.data[i] === 0) clear++;
+    for (let i = 3; i < transparent.data.length; i += 4)
+      if (transparent.data[i] === 0) clear++;
     assert.ok(clear > 100000);
-    assert.equal(await page.evaluate(() => window.__events.filter((e) => e.type === "voice.audio").length), 0);
+    assert.equal(
+      await page.evaluate(
+        () => window.__events.filter((e) => e.type === "voice.audio").length,
+      ),
+      0,
+    );
     voiceEvidence.transparentAvatarPixels = clear;
     voiceEvidence.reconnectDidNotReplay = true;
     voiceEvidence.obsTested = false;
@@ -295,7 +343,10 @@ try {
     await readFile(join(temporary, "store/public-live.json"), "utf8"),
   );
   assert.equal(Object.keys(store.sessions).length, 1);
-  assert.equal(Object.keys(Object.values(store.sessions)[0].turns).length, voiceMock ? 3 : 1);
+  assert.equal(
+    Object.keys(Object.values(store.sessions)[0].turns).length,
+    voiceMock ? 3 : 1,
+  );
   assert.equal(store.spentMicros, 0);
   const evidence = {
     verified: true,

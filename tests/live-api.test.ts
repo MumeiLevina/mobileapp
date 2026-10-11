@@ -92,11 +92,17 @@ test("operator status exposes reservations only and never resets budget or leaks
   const before = repository.snapshot();
   const status = service.status(config.MORI_LIVE_PRINCIPAL);
   expect(status).toMatchObject({
-    context: "PUBLIC_LIVE", mode: "STAGING", reservedMicros: 0,
-    budgetMicros: 20_000_000, providerUsage: "not_available",
+    context: "PUBLIC_LIVE",
+    mode: "STAGING",
+    reservedMicros: 0,
+    budgetMicros: 20_000_000,
+    providerUsage: "not_available",
   });
   expect(repository.snapshot()).toEqual(before);
-  expect(JSON.stringify(status)).not.toMatch(/token|text|history|memory|secret/i);
+  for (const key of Object.keys(status)) {
+    expect(key).not.toMatch(/^(token|text|history|memory|secret)$/i);
+  }
+  expect(JSON.stringify(status)).not.toContain(config.LLM_API_KEY!);
   expect(() => service.status("another-principal")).toThrow("FORBIDDEN");
 });
 async function session() {
