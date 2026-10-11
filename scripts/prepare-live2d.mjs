@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const defaultAssetRoot = resolve(repositoryRoot, "..", "mori");
 const assetRoot = resolve(
-  process.env.MORI_LIVE2D_ROOT || process.argv[2] || defaultAssetRoot,
+  process.env.MORI_LIVE2D_ROOT || process.argv.slice(2).find((arg) => !arg.startsWith("--")) || defaultAssetRoot,
 );
 const modelRoot = join(assetRoot, "snow-neko-live2d-assets", "snow-neko");
 const sdkRoot = join(
@@ -15,7 +15,10 @@ const sdkRoot = join(
   "CubismSdkForWeb-5-r.5",
 );
 const mobileRoot = join(repositoryRoot, "apps", "mobile");
-const privateRoot = join(mobileRoot, ".live2d-private");
+const desktopAudio = process.env.MORI_LIVE2D_DESKTOP === "1" || process.argv.includes("--desktop");
+const privateRoot = desktopAudio
+  ? join(repositoryRoot, ".mori-live", "renderer")
+  : join(mobileRoot, ".live2d-private");
 const workRoot = join(privateRoot, "work");
 const distRoot = join(privateRoot, "dist");
 const demoSource = join(sdkRoot, "Samples", "TypeScript", "Demo");
@@ -186,6 +189,15 @@ modelSource = modelSource
     "    this._updateScheduler.onLateUpdate(this._model, deltaTimeSeconds);",
     `    if (moriAnimated) {\n      this._updateScheduler.onLateUpdate(this._model, deltaTimeSeconds);\n    }\n    if (moriAnimated && moriState?.state === 'speaking') {\n      const mouth = CubismFramework.getIdManager().getId(CubismDefaultParameterId.ParamMouthOpenY);\n      this._model.addParameterValueById(mouth, 0.12 + Math.abs(Math.sin(this._userTimeSeconds * 5.2)) * 0.22, 0.6);\n    }\n    if (moriAnimated && moriState?.state === 'listening') {\n      this._model.addParameterValueById(this._idParamAngleY, -2.0, 0.25);\n    } else if (moriAnimated && moriState?.state === 'thinking') {\n      this._model.addParameterValueById(this._idParamAngleX, 3.0, 0.25);\n    }`,
   );
+if (desktopAudio) {
+  // Desktop voice uses real playback amplitude, never Android's visual cue.
+  if (!modelSource.includes("    this._model.update();"))
+    throw new Error("Pinned SDK mouth-layer insertion point changed");
+  modelSource = modelSource.replace(
+    "    this._model.update();",
+    `    const audioMouth = Number((window as any).__moriAudioMouth || 0);\n    const mouthId = CubismFramework.getIdManager().getId(CubismDefaultParameterId.ParamMouthOpenY);\n    this._model.setParameterValueById(mouthId, moriState?.paused ? 0 : Math.min(0.65, Math.max(0, Number.isFinite(audioMouth) ? audioMouth : 0)));\n    (window as any).__moriAppliedMouth = this._model.getParameterValueById(mouthId);\n    this._model.update();`,
+  );
+}
 await writeFile(modelPath, modelSource);
 
 await writeFile(
@@ -194,10 +206,19 @@ await writeFile(
 );
 
 const bridgePath = join(workRoot, "src", "main.ts");
-const bridgeSource = (await readFile(bridgePath, "utf8")).replace(
+let bridgeSource = (await readFile(bridgePath, "utf8")).replace(
   "const gl = document.querySelector('canvas')?.getContext('webgl');",
   "const canvas = document.querySelector('canvas'); const gl = canvas?.getContext('webgl2') || canvas?.getContext('webgl');",
 );
+if (desktopAudio) {
+  bridgeSource = bridgeSource.replace(
+    "if (!name) { current._expressionManager?.stopAllMotions(); return; }",
+    "if (!name) { const manager = current._expressionManager; if (runtime.crisis || runtime.reducedMotion) manager?.stopAllMotions(); else manager?.getCubismMotionQueueEntries()?.forEach((entry: any) => entry.setFadeOut(0.35)); return; }",
+  ).replace(
+    "if (command.type === 'setState' &&",
+    "if (command.type === 'clearExpression') { applyExpression(null); return; }\n    if (command.type === 'audioSpeaking' && typeof command.active === 'boolean') { runtime.state = runtime.crisis ? 'resting' : command.active ? 'speaking' : 'idle'; emit({ type:'stateChanged', state:runtime.state }); return; }\n    if (command.type === 'setState' &&",
+  );
+}
 await writeFile(bridgePath, bridgeSource);
 
 const runNpm = (args) =>

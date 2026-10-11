@@ -1,5 +1,38 @@
 # Mori Live delivery status
 
+## Milestone C update — 2026-10-11
+
+IMPLEMENTED / VERIFIED locally: actual upstream `AgentInterface` and
+`SentenceOutput`, strict Python protocol validation, bounded at-most-once output,
+cancellation/expiry/recovery, no upstream memory/history/tools/server imports.
+Restricted loopback FastAPI launcher has separate HttpOnly operator session,
+Host/Origin checks, one WebSocket, no microphone, exact private asset allowlist.
+The stock frontend is a compiled artifact with stock-server coupling; C reuses
+Mori's existing official Cubism renderer instead of rewriting it or serving stock
+config/history/microphone controls. Model/Core files remain ignored/private.
+
+Actual frozen sync installed CPython 3.11.13 and 103 packages with uv 0.8.22;
+runtime/frontend commits and uv.lock SHA256 remain unchanged.
+`python -m unittest discover -s apps/live-desktop/python/tests -v`: 17 passed.
+`python -m ruff check apps/live-desktop/python`: passed (locked ruff 0.9.1).
+`node scripts/verify-mori-python.mjs`: actual Nest MOCK → Python → Chromium
+Snow Neko; 1,539ms ready, 33fps sampled, ~72.2MB JS heap (not process RSS),
+19,531 character-colored screenshot pixels, zero page errors. One backend turn
+after duplicate submission, allowed `cry` expression delivered, returned idle.
+Evidence is private: `.mori-live/python-verification.json` and referenced image.
+These are local machine observations, not audio/OBS/Android performance claims.
+
+Snow Neko v3: all 41 references present, four textures, 33 expressions, one Idle.
+Core reports 100663297 (6.0.1). Emotion mapping: neutral→idle, happy→blushing,
+sad→cry, confused→sullen_face, surprised→neutral (no verified subtle expression).
+Appearance expressions are excluded; fallback always neutral. Fluffy Wintery
+Kitty is not identified with Snow Neko. Rights to redistribute are NOT VERIFIED.
+
+Changed C files: `apps/live-desktop/python/{launch.py,mori_live/*,web/*,tests/*}`,
+`scripts/verify-mori-python.mjs`, `scripts/setup-mori-live.ps1`, live documentation.
+D is next; E/F/G remain gated. This section supersedes the A/B-only runtime
+limitations in the historical baseline below, not its storage/budget warnings.
+
 Date: 2026-10-11. Scope delivered: **Milestones A and B**.
 This is not completion of the full A–G integration.
 

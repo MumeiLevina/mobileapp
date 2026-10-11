@@ -7,6 +7,7 @@ import {
   TurnRequest,
   TurnResponse,
   turnResponseSchema,
+  liveStatusSchema,
 } from "@mori/live-protocol";
 import { LLMProvider, PromptMessage } from "../../ai/providers/provider";
 import { SAFE_FALLBACK } from "../../ai/guards/output.guard";
@@ -34,6 +35,20 @@ export class PublicLiveService {
     private readonly repository: PublicLiveRepository,
     private readonly makeProvider: (signal: AbortSignal) => LLMProvider,
   ) {}
+  status(principal: string) {
+    if (principal !== this.config.MORI_LIVE_PRINCIPAL)
+      throw new LiveFailure(403, "FORBIDDEN");
+    const snapshot = this.repository.snapshot();
+    return liveStatusSchema.parse({
+      version: 1, context: "PUBLIC_LIVE", type: "live.status",
+      mode: this.config.MORI_LIVE_MODE,
+      reservedMicros: snapshot.spentMicros,
+      budgetMicros: Math.floor(this.config.MORI_LIVE_BUDGET_USD * 1_000_000),
+      activeTurns: this.active.size,
+      retainedSessions: Object.keys(snapshot.sessions).length,
+      providerUsage: "not_available",
+    });
+  }
   async handle(
     raw: unknown,
     principal: string,

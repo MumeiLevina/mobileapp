@@ -88,6 +88,17 @@ afterEach(async () => {
   repository.close();
   rmSync(directory, { recursive: true, force: true });
 });
+test("operator status exposes reservations only and never resets budget or leaks public text", async () => {
+  const before = repository.snapshot();
+  const status = service.status(config.MORI_LIVE_PRINCIPAL);
+  expect(status).toMatchObject({
+    context: "PUBLIC_LIVE", mode: "STAGING", reservedMicros: 0,
+    budgetMicros: 20_000_000, providerUsage: "not_available",
+  });
+  expect(repository.snapshot()).toEqual(before);
+  expect(JSON.stringify(status)).not.toMatch(/token|text|history|memory|secret/i);
+  expect(() => service.status("another-principal")).toThrow("FORBIDDEN");
+});
 async function session() {
   return (await service.handle(
     {

@@ -113,3 +113,14 @@ export type TurnRequest = z.infer<typeof turnRequestSchema>;
 export type TurnResponse = z.infer<typeof turnResponseSchema>;
 export type LiveRequest = z.infer<typeof liveRequestSchema>;
 export type LiveSession = z.infer<typeof sessionSchema>;
+
+// Read-only authenticated operator telemetry. Reservations are not invoices.
+export const liveStatusSchema = z.object({
+  version: z.literal(1), context: z.literal("PUBLIC_LIVE"),
+  type: z.literal("live.status"), mode: liveModeSchema,
+  reservedMicros: z.number().int().nonnegative(),
+  budgetMicros: z.number().int().positive(),
+  activeTurns: z.number().int().nonnegative(),
+  retainedSessions: z.number().int().nonnegative(),
+  providerUsage: z.literal("not_available"),
+}).strict();

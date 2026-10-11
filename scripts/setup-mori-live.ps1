@@ -37,8 +37,14 @@ try {
       throw 'Upstream pin verification failed.'
     }
     if ($SyncPython) {
+      # pip user Scripts need not be on PATH. Install only the pinned uv tool.
+      $uvPresent = & python -c "import importlib.util; print(int(importlib.util.find_spec('uv') is not None))"
+      if ($LASTEXITCODE -ne 0) { throw 'A Python bootstrap interpreter is required to install uv.' }
+      if ($uvPresent -ne '1') {
+        Invoke-Checked 'python' @('-m', 'pip', 'install', 'uv==0.8.22')
+      }
       Push-Location $checkout
-      try { Invoke-Checked 'uv' @('sync', '--frozen', '--python', $pin.python) }
+      try { Invoke-Checked 'python' @('-m', 'uv', 'sync', '--frozen', '--python', $pin.python) }
       finally { Pop-Location }
     }
     Write-Output 'Upstream pins verified. Unmodified upstream server is NOT started.'

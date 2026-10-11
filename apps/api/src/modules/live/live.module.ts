@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpException,
   Inject,
+  Get,
   Module,
   Post,
 } from "@nestjs/common";
@@ -30,6 +31,10 @@ class PublicLiveController {
     private readonly service: PublicLiveService,
     @Inject(LIVE_CONFIG) private readonly config: LiveConfig,
   ) {}
+  @Get("status")
+  status() {
+    return this.service.status(this.config.MORI_LIVE_PRINCIPAL);
+  }
   @Post()
   @HttpCode(200)
   handle(@Body() body: unknown) {

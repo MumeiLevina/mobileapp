@@ -9,6 +9,12 @@
     "react": "19.2.3"
   },
   "scripts": {
+    "live:python": "node scripts/mori-python.mjs serve",
+    "live:python:smoke": "npm run build:api && node scripts/verify-mori-python.mjs",
+    "live:voice:smoke": "npm run build:api && node scripts/verify-mori-python.mjs --voice-mock",
+    "live:renderer:prepare": "node scripts/prepare-live2d.mjs --desktop",
+    "test:python": "node scripts/mori-python.mjs test && node --test apps/live-desktop/python/tests/voice.test.mjs",
+    "lint:python": "node scripts/mori-python.mjs lint",
     "live:build": "npm run build -w @mori/live-protocol && npm run build -w @mori/live-desktop",
     "live:api": "npm run build:api && node --env-file-if-exists=apps/api/.env.live apps/api/dist/apps/api/src/live.main.js",
     "live:api:smoke": "npm run build:api && npm run live:build && node scripts/verify-mori-public-live.mjs",
