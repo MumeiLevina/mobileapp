@@ -140,6 +140,33 @@ Stop must invalidate pending generation/playback before any new speech can begin
 
 ## Milestone gates
 
+### B implementation decision
+
+Run a separate Nest entrypoint inside `apps/api` on loopback port 4319. It reuses
+the existing provider, SafetyService, intent classifier and OutputGuard classes,
+but never imports AppModule or instantiates the private database/memory services.
+The private API and global Supabase authentication are unchanged. A dedicated
+desktop bearer credential maps to a configured public principal, never a user ID
+supplied by clients. No Supabase key is needed by the Live entrypoint.
+
+Use a public-only atomic JSON repository with an exclusive process lock for the
+initial single-operator Windows deployment. Persist reservations before provider
+calls and completed turns before delivery. Crashed in-flight turns become cancelled
+on recovery; no automatic generation replay. One generation at a time globally;
+duplicates join the same turn, cancellation creates a durable tombstone. This is
+not a multi-replica storage design: distributed deployment needs a transactional
+public-only repository before scaling. Bound retained records and fail closed at
+capacity; retention/export/redaction workflows remain G.
+
+Reserve a conservative per-turn cost ceiling from configured input/output prices,
+maximum UTF-8 input bytes, 700 output tokens/call and up to seven billable calls
+(including the existing structured-format retries). No refunds on failures or
+cancellation. Budget is cumulative for the repository, not reset by new sessions
+or process restarts. This assumes the configured vendor honors max_tokens and the
+operator supplies correct prices; enable an account-level vendor spending cap too.
+Public memory is always empty; bounded context includes only approved public turns.
+Persona is versioned server configuration, never caller-supplied prompts.
+
 A: documented audit + exact pins + isolated workspace + executable authenticated
 mock roundtrip, invalid/auth/replay/cancel tests, regression checks.
 

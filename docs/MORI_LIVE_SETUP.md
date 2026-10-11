@@ -1,8 +1,100 @@
 # Mori Live — Windows setup
 
-Milestone A is a working **MOCK transport fixture**. It does not yet run a public
-LLM, speak, render an avatar, connect YouTube or stream to OBS. Never present its
-deterministic responses as safety-reviewed production output.
+Milestone B adds the Nest **PUBLIC_LIVE API** below. Milestone A's transport-only
+fixture remains available on port 4318. Neither provides voice, a desktop avatar,
+YouTube or OBS yet. MOCK uses deterministic responses, not a real safety model.
+
+## Milestone B — public Nest API
+
+Run a credential-free integration smoke first:
+
+```powershell
+npm run live:api:smoke
+npm run test:live-api
+```
+
+This starts the actual public Nest module, sends simulated chat through the typed
+bridge, closes/restarts Nest against the same public store, verifies replay and
+cancellation, then deletes its own temporary test store. It does not use Supabase.
+
+To start a persistent local API from the repository root:
+
+```powershell
+$env:MORI_LIVE_MODE = 'MOCK'
+$env:MORI_LIVE_API_TOKEN = node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))"
+npm run live:api
+```
+
+Endpoint: `POST http://127.0.0.1:4319/v1/live`. Use `MoriLiveBridge` with that URL,
+the dedicated API token, and `expectedMode: 'MOCK'`. Session/turn/cancel envelopes
+are the same version 1 protocol as A. The bridge now defaults to a 50-second timeout
+to exceed the API's default 45-second turn deadline. If changing either timeout,
+keep the client timeout longer than the server deadline.
+
+Alternatively, copy the template `apps/api/.env.live.example` to ignored
+`apps/api/.env.live` and fill the token. `npm run live:api` loads that file; existing
+process environment variables take precedence. The private API's `.env` is not
+loaded. No private Supabase credential is required or used. `MORI_LIVE_API_TOKEN`
+authenticates B; `MORI_LIVE_BRIDGE_TOKEN` authenticates only A's fixture.
+
+The entrypoint lives in `apps/api/src/live.main.ts`, reusing Mori's existing
+SafetyService, intent classification, provider abstraction and OutputGuard.
+It does not register private controllers or instantiate private repository services.
+The model receives empty approved memory and at most four approved public exchanges
+from the same session. Request bodies cannot set a user, persona, history or memory.
+
+### STAGING / REAL
+
+Set `MORI_LIVE_MODE=STAGING` (or REAL after manual validation), `LLM_BASE_URL`
+(HTTPS OpenAI-compatible base URL), `LLM_API_KEY`, `LLM_MODEL`, and the exact
+`MORI_LIVE_INPUT_USD_PER_MILLION` / `MORI_LIVE_OUTPUT_USD_PER_MILLION` prices for
+that provider/model. No default cloud price is assumed. The server refuses cloud
+mode without complete configuration. Use the corresponding bridge `expectedMode`.
+Persona is one of `mori-public-vi-v1` or `mori-public-en-v1`, selected on the server.
+Do not change the persona/model in the middle of a session; create a new session.
+
+Budget is a **conservative reservation**, not an invoice: each turn reserves seven
+calls (including structured retries), each up to 48,000 prompt bytes plus 2,048
+bytes of framing allowance and 700 output tokens. The configured per-million
+prices convert that bound to USD. Input bytes assume a compatible byte-tokenized
+model. No refunds on timeout, fallback or cancellation; no reset on restart or
+new session. A provider with extra fees, different tokenization or ignoring
+`max_tokens` needs an adjusted policy before use. Set the vendor's own account cap.
+Cloud credentials, billing and quality have not been tested with a paid service.
+
+### Storage, limits and recovery
+
+Default store: `.mori-live/public-api/public-live.json` relative to the launching
+working directory (repo root for `npm run live:api`). It contains **public input and
+validated responses**, session/turn IDs, owner, model/persona provenance, safety
+status and cost reservations. It is not an operational log or a training dataset;
+eligibility is always prohibited. It does not contain API keys or private app data.
+Restrict the folder's Windows ACL to the operator account; POSIX mode bits alone do
+not configure Windows ACLs. Do not commit, share or enter private information here.
+
+One process owns `writer.lock`. Writes use a flushed temporary file plus atomic
+rename. Graceful Ctrl+C closes the store. After a crash, inspect the lock's PID and
+verify no process uses this store before manually removing **only `writer.lock`**;
+never delete `public-live.json` to reset a budget. On restart, pending turns become
+cancelled and completed turns remain replayable. A corrupt store fails closed;
+preserve it and restore a trusted backup rather than replacing it with empty data.
+
+Bounds: one generation globally, 90 normal requests/minute by default, a separate
+120 cancel requests/minute allowance, 100 turns/session by default, 64 retained
+sessions, 4,096 total retained turns, 64MB store, and four-hour sessions by default.
+Unknown/expired sessions fail closed. At capacity the server stops accepting new
+work; no automatic data deletion is implemented in B. Retention/redaction/review
+and deletion/export workflows belong to G. Do not deploy unattended with real
+viewer data until those controls are ready. Multi-replica deployments require a
+transactional public-only database implementation, not this single-writer file.
+
+Manual cloud validation: send harmless Vietnamese text, an instruction to reveal
+private memories, and a simulated safety-risk test; verify no private data access,
+appropriate safety fallback, correct output status and no raw text in logs. Stop
+a slow turn with `turn.cancel`, retry its IDs and verify empty cancelled output.
+Use a small test budget and confirm 429 responses once reservations reach it.
+
+## Milestone A — transport fixture
 
 Requirements: Windows PowerShell, Git, Node.js >=22 and npm. Python is optional in
 A; upstream requires Python >=3.10,<3.13, with 3.11 selected in the pin file.
@@ -64,9 +156,9 @@ packages, caches or tokens. Upstream integration requires Milestone C's launcher
 Keep the existing `apps/api/.env` and mobile configuration described in README.
 `npm run dev:api` runs Nest with existing Supabase/LLM configuration.
 `npm run dev:mobile` starts Expo. Neither is needed by the A mock fixture.
-The desktop token currently authenticates **only the mock fixture**; a production
-public Nest endpoint is a later milestone. Never send it to private API routes or
-give the desktop a Supabase service-role credential.
+The private API still uses Supabase JWTs. The public Nest entrypoint uses a separate
+desktop token, and does not expose private routes. Never give the desktop a
+Supabase service-role credential.
 
 ## Assets, voice and platforms
 

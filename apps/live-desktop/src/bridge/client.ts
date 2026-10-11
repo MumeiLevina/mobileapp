@@ -57,7 +57,7 @@ export class MoriLiveBridge {
         },
         body: JSON.stringify(request),
         signal: AbortSignal.any([
-          AbortSignal.timeout(this.config.timeoutMs ?? 5000),
+          AbortSignal.timeout(this.config.timeoutMs ?? 50000),
           ...(signal ? [signal] : []),
         ]),
       });

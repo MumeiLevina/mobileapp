@@ -10,6 +10,7 @@ dist/
 coverage/
 .env
 .env.local
+.env.live
 *.tsbuildinfo
 playwright-report/
 test-results/
