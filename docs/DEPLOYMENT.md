@@ -1,5 +1,8 @@
 # Deployment runbook
 
+For the Windows-specific staging, GitHub environment, EAS preview and Android
+device sequence, see [WINDOWS_STAGING_ANDROID.md](WINDOWS_STAGING_ANDROID.md).
+
 ## 1. Prepare isolated environments
 
 Create separate Supabase projects and API deployments for staging and production. Configure production service credentials only in the hosting platform. Never copy production data into staging. Follow [ENVIRONMENTS.md](ENVIRONMENTS.md) for variable ownership and mobile environment values.

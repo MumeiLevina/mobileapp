@@ -1,5 +1,8 @@
 # Staging service verification
 
+Windows owners can follow the end-to-end PowerShell sequence in
+[WINDOWS_STAGING_ANDROID.md](WINDOWS_STAGING_ANDROID.md).
+
 Use a disposable development or staging Supabase project. The commands create synthetic users and delete them at the end. Never point them at production.
 
 Apply **every file in `supabase/migrations` in filename order**. Do not use a

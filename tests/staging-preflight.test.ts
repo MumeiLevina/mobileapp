@@ -52,6 +52,16 @@ test("staging preflight rejects missing and unsafe configuration", () => {
   expect(missing.status).toBe(1);
   expect(missing.stderr).toContain("LLM_API_KEY");
 
+  for (const name of [
+    "MOCK_AI",
+    "RUN_SUPABASE_INTEGRATION_TESTS",
+    "RUN_PROVIDER_SAFETY_EVALS",
+  ]) {
+    const missingGate = run({ [name]: undefined });
+    expect(missingGate.status).toBe(1);
+    expect(missingGate.stderr).toContain(name);
+  }
+
   const production = run({
     STAGING_TARGET: "production",
     STAGING_API_URL: "https://api.production.example.test",
