@@ -17,11 +17,10 @@ import {
 } from "../../components/ui";
 import { usePreferences } from "../../store/preferences";
 import { request, refresh, queryClient } from "../../services/api";
-import { supabase } from "../../services/auth";
-import { clearUserDeviceData } from "../../services/cleanup";
 import { useSession } from "../../store/session";
 import { config } from "../../lib/config";
 import { loadDemoSamples } from "../../services/demo";
+import { signOutAndClearLocalData } from "../../services/sign-out";
 import { useT } from "../../i18n";
 import { useTheme } from "../../theme";
 export default function Me() {
@@ -57,14 +56,9 @@ export default function Me() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["profile"] }),
   });
   const signout = useMutation({
-    mutationFn: async () => {
-      await clearUserDeviceData(user!);
-      const result = await supabase?.auth.signOut();
-      if (result?.error) throw new Error("Chưa đăng xuất được. Hãy thử lại.");
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      router.replace("/auth");
+    mutationFn: () => signOutAndClearLocalData(user!),
+    onSettled: () => {
+      if (!useSession.getState().userId) router.replace("/auth");
     },
   });
   const seed = useMutation({
