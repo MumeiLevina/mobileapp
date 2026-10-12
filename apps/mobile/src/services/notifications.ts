@@ -40,10 +40,9 @@ export async function scheduleLetterNotification(
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
-  const current = await Notifications.getPermissionsAsync();
-  const permission = current.granted
-    ? current
-    : await Notifications.requestPermissionsAsync();
+  // Saving a private letter must not trigger an unsolicited OS permission prompt.
+  // Only schedule it if the user has already granted notification permission.
+  const permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) return false;
   await Notifications.cancelScheduledNotificationAsync(plan.identifier).catch(
     () => undefined,
@@ -112,14 +111,18 @@ export async function scheduleReminder(preference: NotificationPreference) {
   if (Platform.OS === "web") return;
 
   const plan = ritualReminderPlan(preference);
-  await Promise.all(
-    (["morning", "evening"] as const).map((id) =>
-      Notifications.cancelScheduledNotificationAsync(`ritual:${id}`).catch(
-        () => undefined,
+  const cancelExisting = () =>
+    Promise.all(
+      (["morning", "evening"] as const).map((id) =>
+        Notifications.cancelScheduledNotificationAsync(`ritual:${id}`).catch(
+          () => undefined,
+        ),
       ),
-    ),
-  );
+    );
+
+  // Turning reminders off must work even when notifications are denied.
   if (plan.length === 0) {
+    await cancelExisting();
     return;
   }
 
@@ -139,6 +142,8 @@ export async function scheduleReminder(preference: NotificationPreference) {
     );
   }
 
+  // Do not delete previously scheduled reminders if permission is denied.
+  await cancelExisting();
   for (const reminder of plan) {
     await Notifications.scheduleNotificationAsync({
       identifier: `ritual:${reminder.id}`,
