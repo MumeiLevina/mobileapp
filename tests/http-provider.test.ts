@@ -184,8 +184,19 @@ describe("OpenAI strict JSON schemas", () => {
     ) as JsonSchemaObject;
 
     expectStrictObjectSchema(schema);
-    expect(schema.required).toEqual(["safe"]);
+    expect(schema.required).toEqual(["safe", "reason"]);
     expect(schema.properties?.safe?.type).toBe("boolean");
+    expect(schema.properties?.reason?.enum).toEqual([
+      "safe",
+      "harmful_directions",
+      "emotional_dependency",
+      "romantic_exclusivity",
+      "manipulative_engagement",
+      "medical_claim",
+      "guaranteed_outcome",
+      "crisis_mismatch",
+      "unsupported_memory",
+    ]);
   });
 });
 

@@ -111,6 +111,7 @@ export class AIOrchestratorService {
         await this.provider.generateText(context),
         [],
         normalized,
+        history.map((message) => message.content),
       );
     }
     return {
@@ -217,6 +218,7 @@ export class AIOrchestratorService {
         await this.provider.generateText(context),
         memories.map((m) => m.content),
         normalized,
+        history.map((message) => message.content),
       );
     }
     const saved = await this.db.rpc<Message[]>("save_exchange", {
@@ -283,6 +285,7 @@ export class AIOrchestratorService {
         text,
         [],
         history.map((m) => m.content).join("\n"),
+        history.map((m) => m.content),
       ),
       source: "conversation",
       saved: false,
