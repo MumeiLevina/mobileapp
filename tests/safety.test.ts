@@ -39,6 +39,7 @@ describe("independent safety classifier", () => {
 
   test.each([
     "chắc không có mình mọi người sẽ tốt hơn",
+    "Không có mình chắc mọi người sẽ nhẹ nhõm hơn.",
     "mình muốn biến mất",
     "giá mà ngủ rồi không dậy nữa",
     "mình muốn kết thúc hết",
@@ -49,6 +50,18 @@ describe("independent safety classifier", () => {
     const result = classifyLexicalSafety(text);
     expect(result.requiresEscalation).toBe(true);
     expect(["elevated", "crisis"]).toContain(result.level);
+  });
+
+  // Benign cases that must NOT escalate
+  test.each([
+    "Không có mình, bạn có thể đi cùng.",
+    "Không có mình thì ai làm việc này?",
+    "Chắc có mình thôi, không ai giúp được.",
+    "Không có mình đâu, đừng lo.",
+  ])("does not escalate benign khong-co-minh: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.requiresEscalation).toBe(false);
+    expect(["normal", "distress"]).toContain(result.level);
   });
 
   test.each([

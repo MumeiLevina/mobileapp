@@ -42,30 +42,52 @@ export function classifyLexicalSafety(text: string): SafetyResult {
     "hurtmyself",
     "tulamdau",
   ]);
-  const indirectSelfHarm = includesAny(words, [
-    "chac khong co minh moi nguoi se tot hon",
-    "khong co minh moi nguoi se tot hon",
-    "khong co minh chac ai cung do met",
-    "minh muon bien mat",
-    "muon bien mat",
-    "gia ma ngu roi khong day nua",
-    "ngu roi khong day nua",
-    "muon ket thuc het",
-    "khong chiu noi nua",
-    "minh da chuan bi roi",
-    "i want to disappear",
-    "better off without me",
-    "wish i would not wake up",
-    "i wish i were dead",
-  ]);
+  // Indirect self-harm: burden / better-without-me / passive disappear wishes
+  // Uses words token because phrase order varies in Vietnamese.
+  const indirectSelfHarm =
+    includesAny(words, [
+      "chac khong co minh moi nguoi se tot hon",
+      "khong co minh moi nguoi se tot hon",
+      "khong co minh Chac moi nguoi se nhe nhom hon",
+      "khong co minh Chac moi nguoi se tot hon",
+      "khong co minh Chac moi nguoi se nhe hon",
+      "khong co minh Chac moi nguoi se nhe nhon hon",
+      "khong co minh Chac ai cung nhe hon",
+      "khong co minh Chac ai cung do met",
+      "khong co minh Chac ai cung se do met",
+      "khong co minh Chac ai cung se nhe nhon hon",
+      "khong co minh Chac moi nguoi se do vat va hon",
+      "khong co minh Chac moi nguoi se bot kho hon",
+      "minh muon bien mat",
+      "muon bien mat",
+      "gia ma ngu roi khong day nua",
+      "ngu roi khong day nua",
+      "muon ket thuc het",
+      "khong chiu noi nua",
+      "minh da chuan bi roi",
+      "i want to disappear",
+      "better off without me",
+      "wish i would not wake up",
+      "i wish i were dead",
+    ]) ||
+    // Catch "khong co minh" + comparative suggesting others would benefit
+    // Covers: "khong co minh... nhe hon", "tot hon", "do met", "nhẹ nhõm hơn", "nhẹ nhõm", "vui hon"
+    (/\bkhong co minh\b/.test(words) &&
+      /\b(chac|co le)\b/.test(words) &&
+      /\b(moi nguoi|ai cung|ai)\b/.test(words) &&
+      /\b(se |)((tot|nhe|vui) (hon|nhon|nhom)|do met|bot kho)\b/.test(words));
   const methodSignal =
     /(co|cam|giu) dao (o day|trong tay)|uong het (thuoc|medicine)|overdose|qua lieu|have (the )?(pills|knife) (here|with me)/.test(
       words,
     );
+  // Violence: requires a clear violent verb + target. Avoids false positives from
+  // common words like "ban nguoi" (bạn người = "a person/you") or "lam gi" (做什么 = "doing what").
   const violence =
-    /(giet|dam|ban) (anh|co|no|nguoi|ai do)|lam hai (nguoi khac|ai do)|kill (him|her|them|someone)|hurt someone|attack (him|her|them|someone)/.test(
-      words,
-    );
+    /\b(giet|dam|ban nhau) [\w]+(?:[\s]+[\w]+)*\b/.test(words) ||
+    /ban\s+(?:nguoi|ai\s+do|ho\s+ta)\b/.test(words) ||
+    /\b(giet|dam) (?:anh|co|no|ai\s+do)\b/.test(words) ||
+    /\blam hai (?:nguoi khac|ai do)\b/.test(words) ||
+    /\b(giet|kill|attack|hurt) (?:someone|him|her|them)\b/.test(words);
   const ambiguousPlan = [
     "toi nay minh se lam",
     "i will do it tonight",
