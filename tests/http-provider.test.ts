@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
+  ProviderIncompleteResponseError,
   ProviderInvalidResponseError,
   ProviderRateLimitError,
+  ProviderRefusalError,
   ProviderTimeoutError,
   ProviderUnavailableError,
 } from "../apps/api/src/ai/providers/errors";
@@ -42,9 +44,34 @@ function jsonResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-function chatResponse(content: string): Response {
-  return jsonResponse(200, { choices: [{ message: { content } }] });
+function chatResponse(
+  content: string | null,
+  finishReason: string | null = "stop",
+  refusal: string | null = null,
+): Response {
+  return jsonResponse(200, {
+    choices: [
+      {
+        finish_reason: finishReason,
+        message: { content, refusal },
+      },
+    ],
+  });
 }
+
+const intentSchema = z.object({
+  intent: z.enum(["LISTEN", "REFLECT", "ADVICE", "CELEBRATE"]),
+  emotion: z.string(),
+  intensity: z.number().min(0).max(1),
+  adviceRequested: z.boolean(),
+});
+
+const validIntent = {
+  intent: "LISTEN",
+  emotion: "calm",
+  intensity: 0.4,
+  adviceRequested: false,
+};
 
 describe("HttpLLMProvider", () => {
   const originalFetch = global.fetch;
@@ -90,6 +117,172 @@ describe("HttpLLMProvider", () => {
         z.object({ level: z.literal("safe") }),
       ),
     ).resolves.toEqual({ level: "safe" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const request = JSON.parse(
+      String(fetchMock.mock.calls[0][1]?.body),
+    ) as Record<string, any>;
+    expect(request.response_format).toMatchObject({
+      type: "json_schema",
+      json_schema: { strict: true },
+    });
+    expect(request.response_format.json_schema.schema).toMatchObject({
+      type: "object",
+      additionalProperties: false,
+    });
+  });
+
+  test("accepts valid structured JSON", async () => {
+    fetchMock.mockResolvedValue(chatResponse(JSON.stringify(validIntent)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).resolves.toEqual(validIntent);
+  });
+
+  test.each([
+    ["missing required fields", { intent: "LISTEN" }, "emotion", "invalid_type"],
+    [
+      "invalid intent enum",
+      { ...validIntent, intent: "UNKNOWN" },
+      "intent",
+      "invalid_enum_value",
+    ],
+    [
+      "wrong intensity type",
+      { ...validIntent, intensity: "high" },
+      "intensity",
+      "invalid_type",
+    ],
+    [
+      "out-of-range intensity",
+      { ...validIntent, intensity: 2 },
+      "intensity",
+      "too_big",
+    ],
+  ])("rejects %s with field-level diagnostics", async (_, value, path, code) => {
+    fetchMock.mockResolvedValue(chatResponse(JSON.stringify(value)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "schema_validation",
+        invalid_field_paths: expect.arrayContaining([path]),
+        zod_issue_codes: expect.arrayContaining([code]),
+      }),
+    );
+  });
+
+  test("distinguishes malformed JSON from schema validation", async () => {
+    fetchMock.mockResolvedValue(chatResponse("{not-json"));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "json_parse",
+        content_empty: false,
+        content_truncated: false,
+      }),
+    );
+  });
+
+  test("rejects an empty response with explicit diagnostics", async () => {
+    fetchMock.mockResolvedValue(chatResponse(""));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "empty_content",
+        finish_reason: "stop",
+        content_empty: true,
+      }),
+    );
+  });
+
+  test("rejects truncated and refused responses without retrying", async () => {
+    const provider = new HttpLLMProvider(config(), logger);
+    fetchMock.mockResolvedValueOnce(chatResponse('{"intent":', "length"));
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderIncompleteResponseError);
+
+    fetchMock.mockResolvedValueOnce(chatResponse(null, "stop", "refused"));
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderRefusalError);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "truncated",
+        finish_reason: "length",
+        content_truncated: true,
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ validation_failure: "refusal" }),
+    );
+  });
+
+  test("falls back to JSON mode for compatible providers without strict schemas", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(400, { error: "unsupported format" }))
+      .mockResolvedValueOnce(chatResponse(JSON.stringify(validIntent)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).resolves.toEqual(validIntent);
+    const fallbackRequest = JSON.parse(
+      String(fetchMock.mock.calls[1][1]?.body),
+    ) as Record<string, any>;
+    expect(fallbackRequest.response_format).toEqual({ type: "json_object" });
+  });
+
+  test("does not hide an OpenAI strict-schema rejection with a fallback", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(400, { error: "invalid schema" }));
+    const provider = new HttpLLMProvider(
+      config({ LLM_BASE_URL: "https://api.openai.com/v1" }),
+      logger,
+    );
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderUnavailableError);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

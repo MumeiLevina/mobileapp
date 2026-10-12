@@ -2,7 +2,12 @@ export type ProviderOperation =
   "text_generation" | "structured_generation" | "embedding";
 
 export type ProviderErrorCategory =
-  "timeout" | "rate_limit" | "unavailable" | "invalid_response";
+  | "timeout"
+  | "rate_limit"
+  | "unavailable"
+  | "invalid_response"
+  | "incomplete_response"
+  | "refusal";
 
 export abstract class ProviderError extends Error {
   abstract readonly category: ProviderErrorCategory;
@@ -46,5 +51,21 @@ export class ProviderInvalidResponseError extends ProviderError {
 
   constructor(operation: ProviderOperation) {
     super("The AI provider returned an invalid response.", operation);
+  }
+}
+
+export class ProviderIncompleteResponseError extends ProviderError {
+  readonly category = "incomplete_response" as const;
+
+  constructor(operation: ProviderOperation) {
+    super("The AI provider returned an incomplete response.", operation);
+  }
+}
+
+export class ProviderRefusalError extends ProviderError {
+  readonly category = "refusal" as const;
+
+  constructor(operation: ProviderOperation) {
+    super("The AI provider refused the request.", operation);
   }
 }
