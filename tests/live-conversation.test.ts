@@ -12,9 +12,7 @@ import {
   isActionRepetitive,
   extractTopic,
   classifyMessage,
-  MessageCategorySchema,
   planConversation,
-  DEFAULT_PLANNER_CONFIG,
   createTopicMemory,
   updateTopicMemory,
   type TurnMetadata,
@@ -185,7 +183,9 @@ describe("classifyMessage", () => {
 });
 
 describe("planConversation", () => {
-  const makeMetadata = (overrides: Partial<TurnMetadata> = {}): TurnMetadata => ({
+  const makeMetadata = (
+    overrides: Partial<TurnMetadata> = {},
+  ): TurnMetadata => ({
     viewerText: "Xin chào!",
     isFirstTurn: false,
     turnsSinceLastQuestion: 0,
@@ -225,7 +225,8 @@ describe("planConversation", () => {
 
   it("should give observations to personal shares", () => {
     const metadata = makeMetadata({
-      viewerText: "Hôm nay tôi đi làm và gặp rất nhiều khó khăn. Tôi phải đối mặt với rất nhiều thử thách và cảm thấy mệt mỏi.",
+      viewerText:
+        "Hôm nay tôi đi làm và gặp rất nhiều khó khăn. Tôi phải đối mặt với rất nhiều thử thách và cảm thấy mệt mỏi.",
       recentActions: ["answer"],
       consecutiveQuestions: 0,
     });
@@ -234,7 +235,7 @@ describe("planConversation", () => {
   });
 
   it("should prevent too many consecutive questions", () => {
-    let metadata = makeMetadata({
+    const metadata = makeMetadata({
       viewerText: "Câu hỏi 1?",
       consecutiveQuestions: 2,
       recentActions: ["ask_followup", "ask_followup"],
@@ -323,6 +324,11 @@ describe("Topic Memory", () => {
     }
     // After 5 different topics, slice(-4) keeps last 4: [music, weather, games, travel]
     expect(memory.topicHistory.length).toBeLessThanOrEqual(4);
-    expect(memory.topicHistory).toEqual(["music", "weather", "games", "travel"]);
+    expect(memory.topicHistory).toEqual([
+      "music",
+      "weather",
+      "games",
+      "travel",
+    ]);
   });
 });

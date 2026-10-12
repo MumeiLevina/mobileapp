@@ -88,14 +88,14 @@ export function updateRepetitionState(
   action: ConversationAction,
   topic: string | null,
 ): RepetitionState {
-  const recentActions = [...state.recentActions, action].slice(-MAX_RECENT_ACTIONS);
+  const recentActions = [...state.recentActions, action].slice(
+    -MAX_RECENT_ACTIONS,
+  );
   const recentTopics = topic
     ? [...state.recentTopics, topic].slice(-TOPIC_MEMORY_TURNS)
     : state.recentTopics;
   const consecutiveQuestions =
-    action === "ask_followup"
-      ? state.consecutiveQuestions + 1
-      : 0;
+    action === "ask_followup" ? state.consecutiveQuestions + 1 : 0;
 
   return { recentActions, recentTopics, consecutiveQuestions };
 }
@@ -114,17 +114,108 @@ export function isActionRepetitive(
 // ── Topic Extraction ─────────────────────────────────────────────────────────
 
 const TOPIC_KEYWORDS: Record<string, string[]> = {
-  weather: ["weather", "rain", "snow", "cold", "hot", "sun", "temperature", "trời", "nắng", "mưa", "lạnh", "nóng", "thời tiết"],
-  food: ["food", "cook", "recipe", "delicious", "meal", "ăn", "nấu", "món", "cơm", "phở", "bánh"],
-  music: ["music", "song", "listen", "artist", "band", "playlist", "nhạc", "hát", "bài hát"],
-  games: ["game", "play", "video game", "stream", "esports", "trò chơi", "chơi"],
-  work: ["work", "job", "office", "boss", "career", "interview", "làm", "việc", "công ty"],
-  school: ["school", "study", "exam", "university", "class", "học", "thi", "trường", "sinh viên"],
-  life: ["life", "future", "dream", "goal", "plan", "cuộc sống", "tương lai", "ước mơ", "mục tiêu"],
+  weather: [
+    "weather",
+    "rain",
+    "snow",
+    "cold",
+    "hot",
+    "sun",
+    "temperature",
+    "trời",
+    "nắng",
+    "mưa",
+    "lạnh",
+    "nóng",
+    "thời tiết",
+  ],
+  food: [
+    "food",
+    "cook",
+    "recipe",
+    "delicious",
+    "meal",
+    "ăn",
+    "nấu",
+    "món",
+    "cơm",
+    "phở",
+    "bánh",
+  ],
+  music: [
+    "music",
+    "song",
+    "listen",
+    "artist",
+    "band",
+    "playlist",
+    "nhạc",
+    "hát",
+    "bài hát",
+  ],
+  games: [
+    "game",
+    "play",
+    "video game",
+    "stream",
+    "esports",
+    "trò chơi",
+    "chơi",
+  ],
+  work: [
+    "work",
+    "job",
+    "office",
+    "boss",
+    "career",
+    "interview",
+    "làm",
+    "việc",
+    "công ty",
+  ],
+  school: [
+    "school",
+    "study",
+    "exam",
+    "university",
+    "class",
+    "học",
+    "thi",
+    "trường",
+    "sinh viên",
+  ],
+  life: [
+    "life",
+    "future",
+    "dream",
+    "goal",
+    "plan",
+    "cuộc sống",
+    "tương lai",
+    "ước mơ",
+    "mục tiêu",
+  ],
   hobby: ["hobby", "interest", "passion", "free time", "sở thích", "rảnh"],
   pet: ["pet", "dog", "cat", "animal", "fish", "thú cưng", "chó", "mèo", "cún"],
-  travel: ["travel", "trip", "vacation", "country", "city", "du lịch", "thành phố"],
-  tech: ["tech", "computer", "phone", "AI", "app", "code", "công nghệ", "điện thoại"],
+  travel: [
+    "travel",
+    "trip",
+    "vacation",
+    "country",
+    "city",
+    "du lịch",
+    "thành phố",
+  ],
+  tech: [
+    "tech",
+    "computer",
+    "phone",
+    "AI",
+    "app",
+    "code",
+    "công nghệ",
+    "điện thoại",
+  ],
   anime: ["anime", "manga", "japan", "vtuber", "cosplay"],
   meme: ["meme", "funny", "lol", "joke", "hài", "cười"],
 };
@@ -133,20 +224,26 @@ export function extractTopic(text: string): string | null {
   const lower = text.toLowerCase();
   for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
     for (const kw of keywords) {
+      const normalizedKeyword = kw.toLowerCase();
       // Short keywords (<=3): require word boundary to avoid "ai" in "mori" matching tech's "ai"
       // and "ph" in "phở" matching tech's "phone+s"
-      if (kw.length <= 3) {
-        const pattern = String.raw`\b${kw}\b`;
-        if (new RegExp(pattern).test(lower)) return topic;
+      if (normalizedKeyword.length <= 3) {
+        const pattern = String.raw`(?:^|[^\p{L}\p{N}_])${normalizedKeyword}(?=$|[^\p{L}\p{N}_])`;
+        if (new RegExp(pattern, "u").test(lower)) return topic;
       } else {
-        if (lower.includes(kw)) return topic;
+        if (lower.includes(normalizedKeyword)) return topic;
       }
       // Handle common plural forms with word boundary to avoid "ph" → "phones"
-      if (!kw.endsWith("s") && kw.length > 3) {
-        const plural = kw + "s";
+      if (!normalizedKeyword.endsWith("s") && normalizedKeyword.length > 3) {
+        const plural = normalizedKeyword + "s";
         if (lower.includes(plural)) return topic;
         // -y → -ies: hobby → hobbies
-        if (kw.endsWith("y") && lower.includes(kw.slice(0, -1) + "ies")) return topic;
+        if (
+          normalizedKeyword.endsWith("y") &&
+          lower.includes(normalizedKeyword.slice(0, -1) + "ies")
+        ) {
+          return topic;
+        }
       }
     }
   }
@@ -173,20 +270,28 @@ export function classifyMessage(text: string): MessageCategory {
 
   // Greetings FIRST — check before spam to avoid "Hello!" being marked as spam
   if (
-    /^(xin chào|chào|hi|hello|hey|yo|ôi|helo|hola|hi there|hey there)/i.test(lower)
+    /^(xin chào|chào|hi|hello|hey|yo|ôi|helo|hola|hi there|hey there)(?:$|[\s,!?.])/i.test(
+      lower,
+    )
   ) {
     return "greeting";
   }
 
   // Spam detection: very short repetitive messages
   const words = lower.split(/\s+/);
-  if (words.length <= 2 && words.every((w) => w === words[0])) {
+  if (
+    words.length >= 2 &&
+    words.length <= 4 &&
+    words.every((w) => w === words[0])
+  ) {
     return "spam";
   }
 
   // Praise — check before question to catch "X is great!" as praise
   if (
-    /(\bamazing|\bawesome|\bbest|\bcool|\blove you|\byêu|\btuyệt|vời|great job|good job|giỏi)/i.test(lower) &&
+    /(\bamazing|\bawesome|\bbest|\bcool|\blove you|\byêu|\btuyệt|vời|great job|good job|giỏi)/i.test(
+      lower,
+    ) &&
     lower.length < 200
   ) {
     return "praise";
@@ -199,7 +304,9 @@ export function classifyMessage(text: string): MessageCategory {
 
   // Complaints
   if (
-    /(\bsad|\bupset|\bangry|\bfrustrated|bad|terrible|hate|không thích|buồn|chán|失望|讨厌)/i.test(lower) &&
+    /(\bsad|\bupset|\bangry|\bfrustrated|bad|terrible|hate|không thích|buồn|chán|失望|讨厌)/i.test(
+      lower,
+    ) &&
     !lower.includes("?")
   ) {
     return "complaint";
@@ -211,7 +318,9 @@ export function classifyMessage(text: string): MessageCategory {
   }
 
   // Topic change
-  if (/(btw|nhân tiện|anyway|bằng cách|mà|nói qua|vậy|by the way)/i.test(lower)) {
+  if (
+    /(btw|nhân tiện|anyway|bằng cách|mà|nói qua|vậy|by the way)/i.test(lower)
+  ) {
     return "topic_change";
   }
 
@@ -298,7 +407,12 @@ export function planConversation(
   }
 
   // Check repetitive action
-  if (isActionRepetitive({ recentActions, recentTopics, consecutiveQuestions }, "ask_followup")) {
+  if (
+    isActionRepetitive(
+      { recentActions, recentTopics, consecutiveQuestions },
+      "ask_followup",
+    )
+  ) {
     return {
       action: "answer",
       reasoning: "Preventing question spam",
@@ -311,7 +425,12 @@ export function planConversation(
     recentTopics.length > 0 &&
     recentTopics[recentTopics.length - 1] === topic
   ) {
-    if (!isActionRepetitive({ recentActions, recentTopics, consecutiveQuestions }, "continue_topic")) {
+    if (
+      !isActionRepetitive(
+        { recentActions, recentTopics, consecutiveQuestions },
+        "continue_topic",
+      )
+    ) {
       return {
         action: "continue_topic",
         topicToContinue: topic,
@@ -429,7 +548,10 @@ export function planConversation(
       // Unclear messages get a confused response
       return {
         action: "brief_observation",
-        observation: topic === null ? "Hmm, mình không chắc mình hiểu ý bạn. Bạn có thể nói rõ hơn không?" : null,
+        observation:
+          topic === null
+            ? "Hmm, mình không chắc mình hiểu ý bạn. Bạn có thể nói rõ hơn không?"
+            : null,
         reasoning: "Unclear message",
       };
 
@@ -466,13 +588,19 @@ export function updateTopicMemory(
   let turnsOnTopic = memory.turnsOnTopic;
   let topicHistory = memory.topicHistory;
 
-  if (detectedTopic && plan.action !== "silent_pass" && plan.action !== "operator_escalate") {
+  if (
+    detectedTopic &&
+    plan.action !== "silent_pass" &&
+    plan.action !== "operator_escalate"
+  ) {
     if (detectedTopic === currentTopic) {
       turnsOnTopic += 1;
     } else {
       currentTopic = detectedTopic;
       turnsOnTopic = 1;
-      topicHistory = [...topicHistory, detectedTopic].slice(-TOPIC_MEMORY_TURNS);
+      topicHistory = [...topicHistory, detectedTopic].slice(
+        -TOPIC_MEMORY_TURNS,
+      );
     }
   } else if (plan.action === "change_topic") {
     currentTopic = null;

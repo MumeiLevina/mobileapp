@@ -107,13 +107,18 @@ export function buildTurnPrompt(
   const messages: PromptMessage[] = [system];
 
   // Rebuild interleaved history from filtered entries
-  const historyIndex = history.findIndex(
-    (m) => m === approvedHistory[0],
-  );
+  const historyIndex = history.findIndex((m) => m === approvedHistory[0]);
   if (historyIndex > 0) {
     // include assistant turns that precede the filtered user turns
-    for (let i = historyIndex - 1; i >= 0 && messages.length - 1 < MAX_HISTORY_TURNS * 2; i--) {
-      if (history[i].role === "assistant" && typeof history[i].content === "string") {
+    for (
+      let i = historyIndex - 1;
+      i >= 0 && messages.length - 1 < MAX_HISTORY_TURNS * 2;
+      i--
+    ) {
+      if (
+        history[i].role === "assistant" &&
+        typeof history[i].content === "string"
+      ) {
         messages.push(history[i]);
         if (messages.length - 1 >= MAX_HISTORY_TURNS * 2) break;
       }
@@ -158,7 +163,9 @@ Locale: ${persona.locale === "vi" ? "Tiếng Việt" : "English"}.`;
 /**
  * Build a system prompt specifically for Vietnamese persona with cultural nuance.
  */
-export function buildVietnameseSystemPrompt(persona: PersonaDefinition): string {
+export function buildVietnameseSystemPrompt(
+  persona: PersonaDefinition,
+): string {
   if (persona.locale !== "vi") return buildSystemPrompt(persona);
 
   const localeLabel = "Tiếng Việt";
