@@ -12,7 +12,7 @@ import { buildTurnPrompt, getPersona } from "./persona";
 
 export class PublicMockProvider extends MockLLMProvider {
   async generateText(messages: PromptMessage[]) {
-    return messages[0]?.content.includes("Reply in English")
+    return messages[0]?.content.includes("mori-public-en-v1")
       ? "Hello everyone! This is a simulated Mori Live response."
       : "Chào mọi người! Đây là phản hồi mô phỏng của Mori Live.";
   }
