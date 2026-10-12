@@ -89,64 +89,58 @@ export function buildTurnPrompt(
   viewerText: string,
   history: PromptMessage[],
 ): PromptMessage[] {
-  const system: PromptMessage = {
-    role: "system",
-    content: buildSystemPrompt(persona),
-  };
-
-  // Filter and slice history — only approved complete turns
-  const approvedHistory = history
-    .filter(
-      (m) =>
-        m.role === "user" &&
-        typeof m.content === "string" &&
-        m.content.startsWith(`{"source":"${VIEWER_SOURCE}"`),
-    )
-    .slice(-MAX_HISTORY_TURNS);
-
-  const messages: PromptMessage[] = [system];
-
-  // Rebuild interleaved history from filtered entries
-  const historyIndex = history.findIndex((m) => m === approvedHistory[0]);
-  if (historyIndex > 0) {
-    // include assistant turns that precede the filtered user turns
-    for (
-      let i = historyIndex - 1;
-      i >= 0 && messages.length - 1 < MAX_HISTORY_TURNS * 2;
-      i--
+  // Only server-recorded public viewer/assistant pairs may enter the context.
+  // Never forward system/tool roles or orphan assistant turns from history.
+  const approvedPairs: PromptMessage[][] = [];
+  for (let i = 0; i + 1 < history.length; i++) {
+    const viewer = history[i];
+    const assistant = history[i + 1];
+    if (
+      viewer.role !== "user" ||
+      assistant.role !== "assistant" ||
+      typeof viewer.content !== "string" ||
+      typeof assistant.content !== "string" ||
+      !assistant.content.trim() ||
+      assistant.content.length > 4000
     ) {
+      continue;
+    }
+
+    try {
+      const payload: unknown = JSON.parse(viewer.content);
       if (
-        history[i].role === "assistant" &&
-        typeof history[i].content === "string"
+        typeof payload !== "object" ||
+        payload === null ||
+        !("source" in payload) ||
+        payload.source !== VIEWER_SOURCE ||
+        !("text" in payload) ||
+        typeof payload.text !== "string" ||
+        payload.text.length > 2000
       ) {
-        messages.push(history[i]);
-        if (messages.length - 1 >= MAX_HISTORY_TURNS * 2) break;
+        continue;
       }
+    } catch {
+      continue;
     }
-    messages.reverse();
+
+    approvedPairs.push([viewer, assistant]);
+    i++; // Consume this complete pair once, preserving chronological order.
   }
 
-  for (const turn of approvedHistory) {
-    messages.push(turn);
-    const assistantIndex = history.indexOf(
-      history.find(
-        (m, idx) =>
-          idx > history.indexOf(turn) &&
-          m.role === "assistant" &&
-          typeof m.content === "string",
-      )!,
-    );
-    if (assistantIndex !== -1) {
-      messages.push(history[assistantIndex]);
-    }
-  }
-
-  messages.push({
-    role: "user",
-    content: JSON.stringify({ source: VIEWER_SOURCE, text: viewerText }),
-  });
-
-  return messages;
+  return [
+    {
+      role: "system",
+      content:
+        persona.locale === "vi"
+          ? buildVietnameseSystemPrompt(persona)
+          : buildSystemPrompt(persona),
+    },
+    ...approvedPairs.slice(-MAX_HISTORY_TURNS).flat(),
+    {
+      role: "user",
+      content: JSON.stringify({ source: VIEWER_SOURCE, text: viewerText }),
+    },
+  ];
 }
 
 /**

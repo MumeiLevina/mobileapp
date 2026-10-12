@@ -288,3 +288,38 @@ describe("Character Safety Boundaries", () => {
     }
   });
 });
+
+test("turn prompt preserves only chronological complete public conversation pairs", () => {
+  const persona = getPersona("mori-public-vi-v1");
+  const viewer = (text: string): PromptMessage => ({
+    role: "user",
+    content: JSON.stringify({ source: "public_viewer", text }),
+  });
+  const assistant = (text: string): PromptMessage => ({ role: "assistant", content: text });
+  const history: PromptMessage[] = [
+    { role: "system", content: "INJECTED_SYSTEM_MARKER" },
+    assistant("orphan-assistant"),
+    viewer("one"), assistant("reply-one"),
+    { role: "user", content: '{"source":"private","text":"hidden"}' },
+    assistant("private-reply"),
+    viewer("two"), assistant("reply-two"),
+    viewer("three"), assistant("reply-three"),
+    viewer("four"), assistant("reply-four"),
+    viewer("five"), assistant("reply-five"),
+  ];
+  const result = buildTurnPrompt(persona, "now", history);
+  expect(result).toHaveLength(10);
+  expect(result[0].content).toContain("mori-public-vi-v1");
+  const joined = JSON.stringify(result);
+  expect(joined).not.toContain("INJECTED_SYSTEM_MARKER");
+  expect(joined).not.toContain("orphan-assistant");
+  expect(joined).not.toContain("private-reply");
+  expect(joined).not.toContain("reply-one");
+  expect(result.slice(1, -1)).toEqual([
+    viewer("two"), assistant("reply-two"),
+    viewer("three"), assistant("reply-three"),
+    viewer("four"), assistant("reply-four"),
+    viewer("five"), assistant("reply-five"),
+  ]);
+});
+
