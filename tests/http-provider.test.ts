@@ -1,15 +1,21 @@
 import { z } from "zod";
 import {
+  ProviderIncompleteResponseError,
   ProviderInvalidResponseError,
   ProviderRateLimitError,
+  ProviderRefusalError,
   ProviderTimeoutError,
   ProviderUnavailableError,
 } from "../apps/api/src/ai/providers/errors";
 import {
   HttpLLMProvider,
   ProviderLogger,
+  toOpenAIStrictJsonSchema,
 } from "../apps/api/src/ai/providers/http.provider";
 import { Config } from "../apps/api/src/config/env";
+import { intentClassificationSchema } from "../apps/api/src/modules/ai/orchestrator.service";
+import { safetySchema } from "../apps/api/src/modules/safety/safety.service";
+import { outputReviewSchema } from "../apps/api/src/ai/guards/output.guard";
 
 const privatePrompt = "my private journal content";
 const privateResponse = "private provider response";
@@ -42,9 +48,146 @@ function jsonResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-function chatResponse(content: string): Response {
-  return jsonResponse(200, { choices: [{ message: { content } }] });
+function chatResponse(
+  content: string | null,
+  finishReason: string | null = "stop",
+  refusal: string | null = null,
+): Response {
+  return jsonResponse(200, {
+    choices: [
+      {
+        finish_reason: finishReason,
+        message: { content, refusal },
+      },
+    ],
+  });
 }
+
+const intentSchema = z.object({
+  intent: z.enum(["LISTEN", "REFLECT", "ADVICE", "CELEBRATE"]),
+  emotion: z.string(),
+  intensity: z.number().min(0).max(1),
+  adviceRequested: z.boolean(),
+});
+
+const validIntent = {
+  intent: "LISTEN",
+  emotion: "calm",
+  intensity: 0.4,
+  adviceRequested: false,
+};
+
+type JsonSchemaObject = {
+  type?: string;
+  properties?: Record<string, JsonSchemaObject>;
+  required?: string[];
+  additionalProperties?: boolean;
+  enum?: unknown[];
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  [key: string]: unknown;
+};
+
+const unsupportedStrictKeywords = new Set([
+  "allOf",
+  "not",
+  "dependentRequired",
+  "dependentSchemas",
+  "if",
+  "then",
+  "else",
+  "minProperties",
+  "maxProperties",
+  "propertyNames",
+  "patternProperties",
+  "uniqueItems",
+  "contains",
+  "minContains",
+  "maxContains",
+  "unevaluatedProperties",
+  "additionalItems",
+]);
+
+function collectSchemaKeywords(value: unknown, found = new Set<string>()) {
+  if (!value || typeof value !== "object") return found;
+  for (const [key, child] of Object.entries(value)) {
+    if (unsupportedStrictKeywords.has(key)) found.add(key);
+    collectSchemaKeywords(child, found);
+  }
+  return found;
+}
+
+function expectStrictObjectSchema(schema: JsonSchemaObject) {
+  expect(schema.type).toBe("object");
+  expect(schema.additionalProperties).toBe(false);
+  expect(schema.required).toEqual(Object.keys(schema.properties ?? {}));
+  expect([...collectSchemaKeywords(schema)]).toEqual([]);
+  expect(schema).not.toHaveProperty("$schema");
+}
+
+describe("OpenAI strict JSON schemas", () => {
+  test("safety schema has required fields and supported enums only", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      safetySchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual([
+      "level",
+      "selfHarmRisk",
+      "violenceRisk",
+      "requiresEscalation",
+    ]);
+    expect(schema.properties?.level?.enum).toEqual([
+      "normal",
+      "distress",
+      "elevated",
+      "crisis",
+    ]);
+  });
+
+  test("intent schema preserves every enum and server-side constraint", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      intentClassificationSchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual([
+      "intent",
+      "emotion",
+      "intensity",
+      "adviceRequested",
+    ]);
+    expect(schema.properties?.intent?.enum).toEqual([
+      "LISTEN",
+      "REFLECT",
+      "ADVICE",
+      "SELF_CARE",
+      "JOURNAL",
+      "CELEBRATE",
+      "CASUAL",
+      "CRISIS",
+    ]);
+    expect(schema.properties?.emotion?.maxLength).toBe(60);
+    expect(schema.properties?.emotion).not.toHaveProperty("minLength");
+    expect(schema.properties?.intensity).toMatchObject({
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+    });
+  });
+
+  test("output review schema is also strict-mode compatible", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      outputReviewSchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual(["safe"]);
+    expect(schema.properties?.safe?.type).toBe("boolean");
+  });
+});
 
 describe("HttpLLMProvider", () => {
   const originalFetch = global.fetch;
@@ -90,6 +233,172 @@ describe("HttpLLMProvider", () => {
         z.object({ level: z.literal("safe") }),
       ),
     ).resolves.toEqual({ level: "safe" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const request = JSON.parse(
+      String(fetchMock.mock.calls[0][1]?.body),
+    ) as Record<string, any>;
+    expect(request.response_format).toMatchObject({
+      type: "json_schema",
+      json_schema: { strict: true },
+    });
+    expect(request.response_format.json_schema.schema).toMatchObject({
+      type: "object",
+      additionalProperties: false,
+    });
+  });
+
+  test("accepts valid structured JSON", async () => {
+    fetchMock.mockResolvedValue(chatResponse(JSON.stringify(validIntent)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).resolves.toEqual(validIntent);
+  });
+
+  test.each([
+    ["missing required fields", { intent: "LISTEN" }, "emotion", "invalid_type"],
+    [
+      "invalid intent enum",
+      { ...validIntent, intent: "UNKNOWN" },
+      "intent",
+      "invalid_enum_value",
+    ],
+    [
+      "wrong intensity type",
+      { ...validIntent, intensity: "high" },
+      "intensity",
+      "invalid_type",
+    ],
+    [
+      "out-of-range intensity",
+      { ...validIntent, intensity: 2 },
+      "intensity",
+      "too_big",
+    ],
+  ])("rejects %s with field-level diagnostics", async (_, value, path, code) => {
+    fetchMock.mockResolvedValue(chatResponse(JSON.stringify(value)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "schema_validation",
+        invalid_field_paths: expect.arrayContaining([path]),
+        zod_issue_codes: expect.arrayContaining([code]),
+      }),
+    );
+  });
+
+  test("distinguishes malformed JSON from schema validation", async () => {
+    fetchMock.mockResolvedValue(chatResponse("{not-json"));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "json_parse",
+        content_empty: false,
+        content_truncated: false,
+      }),
+    );
+  });
+
+  test("rejects an empty response with explicit diagnostics", async () => {
+    fetchMock.mockResolvedValue(chatResponse(""));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderInvalidResponseError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "empty_content",
+        finish_reason: "stop",
+        content_empty: true,
+      }),
+    );
+  });
+
+  test("rejects truncated and refused responses without retrying", async () => {
+    const provider = new HttpLLMProvider(config(), logger);
+    fetchMock.mockResolvedValueOnce(chatResponse('{"intent":', "length"));
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderIncompleteResponseError);
+
+    fetchMock.mockResolvedValueOnce(chatResponse(null, "stop", "refused"));
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderRefusalError);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        validation_failure: "truncated",
+        finish_reason: "length",
+        content_truncated: true,
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ validation_failure: "refusal" }),
+    );
+  });
+
+  test("falls back to JSON mode for compatible providers without strict schemas", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(400, { error: "unsupported format" }))
+      .mockResolvedValueOnce(chatResponse(JSON.stringify(validIntent)));
+    const provider = new HttpLLMProvider(config(), logger);
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).resolves.toEqual(validIntent);
+    const fallbackRequest = JSON.parse(
+      String(fetchMock.mock.calls[1][1]?.body),
+    ) as Record<string, any>;
+    expect(fallbackRequest.response_format).toEqual({ type: "json_object" });
+  });
+
+  test("does not hide an OpenAI strict-schema rejection with a fallback", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(400, { error: "invalid schema" }));
+    const provider = new HttpLLMProvider(
+      config({ LLM_BASE_URL: "https://api.openai.com/v1" }),
+      logger,
+    );
+
+    await expect(
+      provider.generateStructured(
+        [{ role: "user", content: privatePrompt }],
+        intentSchema,
+      ),
+    ).rejects.toBeInstanceOf(ProviderUnavailableError);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

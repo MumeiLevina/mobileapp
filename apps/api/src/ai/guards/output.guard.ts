@@ -8,6 +8,8 @@ import { MetricsService } from "../../observability/metrics.service";
 export const SAFE_FALLBACK =
   "Mình đang lắng nghe. Mình chưa thể đưa ra phản hồi phù hợp lúc này. Nếu thấy ổn, bạn có thể nói với một người bạn tin tưởng hoặc thử lại sau một chút.";
 
+export const outputReviewSchema = z.object({ safe: z.boolean() });
+
 export function lexicalOutputSafe(text: string, hasMemory: boolean): boolean {
   const normalized = fold(text)
     .replace(/[^a-z0-9]+/g, " ")
@@ -87,7 +89,7 @@ export class OutputGuard {
             }),
           },
         ],
-        z.object({ safe: z.boolean() }),
+        outputReviewSchema,
       );
       if (!result.safe) this.metrics.outputGuardRejected("reviewer");
       return result.safe ? text : SAFE_FALLBACK;
