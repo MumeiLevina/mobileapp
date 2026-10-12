@@ -40,3 +40,49 @@ test("morning and evening reminders keep independent local times", () => {
       .join(" "),
   ).not.toMatch(/streak|chuỗi|bỏ lỡ/i);
 });
+
+
+describe("native notification permission boundaries", () => {
+  const Notifications = require("expo-notifications") as typeof import("expo-notifications");
+  const { scheduleReminder, scheduleLetterNotification } =
+    require("../services/notifications") as typeof import("../services/notifications");
+
+  beforeEach(() => jest.clearAllMocks());
+
+  test("does not request notification permission when saving a future letter", async () => {
+    jest.spyOn(Notifications, "getPermissionsAsync").mockResolvedValue({
+      granted: false,
+    } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
+    const request = jest.spyOn(Notifications, "requestPermissionsAsync");
+    const schedule = jest.spyOn(Notifications, "scheduleNotificationAsync");
+
+    await expect(
+      scheduleLetterNotification("letter-1", new Date(Date.now() + 86400000).toISOString()),
+    ).resolves.toBe(false);
+    expect(request).not.toHaveBeenCalled();
+    expect(schedule).not.toHaveBeenCalled();
+  });
+
+  test("keeps existing ritual reminders if the permission request is denied", async () => {
+    jest.spyOn(Notifications, "getPermissionsAsync").mockResolvedValue({
+      granted: false,
+    } as Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>);
+    jest.spyOn(Notifications, "requestPermissionsAsync").mockResolvedValue({
+      granted: false,
+    } as Awaited<ReturnType<typeof Notifications.requestPermissionsAsync>>);
+    const cancel = jest.spyOn(Notifications, "cancelScheduledNotificationAsync");
+    await expect(scheduleReminder(preference({ morning_enabled: true }))).rejects.toThrow(
+      "Chưa có quyền gửi lời nhắc",
+    );
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  test("turning reminders off cancels schedules without requesting permissions", async () => {
+    const cancel = jest.spyOn(Notifications, "cancelScheduledNotificationAsync").mockResolvedValue();
+    const request = jest.spyOn(Notifications, "requestPermissionsAsync");
+    await scheduleReminder(preference());
+    expect(cancel).toHaveBeenCalledWith("ritual:morning");
+    expect(cancel).toHaveBeenCalledWith("ritual:evening");
+    expect(request).not.toHaveBeenCalled();
+  });
+});
