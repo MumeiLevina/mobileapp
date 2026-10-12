@@ -9,3 +9,17 @@ coverage/
 playwright-report/
 test-results/
 .expo-home/
+
+# Branch-local native/Live experiment workspaces. Tracked files on the
+# experiment branch remain unaffected; these entries prevent cross-branch
+# artifacts from leaking into mobile-only commits.
+.android-private/
+.gradle-private/
+.mori-live/
+apps/api/.env.live
+apps/live-desktop/
+apps/mobile/.live2d-private/
+apps/mobile/android/
+artifacts/android-*.png
+artifacts/live2d-*.json
+artifacts/live2d-*.png

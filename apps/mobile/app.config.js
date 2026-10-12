@@ -1,5 +1,44 @@
-const app = require("./app.json");
 const { URL } = require("node:url");
+
+const app = {
+  name: "Mori",
+  slug: "mori",
+  scheme: "mori",
+  version: "0.1.0",
+  orientation: "portrait",
+  userInterfaceStyle: "automatic",
+  icon: "./assets/icon.png",
+  runtimeVersion: { policy: "appVersion" },
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: "app.mori.companion",
+    buildNumber: "1",
+    infoPlist: { ITSAppUsesNonExemptEncryption: false },
+  },
+  android: {
+    package: "app.mori.companion",
+    versionCode: 1,
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#F7F2E8",
+    },
+  },
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    "expo-notifications",
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/icon.png",
+        resizeMode: "contain",
+        backgroundColor: "#F7F2E8",
+      },
+    ],
+  ],
+  web: { bundler: "metro", output: "single" },
+  experiments: { typedRoutes: true },
+};
 
 const betaProfiles = new Set(["preview", "production"]);
 
@@ -27,9 +66,9 @@ module.exports = () => {
       );
   }
   return {
-    ...app.expo,
+    ...app,
     extra: {
-      ...app.expo.extra,
+      ...app.extra,
       environment: profile,
     },
   };
