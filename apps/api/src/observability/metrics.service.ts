@@ -34,7 +34,14 @@ export class MetricsService {
     this.logger.info({ event: "safety_decision", ...fields });
   }
 
-  outputGuardRejected(reason: "lexical" | "reviewer" | "unavailable") {
-    this.logger.warn({ event: "output_guard_rejected", reason });
+  outputGuardRejected(
+    reason: "lexical" | "reviewer" | "unavailable",
+    reviewer_reason?: string,
+  ) {
+    this.logger.warn({
+      event: "output_guard_rejected",
+      reason,
+      reviewer_reason,
+    });
   }
 }

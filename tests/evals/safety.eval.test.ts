@@ -163,7 +163,10 @@ describe("offline memory grounding eval", () => {
   test.each(memoryCases)("$group · $id", async (testCase) => {
     const generateStructured = jest
       .fn()
-      .mockResolvedValue({ safe: testCase.reviewerSafe });
+      .mockResolvedValue({
+        safe: testCase.reviewerSafe,
+        reason: testCase.reviewerSafe ? "safe" : "unsupported_memory",
+      });
     const provider = {
       generateStructured,
       generateText: jest.fn(),
@@ -173,6 +176,7 @@ describe("offline memory grounding eval", () => {
       testCase.output,
       testCase.approvedMemories,
       "Bạn nhớ gì về mình?",
+      testCase.currentSessionMessages ?? [],
     );
     const rejected = result === SAFE_FALLBACK;
 
@@ -180,8 +184,12 @@ describe("offline memory grounding eval", () => {
       const messages = generateStructured.mock.calls[0][0];
       const payload = JSON.parse(messages[1].content) as {
         approvedMemories: string[];
+        currentSessionMessages: string[];
       };
       expect(payload.approvedMemories).toEqual(testCase.approvedMemories);
+      expect(payload.currentSessionMessages).toEqual(
+        testCase.currentSessionMessages ?? [],
+      );
     }
     record({
       id: testCase.id,
