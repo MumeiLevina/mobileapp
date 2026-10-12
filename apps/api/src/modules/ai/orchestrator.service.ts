@@ -24,6 +24,14 @@ import {
 import { classifyIntent } from "./intent";
 import { SelfCareService } from "../selfcare/selfcare.service";
 import { MetricsService } from "../../observability/metrics.service";
+
+export const intentClassificationSchema = z.object({
+  intent: IntentType,
+  emotion: z.string().max(60),
+  intensity: z.number().min(0).max(1),
+  adviceRequested: z.boolean(),
+});
+
 @Injectable()
 export class AIOrchestratorService {
   constructor(
@@ -77,12 +85,7 @@ export class AIOrchestratorService {
                 content: JSON.stringify({ mode, text: normalized }),
               },
             ],
-            z.object({
-              intent: IntentType,
-              emotion: z.string().max(60),
-              intensity: z.number().min(0).max(1),
-              adviceRequested: z.boolean(),
-            }),
+            intentClassificationSchema,
           )),
         };
       }
@@ -186,12 +189,7 @@ export class AIOrchestratorService {
                 content: JSON.stringify({ mode, text: normalized }),
               },
             ],
-            z.object({
-              intent: IntentType,
-              emotion: z.string().max(60),
-              intensity: z.number().min(0).max(1),
-              adviceRequested: z.boolean(),
-            }),
+            intentClassificationSchema,
           )),
         };
       }

@@ -109,7 +109,7 @@ export function classifyLexicalSafety(text: string): SafetyResult {
   };
 }
 
-const safetySchema = z.object({
+export const safetySchema = z.object({
   level: SafetyLevel,
   selfHarmRisk: z.boolean(),
   violenceRisk: z.boolean(),

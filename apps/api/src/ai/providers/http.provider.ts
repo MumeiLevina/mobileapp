@@ -78,6 +78,21 @@ const embeddingResponseSchema = z.object({
     .min(1),
 });
 
+export function toOpenAIStrictJsonSchema(
+  schema: z.ZodTypeAny,
+): Record<string, unknown> {
+  const convertSchema = zodToJsonSchema as unknown as (
+    input: unknown,
+    options: { $refStrategy: "none"; target: "jsonSchema7" },
+  ) => Record<string, unknown>;
+  const convertedSchema = convertSchema(schema, {
+    $refStrategy: "none",
+    target: "jsonSchema7",
+  });
+  const { $schema: _schemaDialect, ...jsonSchema } = convertedSchema;
+  return jsonSchema;
+}
+
 export class HttpLLMProvider implements LLMProvider {
   constructor(
     private readonly config: Config,
@@ -272,15 +287,7 @@ export class HttpLLMProvider implements LLMProvider {
       content: "Return only one valid JSON object. No markdown fences.",
     };
 
-    const convertSchema = zodToJsonSchema as unknown as (
-      input: unknown,
-      options: { $refStrategy: "none"; target: "jsonSchema7" },
-    ) => Record<string, unknown>;
-    const convertedSchema = convertSchema(schema, {
-      $refStrategy: "none",
-      target: "jsonSchema7",
-    });
-    const { $schema: _schemaDialect, ...jsonSchema } = convertedSchema;
+    const jsonSchema = toOpenAIStrictJsonSchema(schema);
     const responseFormat = {
       type: "json_schema",
       json_schema: {

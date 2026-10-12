@@ -10,8 +10,12 @@ import {
 import {
   HttpLLMProvider,
   ProviderLogger,
+  toOpenAIStrictJsonSchema,
 } from "../apps/api/src/ai/providers/http.provider";
 import { Config } from "../apps/api/src/config/env";
+import { intentClassificationSchema } from "../apps/api/src/modules/ai/orchestrator.service";
+import { safetySchema } from "../apps/api/src/modules/safety/safety.service";
+import { outputReviewSchema } from "../apps/api/src/ai/guards/output.guard";
 
 const privatePrompt = "my private journal content";
 const privateResponse = "private provider response";
@@ -72,6 +76,118 @@ const validIntent = {
   intensity: 0.4,
   adviceRequested: false,
 };
+
+type JsonSchemaObject = {
+  type?: string;
+  properties?: Record<string, JsonSchemaObject>;
+  required?: string[];
+  additionalProperties?: boolean;
+  enum?: unknown[];
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  [key: string]: unknown;
+};
+
+const unsupportedStrictKeywords = new Set([
+  "allOf",
+  "not",
+  "dependentRequired",
+  "dependentSchemas",
+  "if",
+  "then",
+  "else",
+  "minProperties",
+  "maxProperties",
+  "propertyNames",
+  "patternProperties",
+  "uniqueItems",
+  "contains",
+  "minContains",
+  "maxContains",
+  "unevaluatedProperties",
+  "additionalItems",
+]);
+
+function collectSchemaKeywords(value: unknown, found = new Set<string>()) {
+  if (!value || typeof value !== "object") return found;
+  for (const [key, child] of Object.entries(value)) {
+    if (unsupportedStrictKeywords.has(key)) found.add(key);
+    collectSchemaKeywords(child, found);
+  }
+  return found;
+}
+
+function expectStrictObjectSchema(schema: JsonSchemaObject) {
+  expect(schema.type).toBe("object");
+  expect(schema.additionalProperties).toBe(false);
+  expect(schema.required).toEqual(Object.keys(schema.properties ?? {}));
+  expect([...collectSchemaKeywords(schema)]).toEqual([]);
+  expect(schema).not.toHaveProperty("$schema");
+}
+
+describe("OpenAI strict JSON schemas", () => {
+  test("safety schema has required fields and supported enums only", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      safetySchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual([
+      "level",
+      "selfHarmRisk",
+      "violenceRisk",
+      "requiresEscalation",
+    ]);
+    expect(schema.properties?.level?.enum).toEqual([
+      "normal",
+      "distress",
+      "elevated",
+      "crisis",
+    ]);
+  });
+
+  test("intent schema preserves every enum and server-side constraint", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      intentClassificationSchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual([
+      "intent",
+      "emotion",
+      "intensity",
+      "adviceRequested",
+    ]);
+    expect(schema.properties?.intent?.enum).toEqual([
+      "LISTEN",
+      "REFLECT",
+      "ADVICE",
+      "SELF_CARE",
+      "JOURNAL",
+      "CELEBRATE",
+      "CASUAL",
+      "CRISIS",
+    ]);
+    expect(schema.properties?.emotion?.maxLength).toBe(60);
+    expect(schema.properties?.emotion).not.toHaveProperty("minLength");
+    expect(schema.properties?.intensity).toMatchObject({
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+    });
+  });
+
+  test("output review schema is also strict-mode compatible", () => {
+    const schema = toOpenAIStrictJsonSchema(
+      outputReviewSchema,
+    ) as JsonSchemaObject;
+
+    expectStrictObjectSchema(schema);
+    expect(schema.required).toEqual(["safe"]);
+    expect(schema.properties?.safe?.type).toBe("boolean");
+  });
+});
 
 describe("HttpLLMProvider", () => {
   const originalFetch = global.fetch;
