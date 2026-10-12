@@ -18,3 +18,12 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success", Warning: "warning" },
 }));
 jest.mock("react-native-reanimated", () => ({ useReducedMotion: () => true }));
+jest.mock("react-native-webview", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return {
+    WebView: React.forwardRef((props, ref) =>
+      React.createElement(View, { ...props, ref, testID: props.testID }),
+    ),
+  };
+});

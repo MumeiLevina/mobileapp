@@ -26,8 +26,13 @@ module.exports = () => {
         "EXPO_PUBLIC_SUPABASE_ANON_KEY is required for preview/production builds.",
       );
   }
+  const plugins = [...app.expo.plugins];
+  if (process.env.MORI_LIVE2D_ENABLED === "1") {
+    plugins.push("./plugins/with-private-live2d");
+  }
   return {
     ...app.expo,
+    plugins,
     extra: {
       ...app.expo.extra,
       environment: profile,

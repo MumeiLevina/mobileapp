@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mori Live — operator</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/operator.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Mori Live · Operator</h1>
+      <p>
+        Local prototype. Chỉ một trang phát âm thanh được kết nối tại một thời
+        điểm.
+      </p>
+      <form id="login">
+        <label
+          >Mã operator
+          <input
+            type="password"
+            id="token"
+            autocomplete="off"
+            required /></label
+        ><button>Đăng nhập</button>
+      </form>
+      <section id="controls" hidden>
+        <p>
+          <a href="/avatar" target="_blank" rel="noopener">Mở avatar</a> · Dùng
+          http://127.0.0.1:4320/avatar trong OBS (không thêm token).
+        </p>
+        <div>
+          <button data-action="start">Start</button
+          ><button data-action="pause">Pause</button
+          ><button data-action="resume">Resume</button
+          ><button data-action="stop">Stop</button
+          ><button data-action="mute">Emergency Mute</button>
+        </div>
+        <form id="test">
+          <label
+            >Tin nhắn thử <input id="text" maxlength="2000" required /></label
+          ><button>Send Test Message</button>
+        </form>
+        <dl>
+          <dt>Backend / TTS mode</dt>
+          <dd id="mode"></dd>
+          <dt>Connection / Avatar</dt>
+          <dd id="connection"></dd>
+          <dt>Operation / Emotion</dt>
+          <dd id="operation"></dd>
+          <dt>Current speech (public text)</dt>
+          <dd id="speech"></dd>
+          <dt>LLM budget reservation — không phải hóa đơn</dt>
+          <dd id="budget"></dd>
+          <dt>Provider usage</dt>
+          <dd>Chưa có số token thực tế; không suy diễn từ reservation.</dd>
+        </dl>
+      </section>
+      <p id="error" role="status"></p>
+    </main>
+  </body>
+</html>

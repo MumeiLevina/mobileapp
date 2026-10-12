@@ -1,0 +1,22 @@
+name: Mori Live Python prototype
+on: workflow_dispatch
+jobs:
+  python-contracts:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.13'
+      - run: python -m pip install uv==0.8.22
+      - shell: pwsh
+        run: ./scripts/setup-mori-live.ps1 -SyncPython
+      - run: npm run test:python
+      - run: npm run lint:python
+      # Security/unit tests use synthetic fixtures, not proprietary model files.
+      # Real renderer/OBS/Azure checks must be run privately on the operator PC.

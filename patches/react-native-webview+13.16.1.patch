@@ -1,0 +1,47 @@
+diff --git a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
+index 0287e1c..d31f4bb 100644
+--- a/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
++++ b/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewClient.java
+@@ -17,6 +17,7 @@ import android.webkit.WebViewClient;
+ import androidx.annotation.Nullable;
+ import androidx.annotation.RequiresApi;
+ import androidx.core.util.Pair;
++import androidx.webkit.WebViewAssetLoader;
+ 
+ import com.facebook.common.logging.FLog;
+ import com.facebook.react.bridge.Arguments;
+@@ -44,6 +45,34 @@ public class RNCWebViewClient extends WebViewClient {
+     protected boolean mLastLoadFailed = false;
+     protected RNCWebView.ProgressChangedFilter progressChangedFilter = null;
+     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
++    private @Nullable WebViewAssetLoader assetLoader = null;
++
++    private WebViewAssetLoader getAssetLoader(WebView view) {
++        if (assetLoader == null) {
++            assetLoader = new WebViewAssetLoader.Builder()
++                .addPathHandler(
++                    "/assets/",
++                    new WebViewAssetLoader.AssetsPathHandler(view.getContext())
++                )
++                .build();
++        }
++        return assetLoader;
++    }
++
++    @Override
++    public WebResourceResponse shouldInterceptRequest(
++        WebView view,
++        WebResourceRequest request
++    ) {
++        if ("appassets.androidplatform.net".equals(request.getUrl().getHost())) {
++            WebResourceResponse response = getAssetLoader(view)
++                .shouldInterceptRequest(request.getUrl());
++            if (response != null) {
++                return response;
++            }
++        }
++        return super.shouldInterceptRequest(view, request);
++    }
+ 
+     public void setBasicAuthCredential(@Nullable RNCBasicAuthCredential credential) {
+         basicAuthCredential = credential;

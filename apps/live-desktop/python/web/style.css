@@ -1,0 +1,44 @@
+body {
+  font: 18px system-ui;
+  background: #f8f6ef;
+  color: #263d32;
+  margin: 24px;
+}
+main {
+  max-width: 720px;
+  margin: auto;
+}
+iframe {
+  width: 100%;
+  height: 480px;
+  border: 0;
+}
+input,
+button {
+  font: inherit;
+  padding: 8px;
+  margin: 6px;
+}
+label {
+  display: block;
+}
+#status {
+  min-height: 2em;
+}
+.avatar-only.avatar-ready {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.avatar-only.avatar-ready main {
+  max-width: none;
+}
+.avatar-only.avatar-ready main > :not(#runtime),
+.avatar-only.avatar-ready #runtime > :not(#avatar) {
+  display: none;
+}
+.avatar-only.avatar-ready #avatar {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}

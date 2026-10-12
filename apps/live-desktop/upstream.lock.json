@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/Open-LLM-VTuber/Open-LLM-VTuber.git",
+  "release": "v1.2.1",
+  "commit": "3afa41014b4548a0842e9ee2f576f4b164b48886",
+  "frontendRepository": "https://github.com/Open-LLM-VTuber/Open-LLM-VTuber-Web",
+  "frontendCommit": "06a659b114fff788cf0daaa86e484576db4975bf",
+  "uvLockSha256": "13f0c3b7de0d6fd0992ba01ed57f76b53c3bdb865e6b74f065d0bea818a1e15b",
+  "python": "3.11",
+  "pythonRequires": ">=3.10,<3.13",
+  "auditedAt": "2026-10-11"
+}

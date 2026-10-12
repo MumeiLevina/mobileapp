@@ -1,5 +1,7 @@
 # Environment strategy
 
+For a step-by-step Vietnamese guide explaining where each value comes from, see [ENV_SETUP_VI.md](ENV_SETUP_VI.md).
+
 Mori has separate mobile and API configuration for development, staging and production. AI and Supabase service-role keys exist only on the API. `EXPO_PUBLIC_*` values are embedded in the mobile bundle and must never contain a private credential.
 
 ## Mobile development
