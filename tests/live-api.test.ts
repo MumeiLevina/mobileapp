@@ -510,3 +510,14 @@ test("HTTP request quota does not block cancellation and oversized bodies are re
     await app.close();
   }
 });
+
+test("public live generation uses the configured versioned Mori persona", async () => {
+  await turn("Mori ơi, bạn thích mùa đông không?");
+  const messages = provider.generateText.mock.calls.at(-1)![0];
+  expect(messages[0].content).toContain("PUBLIC_LIVE");
+  expect(messages[0].content).toContain("mori-public-vi-v1");
+  expect(messages[0].content).toContain("trái tim mùa đông");
+  expect(messages[0].content).toContain("Approved public memories: []");
+  expect(messages[0].content).not.toContain(config.LLM_API_KEY);
+});
+
