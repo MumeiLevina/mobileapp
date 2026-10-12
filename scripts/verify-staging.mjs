@@ -125,7 +125,7 @@ async function main() {
     await api("/moods", "POST", {
       mood: "okay",
       intensity: 0.5,
-      tags: ["synthetic-validation"],
+      tags: ["Other"],
       client_id: moodClientId,
       user_id: randomUUID(),
     });
