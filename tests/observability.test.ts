@@ -21,7 +21,7 @@ test("structured metrics contain operational fields without private content", ()
     classifier_status: "classified",
     requires_escalation: true,
   });
-  metrics.outputGuardRejected("reviewer");
+  metrics.outputGuardRejected("reviewer", "unsupported_memory");
 
   const serialized = JSON.stringify([
     ...(logger.info as jest.Mock).mock.calls,
@@ -29,6 +29,7 @@ test("structured metrics contain operational fields without private content", ()
   ]);
   expect(serialized).toContain("request_id");
   expect(serialized).toContain("safety_level");
+  expect(serialized).toContain("unsupported_memory");
   expect(serialized).not.toMatch(
     /authorization|access_token|conversation_content|journal_content|memory_content/i,
   );

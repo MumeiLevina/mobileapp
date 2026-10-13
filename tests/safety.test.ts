@@ -2,6 +2,7 @@ import { CrisisResource } from "@mori/shared";
 import {
   classifyLexicalSafety,
   CrisisResponseService,
+  safetyClassifierPrompt,
   SafetyService,
 } from "../apps/api/src/modules/safety/safety.service";
 import {
@@ -38,6 +39,7 @@ describe("independent safety classifier", () => {
 
   test.each([
     "chắc không có mình mọi người sẽ tốt hơn",
+    "Không có mình chắc mọi người sẽ nhẹ nhõm hơn.",
     "mình muốn biến mất",
     "giá mà ngủ rồi không dậy nữa",
     "mình muốn kết thúc hết",
@@ -48,6 +50,43 @@ describe("independent safety classifier", () => {
     const result = classifyLexicalSafety(text);
     expect(result.requiresEscalation).toBe(true);
     expect(["elevated", "crisis"]).toContain(result.level);
+  });
+
+  // Benign cases that must NOT escalate
+  test.each([
+    "Không có mình, bạn có thể đi cùng.",
+    "Không có mình thì ai làm việc này?",
+    "Chắc có mình thôi, không ai giúp được.",
+    "Không có mình đâu, đừng lo.",
+  ])("does not escalate benign khong-co-minh: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.requiresEscalation).toBe(false);
+    expect(["normal", "distress"]).toContain(result.level);
+  });
+
+  // Violence false positive regression tests - "ban" ambiguity
+  test.each([
+    // "ban nguoi" = "bạn người" (benign - you/person), NOT "bắn người" (violent - shoot person)
+    "Bạn người tốt thật đấy.",
+    "Bạn người Hà Nội à?",
+    "Bạn hỏi mình cái này nhé.",
+    "Bạn ơi, giúp mình với!",
+  ])("does not escalate benign ban-nguoi: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.violenceRisk).toBe(false);
+    expect(result.requiresEscalation).toBe(false);
+  });
+
+  // Violence cases that SHOULD escalate - explicit violent "ban" contexts
+  test.each([
+    // "ban nhau" = shoot each other (violent)
+    "Chúng mày cầm súng bắn nhau đi.",
+    // "ban ai do" = shoot someone (violent)
+    "Tao sẽ bắn ai đó hôm nay.",
+  ])("escalates violent ban contexts: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.violenceRisk).toBe(true);
+    expect(result.requiresEscalation).toBe(true);
   });
 
   test.each([
@@ -64,6 +103,60 @@ describe("independent safety classifier", () => {
       level: "distress",
       requiresEscalation: false,
     }));
+
+  test.each([
+    "Chào Mori, hôm nay mình cảm thấy bình yên.",
+    "Mình đang rất vui vì hôm nay được nghỉ.",
+    "Hôm nay thời tiết đẹp quá.",
+    "Cậu có muốn trò chuyện một chút không?",
+    "Như mình vừa nói, hôm nay là một ngày khá vui.",
+  ])("keeps harmless Vietnamese conversation normal: %s", (text) => {
+    expect(classifyLexicalSafety(text)).toEqual({
+      level: "normal",
+      selfHarmRisk: false,
+      violenceRisk: false,
+      requiresEscalation: false,
+    });
+  });
+
+  test.each([
+    "Hôm nay mình buồn.",
+    "Mình hơi mệt sau một ngày dài.",
+    "Dạo này mình thấy cô đơn.",
+    "Công việc làm mình khá căng thẳng và quá tải.",
+  ])("keeps mild distress non-escalating: %s", (text) => {
+    expect(classifyLexicalSafety(text)).toMatchObject({
+      level: "distress",
+      requiresEscalation: false,
+    });
+  });
+
+  test("gives the model explicit normal, distress, elevated and crisis boundaries", async () => {
+    const generateStructured = jest.fn().mockResolvedValue({
+      level: "normal",
+      selfHarmRisk: false,
+      violenceRisk: false,
+      requiresEscalation: false,
+    });
+    const provider = providerWith(generateStructured);
+
+    await expect(
+      new SafetyService(provider).classifySafety(
+        "Chào Mori, hôm nay mình cảm thấy bình yên.",
+      ),
+    ).resolves.toMatchObject({
+      level: "normal",
+      requiresEscalation: false,
+    });
+    expect(generateStructured.mock.calls[0][0][0]).toEqual({
+      role: "system",
+      content: safetyClassifierPrompt,
+    });
+    expect(safetyClassifierPrompt).toContain("normal = greetings");
+    expect(safetyClassifierPrompt).toContain("distress = sadness");
+    expect(safetyClassifierPrompt).toContain("elevated = credible");
+    expect(safetyClassifierPrompt).toContain("crisis = immediate/current");
+  });
 
   test("provider failure becomes an unavailable safety decision", async () => {
     const provider = providerWith(
@@ -171,6 +264,12 @@ describe("output guard", () => {
     expect(lexicalOutputSafe(text, false)).toBe(false),
   );
 
+  test("passes a possible session reference to the semantic reviewer", () => {
+    expect(lexicalOutputSafe("You told me that today was joyful.", false, true)).toBe(
+      true,
+    );
+  });
+
   test("replaces unsafe output before model review", async () => {
     await expect(
       new OutputGuard(new MockLLMProvider()).validateResponse(
@@ -182,7 +281,12 @@ describe("output guard", () => {
   });
 
   test("reviewer rejection and reviewer failure both return fallback", async () => {
-    const rejected = providerWith(jest.fn().mockResolvedValue({ safe: false }));
+    const rejected = providerWith(
+      jest.fn().mockResolvedValue({
+        safe: false,
+        reason: "unsupported_memory",
+      }),
+    );
     await expect(
       new OutputGuard(rejected).validateResponse("A calm reply", [], "Hi"),
     ).resolves.toBe(SAFE_FALLBACK);
@@ -193,6 +297,54 @@ describe("output guard", () => {
     await expect(
       new OutputGuard(unavailable).validateResponse("Unsafe draft", [], "Hi"),
     ).resolves.toBe(SAFE_FALLBACK);
+  });
+
+  test("allows a response grounded in ephemeral session context", async () => {
+    const generateStructured = jest.fn().mockResolvedValue({
+      safe: true,
+      reason: "safe",
+    });
+    const provider = providerWith(generateStructured);
+    const response = "Bạn đã nói với mình rằng hôm nay là một ngày khá vui.";
+    const session = ["Hôm nay là một ngày khá vui."];
+
+    await expect(
+      new OutputGuard(provider).validateResponse(
+        response,
+        [],
+        "Bạn còn nhớ điều mình vừa nói không?",
+        session,
+      ),
+    ).resolves.toBe(response);
+
+    const messages = generateStructured.mock.calls[0][0];
+    expect(JSON.parse(messages[1].content)).toMatchObject({
+      approvedMemories: [],
+      currentSessionMessages: session,
+    });
+  });
+
+  test("records a privacy-safe reviewer rejection category", async () => {
+    const provider = providerWith(
+      jest.fn().mockResolvedValue({
+        safe: false,
+        reason: "emotional_dependency",
+      }),
+    );
+    const metrics = {
+      outputGuardRejected: jest.fn(),
+    };
+
+    await new OutputGuard(provider, metrics as never).validateResponse(
+      "A response",
+      [],
+      "An input",
+    );
+
+    expect(metrics.outputGuardRejected).toHaveBeenCalledWith(
+      "reviewer",
+      "emotional_dependency",
+    );
   });
 });
 

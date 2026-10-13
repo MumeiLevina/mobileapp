@@ -5,32 +5,33 @@ content or production data. `NOT RUN` means there is no execution evidence.
 
 ## Candidate
 
-| Field                  | Recorded value                                                          |
-| ---------------------- | ----------------------------------------------------------------------- |
-| Commit SHA             | `3ccac18` (credential-free CI candidate; hosted validation has not run) |
-| Date                   | 2026-10-08                                                              |
-| Environment            | Local credential-free preparation only                                  |
-| API deployment         | NOT RUN                                                                 |
-| Supabase project alias | NOT RUN                                                                 |
-| LLM provider           | NOT RUN                                                                 |
-| LLM model              | NOT RUN                                                                 |
-| Embedding model        | NOT RUN                                                                 |
-| Android build          | NOT RUN                                                                 |
+| Field                  | Recorded value                                         |
+| ---------------------- | ------------------------------------------------------ |
+| Commit SHA             | `ba850e2` (combined PR #3 then PR #2 code candidate)   |
+| Date                   | 2026-10-12                                             |
+| Environment            | Windows local credential-free integration verification |
+| API deployment         | NOT RUN                                                |
+| Supabase project alias | NOT RUN                                                |
+| LLM provider           | NOT RUN                                                |
+| LLM model              | NOT RUN                                                |
+| Embedding model        | NOT RUN                                                |
+| Android build          | NOT RUN                                                |
 
 ## Results
 
-| Gate                                     | Result   | Evidence                                                                   |
-| ---------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| Default CI                               | PASS     | Local credential-free sequence on `3ccac18`: all required commands passed. |
-| Dependency audit                         | REVIEWED | 64 findings: 49 high, 15 moderate, 0 critical; no forced incompatible fix. |
-| Configuration preflight with real values | NOT RUN  | Required variables are absent in this workspace.                           |
-| Hosted Supabase integration              | NOT RUN  | No staging URL or credentials are available.                               |
-| Deployed HTTPS API health                | NOT RUN  | No staging API URL is available.                                           |
-| Real provider text/structured/embedding  | NOT RUN  | No provider configuration is available.                                    |
-| Provider-backed safety evaluation        | NOT RUN  | Critical false negative count: NOT RUN.                                    |
-| Android preview APK                      | NOT RUN  | Expo project is not linked; `extra.eas.projectId` is absent.               |
-| Physical Android QA                      | NOT RUN  | No APK/device session was performed.                                       |
-| iOS QA                                   | NOT RUN  | Android is prioritized first.                                              |
+| Gate                                     | Result   | Evidence                                                                                                                                                                        |
+| ---------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default CI                               | PASS     | Local combined-code sequence on `ba850e2`; details below.                                                                                                                       |
+| Dependency audit                         | REVIEWED | `npm audit --omit=dev`: 64 findings (49 high, 15 moderate, 0 critical); suggested remediations require Expo/React Native/Jest compatibility changes and were not force-applied. |
+| Expo project checks                      | PASS     | `expo-doctor` passed 21/21; preview config resolved with non-secret placeholders.                                                                                               |
+| Configuration preflight with real values | NOT RUN  | Required variables are absent in this workspace.                                                                                                                                |
+| Hosted Supabase integration              | NOT RUN  | No staging URL or credentials are available.                                                                                                                                    |
+| Deployed HTTPS API health                | NOT RUN  | No staging API URL is available.                                                                                                                                                |
+| Real provider text/structured/embedding  | NOT RUN  | No provider configuration is available.                                                                                                                                         |
+| Provider-backed safety evaluation        | NOT RUN  | Critical false negative count: NOT RUN.                                                                                                                                         |
+| Android preview APK                      | NOT RUN  | Expo project is not linked; `extra.eas.projectId` is absent.                                                                                                                    |
+| Physical Android QA                      | NOT RUN  | No APK/device session was performed.                                                                                                                                            |
+| iOS QA                                   | NOT RUN  | Android is prioritized first.                                                                                                                                                   |
 
 ## Credential-free evidence
 
@@ -40,19 +41,26 @@ non-persistence and idempotent-save checks, export v6 checks, provider checks,
 and supported-path account deletion. These checks being present is not a hosted
 PASS.
 
-The local run completed 173 unit tests, 52/52 deterministic safety cases with
-0 critical false negatives, 32 mobile tests and 15/15 browser E2E tests. The
-database migration/RLS script, API build and web export also passed. The hosted
-Supabase and provider suites were skipped because their explicit run flags and
-credentials were absent; they are recorded as `NOT RUN` above.
+The local run completed 173 root tests, 44 mobile tests, 19 database checks,
+52/52 deterministic safety cases with 0 critical false negatives, and 15/15
+browser E2E tests. Typecheck, lint, the API build, web export and Android/iOS
+native export also passed. The first combined mobile run had one onboarding
+test timeout under load; that test then passed alone and the complete 44-test
+mobile suite passed on rerun. No product failure was reproduced.
+
+The hosted Supabase, deployed API, real provider and provider-backed safety
+suites were not executed because their URLs, credentials and deployed
+resources are absent. They remain `NOT RUN`; the local configuration preflight
+tests do not convert them into a hosted pass.
 
 ## Known issues and blockers
 
 - P0: none found by credential-free checks; real P0 status remains unverified.
-- P1: none open from local testing; real service/device status remains unverified.
+- P1: none reproduced in local testing; real service/device status remains unverified.
 - P2: none recorded in this validation pass.
-- Hosted service credentials and deployment identifiers are unavailable.
-- EAS project linkage and preview environment are unavailable.
+- Hosted Supabase/API/LLM credentials and deployment identifiers are unavailable.
+- EAS project linkage is unavailable; `extra.eas.projectId` is intentionally
+  not fabricated and must be generated and reviewed by the owner.
 - No Android APK has been built or installed on a physical device.
 
 ## Required execution

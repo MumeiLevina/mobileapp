@@ -24,6 +24,14 @@ import {
 import { classifyIntent } from "./intent";
 import { SelfCareService } from "../selfcare/selfcare.service";
 import { MetricsService } from "../../observability/metrics.service";
+
+export const intentClassificationSchema = z.object({
+  intent: IntentType,
+  emotion: z.string().max(60),
+  intensity: z.number().min(0).max(1),
+  adviceRequested: z.boolean(),
+});
+
 @Injectable()
 export class AIOrchestratorService {
   constructor(
@@ -77,12 +85,7 @@ export class AIOrchestratorService {
                 content: JSON.stringify({ mode, text: normalized }),
               },
             ],
-            z.object({
-              intent: IntentType,
-              emotion: z.string().max(60),
-              intensity: z.number().min(0).max(1),
-              adviceRequested: z.boolean(),
-            }),
+            intentClassificationSchema,
           )),
         };
       }
@@ -108,6 +111,7 @@ export class AIOrchestratorService {
         await this.provider.generateText(context),
         [],
         normalized,
+        history.map((message) => message.content),
       );
     }
     return {
@@ -186,12 +190,7 @@ export class AIOrchestratorService {
                 content: JSON.stringify({ mode, text: normalized }),
               },
             ],
-            z.object({
-              intent: IntentType,
-              emotion: z.string().max(60),
-              intensity: z.number().min(0).max(1),
-              adviceRequested: z.boolean(),
-            }),
+            intentClassificationSchema,
           )),
         };
       }
@@ -219,6 +218,7 @@ export class AIOrchestratorService {
         await this.provider.generateText(context),
         memories.map((m) => m.content),
         normalized,
+        history.map((message) => message.content),
       );
     }
     const saved = await this.db.rpc<Message[]>("save_exchange", {
@@ -285,6 +285,7 @@ export class AIOrchestratorService {
         text,
         [],
         history.map((m) => m.content).join("\n"),
+        history.map((m) => m.content),
       ),
       source: "conversation",
       saved: false,
