@@ -44,25 +44,25 @@ export function classifyLexicalSafety(text: string): SafetyResult {
   ]);
   // Indirect self-harm: burden / better-without-me / passive disappear wishes
   // Uses words token because phrase order varies in Vietnamese.
-  // All patterns are lowercase since input is folded to lowercase before matching.
+  // IMPORTANT: All patterns must be LOWERCASE because input is folded to lowercase before matching.
   const indirectSelfHarm =
     includesAny(words, [
-      // Exact burden phrase variations
+      // Exact burden phrase variations (all lowercase)
       "chac khong co minh moi nguoi se tot hon",
       "khong co minh moi nguoi se tot hon",
-      "chac khong co minh Chac ai cung do met",
-      "chac khong co minh Chac moi nguoi se tot",
-      // Burden with "chac" following "khong co minh"
-      "khong co minh Chac moi nguoi se nhe nhom hon",
-      "khong co minh Chac moi nguoi se tot hon",
-      "khong co minh Chac moi nguoi se nhe hon",
-      "khong co minh Chac moi nguoi se nhe nhon hon",
-      "khong co minh Chac ai cung nhe hon",
-      "khong co minh Chac ai cung do met",
-      "khong co minh Chac ai cung se do met",
-      "khong co minh Chac ai cung se nhe nhon hon",
-      "khong co minh Chac moi nguoi se do vat va hon",
-      "khong co minh Chac moi nguoi se bot kho hon",
+      "chac khong co minh chac ai cung do met",
+      "chac khong co minh chac moi nguoi se tot",
+      // Burden with "chac" following "khong co minh" (all lowercase)
+      "khong co minh chac moi nguoi se nhe nhom hon",
+      "khong co minh chac moi nguoi se tot hon",
+      "khong co minh chac moi nguoi se nhe hon",
+      "khong co minh chac moi nguoi se nhe nhon hon",
+      "khong co minh chac ai cung nhe hon",
+      "khong co minh chac ai cung do met",
+      "khong co minh chac ai cung se do met",
+      "khong co minh chac ai cung se nhe nhon hon",
+      "khong co minh chac moi nguoi se do vat va hon",
+      "khong co minh chac moi nguoi se bot kho hon",
       // Passive disappear wishes
       "minh muon bien mat",
       "muon bien mat",
@@ -77,9 +77,9 @@ export function classifyLexicalSafety(text: string): SafetyResult {
       "wish i would not wake up",
       "i wish i were dead",
       // Additional burden patterns (all lowercase)
-      "khong co minh Chac moi nguoi se nhe nhom",
-      "khong co minh Chac ai cung se vui hon",
-      "khong co minh Chac moi nguoi se vui hon",
+      "khong co minh chac moi nguoi se nhe nhom",
+      "khong co minh chac ai cung se vui hon",
+      "khong co minh chac moi nguoi se vui hon",
     ]) ||
     // Catch "khong co minh" + uncertainty + beneficiary + comparative
     // Covers burden phrases like "khong co minh... nhe hon", "tot hon", "vui hon"
@@ -95,13 +95,12 @@ export function classifyLexicalSafety(text: string): SafetyResult {
   // IMPORTANT: All patterns use ASCII/lowercase only because input is accent-folded.
   // Key ambiguities after folding:
   // - "ban" = bạn (you), bắn (shoot), bán (sell)
-  // We disambiguate by requiring a clear violent target after "ban".
+  // - "ban vao" = bắn vào (shoot at) OR bạn vào (you enter) - removed due to ambiguity
+  // We only flag unambiguous violent patterns.
   const violence =
     // "ban nhau" = shoot each other - unambiguous violent pattern
     /\bban\s+nhau\b/.test(words) ||
-    // "ban vao" = shoot at (with target)
-    /\bban\s+vao/.test(words) ||
-    // "se ban ai" = will shoot someone (ai/someone is a violent target, not a selling object)
+    // "se ban ai" = will shoot someone - ai/someone is a violent target
     /\bse\s+ban\s+ai\b/.test(words) ||
     // "giet" and "dam" are unambiguous violent verbs
     /\bgiet\s+(?:anh|co|no|nguoi|ai\s+do)\b/.test(words) ||
