@@ -64,6 +64,31 @@ describe("independent safety classifier", () => {
     expect(["normal", "distress"]).toContain(result.level);
   });
 
+  // Violence false positive regression tests - "ban" ambiguity
+  test.each([
+    // "ban nguoi" = "bạn người" (benign - you/person), NOT "bắn người" (violent - shoot person)
+    "Bạn người tốt thật đấy.",
+    "Bạn người Hà Nội à?",
+    "Bạn hỏi mình cái này nhé.",
+    "Bạn ơi, giúp mình với!",
+  ])("does not escalate benign ban-nguoi: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.violenceRisk).toBe(false);
+    expect(result.requiresEscalation).toBe(false);
+  });
+
+  // Violence cases that SHOULD escalate - explicit violent "ban" contexts
+  test.each([
+    // "ban nhau" = shoot each other (violent)
+    "Chúng mày cầm súng bắn nhau đi.",
+    // "ban ai do" = shoot someone (violent)
+    "Tao sẽ bắn ai đó hôm nay.",
+  ])("escalates violent ban contexts: %s", (text) => {
+    const result = classifyLexicalSafety(text);
+    expect(result.violenceRisk).toBe(true);
+    expect(result.requiresEscalation).toBe(true);
+  });
+
   test.each([
     "t ự t ử",
     "t.u t.u",

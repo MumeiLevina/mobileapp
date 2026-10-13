@@ -69,25 +69,44 @@ export function classifyLexicalSafety(text: string): SafetyResult {
       "better off without me",
       "wish i would not wake up",
       "i wish i were dead",
+      // Additional burden patterns with varied word order
+      "khong co minh Chac moi nguoi se nhe nhom",
+      "khong co minh Chac ai cung se vui hon",
+      "khong co minh Chac moi nguoi se vui hon",
+      "chac khong co minh Chac ai cung do met",
+      "chac khong co minh Chac moi nguoi se tot",
     ]) ||
-    // Catch "khong co minh" + comparative suggesting others would benefit
-    // Covers: "khong co minh... nhe hon", "tot hon", "do met", "nhẹ nhõm hơn", "nhẹ nhõm", "vui hon"
+    // Catch "khong co minh" + uncertainty + beneficiary + comparative
+    // Covers burden phrases like "khong co minh... nhe hon", "tot hon", "vui hon"
     (/\bkhong co minh\b/.test(words) &&
       /\b(chac|co le)\b/.test(words) &&
       /\b(moi nguoi|ai cung|ai)\b/.test(words) &&
-      /\b(se |)((tot|nhe|vui) (hon|nhon|nhom)|do met|bot kho)\b/.test(words));
+      /\b(se |)((tot|nhe|vui) ?(hon|nhon|nhom)?|do met|bot kho)\b/.test(words));
   const methodSignal =
     /(co|cam|giu) dao (o day|trong tay)|uong het (thuoc|medicine)|overdose|qua lieu|have (the )?(pills|knife) (here|with me)/.test(
       words,
     );
-  // Violence: requires a clear violent verb + target. Avoids false positives from
-  // common words like "ban nguoi" (bạn người = "a person/you") or "lam gi" (做什么 = "doing what").
+  // Violence: requires a clear violent verb + target in context.
+  // Key distinctions after accent folding:
+  // - "ban" can mean: bạn (you/pronoun), bắn (shoot/verb), bán (sell/verb)
+  // - "ban nguoi" after folding = "ban nguoi" - ambiguous between "bạn người" (benign)
+  //   and "bắn người" (violent). We only flag clear violent contexts.
+  // Vietnamese violent speech typically uses "ban nhau" (shoot each other),
+  // "ban vao" (shoot at), or explicit harm verbs like "giet", "dam", "lam hai".
   const violence =
-    /\b(giet|dam|ban nhau) [\w]+(?:[\s]+[\w]+)*\b/.test(words) ||
-    /ban\s+(?:nguoi|ai\s+do|ho\s+ta)\b/.test(words) ||
-    /\b(giet|dam) (?:anh|co|no|ai\s+do)\b/.test(words) ||
-    /\blam hai (?:nguoi khac|ai do)\b/.test(words) ||
-    /\b(giet|kill|attack|hurt) (?:someone|him|her|them)\b/.test(words);
+    // Specific violent patterns with clear intent markers
+    /\bban\s+nhau\b/.test(words) || // ban nhau = shoot each other (violent)
+    /\bban\s+vào?\s+/i.test(words) || // ban vao(n) = shoot at (violent)
+    /\bse\s+ban\b/.test(words) || // will shoot
+    /\bdinh\s+ban\b/.test(words) || // intend to shoot
+    /\bmuốn\s+ban\b/.test(words) || // want to shoot
+    // Explicit harm verbs - "giet" and "dam" are unambiguous
+    /\bgiet\s+(?:anh|co|no|nguoi|ai\s+do)\b/.test(words) ||
+    /\bdam\s+(?:anh|co|no|nguoi|ai\s+do)\b/.test(words) ||
+    // English violent patterns
+    /\b(giet|kill|attack|hurt)\s+(?:someone|him|her|them)\b/.test(words) ||
+    // Vietnamese explicit harm - "lam hai" requires a target
+    /\blam\s+hai\s+(?:nguoi|ai\s+do|anh|co)\b/.test(words);
   const ambiguousPlan = [
     "toi nay minh se lam",
     "i will do it tonight",
