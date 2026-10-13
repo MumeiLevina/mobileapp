@@ -42,30 +42,73 @@ export function classifyLexicalSafety(text: string): SafetyResult {
     "hurtmyself",
     "tulamdau",
   ]);
-  const indirectSelfHarm = includesAny(words, [
-    "chac khong co minh moi nguoi se tot hon",
-    "khong co minh moi nguoi se tot hon",
-    "khong co minh chac ai cung do met",
-    "minh muon bien mat",
-    "muon bien mat",
-    "gia ma ngu roi khong day nua",
-    "ngu roi khong day nua",
-    "muon ket thuc het",
-    "khong chiu noi nua",
-    "minh da chuan bi roi",
-    "i want to disappear",
-    "better off without me",
-    "wish i would not wake up",
-    "i wish i were dead",
-  ]);
+  // Indirect self-harm: burden / better-without-me / passive disappear wishes
+  // Uses words token because phrase order varies in Vietnamese.
+  // IMPORTANT: All patterns must be LOWERCASE because input is folded to lowercase before matching.
+  const indirectSelfHarm =
+    includesAny(words, [
+      // Exact burden phrase variations (all lowercase)
+      "chac khong co minh moi nguoi se tot hon",
+      "khong co minh moi nguoi se tot hon",
+      "chac khong co minh chac ai cung do met",
+      "chac khong co minh chac moi nguoi se tot",
+      // Burden with "chac" following "khong co minh" (all lowercase)
+      "khong co minh chac moi nguoi se nhe nhom hon",
+      "khong co minh chac moi nguoi se tot hon",
+      "khong co minh chac moi nguoi se nhe hon",
+      "khong co minh chac moi nguoi se nhe nhon hon",
+      "khong co minh chac ai cung nhe hon",
+      "khong co minh chac ai cung do met",
+      "khong co minh chac ai cung se do met",
+      "khong co minh chac ai cung se nhe nhon hon",
+      "khong co minh chac moi nguoi se do vat va hon",
+      "khong co minh chac moi nguoi se bot kho hon",
+      // Passive disappear wishes
+      "minh muon bien mat",
+      "muon bien mat",
+      "gia ma ngu roi khong day nua",
+      "ngu roi khong day nua",
+      "muon ket thuc het",
+      "khong chiu noi nua",
+      "minh da chuan bi roi",
+      // English
+      "i want to disappear",
+      "better off without me",
+      "wish i would not wake up",
+      "i wish i were dead",
+      // Additional burden patterns (all lowercase)
+      "khong co minh chac moi nguoi se nhe nhom",
+      "khong co minh chac ai cung se vui hon",
+      "khong co minh chac moi nguoi se vui hon",
+    ]) ||
+    // Catch "khong co minh" + uncertainty + beneficiary + comparative
+    // Covers burden phrases like "khong co minh... nhe hon", "tot hon", "vui hon"
+    (/\bkhong co minh\b/.test(words) &&
+      /\b(chac|co le)\b/.test(words) &&
+      /\b(moi nguoi|ai cung|ai)\b/.test(words) &&
+      /\b(se |)((tot|nhe|vui) ?(hon|nhon|nhom)?|do met|bot kho)\b/.test(words));
   const methodSignal =
     /(co|cam|giu) dao (o day|trong tay)|uong het (thuoc|medicine)|overdose|qua lieu|have (the )?(pills|knife) (here|with me)/.test(
       words,
     );
+  // Violence: requires a clear violent verb + target in context.
+  // IMPORTANT: All patterns use ASCII/lowercase only because input is accent-folded.
+  // Key ambiguities after folding:
+  // - "ban" = bạn (you), bắn (shoot), bán (sell)
+  // - "ban vao" = bắn vào (shoot at) OR bạn vào (you enter) - removed due to ambiguity
+  // We only flag unambiguous violent patterns.
   const violence =
-    /(giet|dam|ban) (anh|co|no|nguoi|ai do)|lam hai (nguoi khac|ai do)|kill (him|her|them|someone)|hurt someone|attack (him|her|them|someone)/.test(
-      words,
-    );
+    // "ban nhau" = shoot each other - unambiguous violent pattern
+    /\bban\s+nhau\b/.test(words) ||
+    // "se ban ai" = will shoot someone - ai/someone is a violent target
+    /\bse\s+ban\s+ai\b/.test(words) ||
+    // "giet" and "dam" are unambiguous violent verbs
+    /\bgiet\s+(?:anh|co|no|nguoi|ai\s+do)\b/.test(words) ||
+    /\bdam\s+(?:anh|co|no|nguoi|ai\s+do)\b/.test(words) ||
+    // English violent patterns
+    /\b(kill|attack|hurt)\s+(?:someone|him|her|them)\b/.test(words) ||
+    // "lam hai" requires a specific target
+    /\blam\s+hai\s+(?:nguoi|ai\s+do|anh|co)\b/.test(words);
   const ambiguousPlan = [
     "toi nay minh se lam",
     "i will do it tonight",
