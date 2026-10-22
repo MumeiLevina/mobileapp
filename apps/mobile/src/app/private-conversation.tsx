@@ -82,6 +82,7 @@ export default function PrivateConversation() {
         <MoriIconButton
           icon="arrow-back"
           accessibilityLabel={copy.back}
+          disabled={save.isPending}
           onPress={() => setEnd(true)}
         />
         <View style={{ flex: 1 }}>
@@ -93,6 +94,7 @@ export default function PrivateConversation() {
         <MoriIconButton
           icon="exit-outline"
           accessibilityLabel="Rời cuộc trò chuyện riêng tư"
+          disabled={save.isPending}
           onPress={() => setEnd(true)}
         />
       </View>
@@ -103,7 +105,7 @@ export default function PrivateConversation() {
           value,
           label: copy[value],
         }))}
-        disabled={send.isPending}
+        disabled={send.isPending || save.isPending}
         onChange={setMode}
       />
       <KeyboardAvoidingView
@@ -155,7 +157,7 @@ export default function PrivateConversation() {
             placeholder="Bạn có thể bắt đầu từ bất cứ đâu…"
             multiline
             maxLength={6000}
-            editable={!send.isPending}
+            editable={!send.isPending && !save.isPending}
             style={{ flex: 1, maxHeight: 150 }}
           />
           <MoriIconButton
@@ -163,12 +165,17 @@ export default function PrivateConversation() {
             accessibilityLabel={copy.send}
             variant="primary"
             loading={send.isPending}
-            disabled={!text.trim() || send.isPending}
+            disabled={!text.trim() || send.isPending || save.isPending}
             onPress={() => send.mutate()}
           />
         </View>
       </KeyboardAvoidingView>
-      <MoriBottomSheet visible={end} onClose={() => setEnd(false)}>
+      <MoriBottomSheet
+        visible={end}
+        onClose={() => {
+          if (!save.isPending) setEnd(false);
+        }}
+      >
         <View style={styles.stack}>
           <MoriText variant="title">Giữ lại cuộc trò chuyện này?</MoriText>
           <MoriText muted>
@@ -179,7 +186,7 @@ export default function PrivateConversation() {
           <MoriButton
             loading={save.isPending}
             loadingLabel="Đang lưu cuộc trò chuyện…"
-            disabled={messages.length < 2}
+            disabled={messages.length < 2 || send.isPending}
             onPress={() => save.mutate()}
           >
             Lưu
@@ -191,7 +198,11 @@ export default function PrivateConversation() {
           >
             Rời đi mà không lưu
           </MoriButton>
-          <MoriButton variant="ghost" onPress={() => setEnd(false)}>
+          <MoriButton
+            variant="ghost"
+            disabled={save.isPending}
+            onPress={() => setEnd(false)}
+          >
             Tiếp tục trò chuyện
           </MoriButton>
         </View>

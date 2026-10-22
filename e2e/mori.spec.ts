@@ -1,6 +1,67 @@
 import { expect, Page, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+test("calendar clears hidden date filters and mood sheets reopen repeatedly", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await completeOnboarding(page);
+  await page.goto("/journal");
+  await expect(page.getByText("NHẬT KÝ CỦA BẠN")).toBeVisible();
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("mori-demo")!);
+    const now = new Date();
+    state.journals = [1, 2].map((day) => ({
+      id: `calendar-${day}`,
+      user_id: "demo",
+      title: `Calendar entry ${day}`,
+      content: `Private calendar ${day}`,
+      source: "manual",
+      deleted_at: null,
+      created_at: new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        day,
+        12,
+      ).toISOString(),
+    }));
+    localStorage.setItem("mori-demo", JSON.stringify(state));
+  });
+  await page.reload();
+  await expect(
+    page.getByText("Calendar entry 2", { exact: true }),
+  ).toBeVisible();
+  for (let i = 0; i < 3; i++) {
+    await page.getByLabel("Lịch nhật ký").click();
+    await page.getByLabel("Ngày 1, có nhật ký", { exact: true }).click();
+    await expect(
+      page.getByText("Calendar entry 2", { exact: true }),
+    ).toBeHidden();
+    await page.getByLabel("Ngày 2, có nhật ký", { exact: true }).click();
+    await expect(
+      page.getByText("Calendar entry 1", { exact: true }),
+    ).toBeHidden();
+    await page.getByLabel("Lịch nhật ký").click();
+    await expect(
+      page.getByText("Calendar entry 1", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Calendar entry 2", { exact: true }),
+    ).toBeVisible();
+  }
+  await openGarden(page);
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole("radio", { name: "Chùng xuống", exact: true }).click();
+    await expect(page.getByLabel("Ghi chú cảm xúc")).toBeVisible();
+    await page
+      .getByLabel("Đóng", { exact: true })
+      .click({ position: { x: 10, y: 10 } });
+    await expect(page.getByLabel("Ghi chú cảm xúc")).toBeHidden();
+  }
+  expect(errors).toEqual([]);
+});
+
 async function completeOnboarding(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Bắt đầu", exact: true }).click();
@@ -261,7 +322,7 @@ test("Wave 1 connects Ask Mori, Life Map, Memory evidence, Timeline and Patterns
   await expect(page.getByText("Chủ đề xuất hiện nhiều lần")).toBeVisible();
   await expect(
     page.getByText(
-      "This is a pattern in your entries, not proof of cause or a diagnosis.",
+      "Đây là một mẫu trong ghi chép của bạn, không phải bằng chứng về nguyên nhân hay chẩn đoán.",
     ),
   ).toBeVisible();
 
@@ -516,11 +577,14 @@ test("You creates and completes a gentle intention without pressure copy", async
     page.getByText("Bạn đã hoàn thành ý định nhỏ đầu tiên.", { exact: true }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() =>
-      JSON.parse(localStorage.getItem("mori-demo")!).personalMilestones.filter(
-        (item: { milestone_key: string }) =>
-          item.milestone_key === "first_soft_goal",
-      ).length,
+    await page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("mori-demo")!,
+        ).personalMilestones.filter(
+          (item: { milestone_key: string }) =>
+            item.milestone_key === "first_soft_goal",
+        ).length,
     ),
   ).toBe(1);
 });

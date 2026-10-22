@@ -25,6 +25,30 @@ const providerWith = (
 
 describe("independent safety classifier", () => {
   test.each([
+    "I want to d i e tonight",
+    "I want.to.die tonight",
+    "iwanttodie tonight",
+  ])("preserves obfuscated explicit risk detection: %s", (text) => {
+    expect(classifyLexicalSafety(text)).toMatchObject({
+      level: "crisis",
+      requiresEscalation: true,
+    });
+  });
+  test.each([
+    "I want to diet",
+    "I want to diesel",
+    "sometimes",
+    "I met my friend",
+  ])(
+    "ordinary words do not match partial risk or distress tokens: %s",
+    (text) => {
+      expect(classifyLexicalSafety(text)).toMatchObject({
+        level: "normal",
+        requiresEscalation: false,
+      });
+    },
+  );
+  test.each([
     "Tôi muốn tự tử ngay bây giờ",
     "I will kill myself tonight",
     "Tôi muốn giết người ngay bây giờ",
@@ -265,9 +289,9 @@ describe("output guard", () => {
   );
 
   test("passes a possible session reference to the semantic reviewer", () => {
-    expect(lexicalOutputSafe("You told me that today was joyful.", false, true)).toBe(
-      true,
-    );
+    expect(
+      lexicalOutputSafe("You told me that today was joyful.", false, true),
+    ).toBe(true);
   });
 
   test("replaces unsafe output before model review", async () => {
