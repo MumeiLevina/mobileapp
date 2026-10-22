@@ -12,6 +12,9 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_DEMO_MODE": "false"
+      },
       "android": {
         "buildType": "apk"
       }
@@ -19,6 +22,9 @@
     "production": {
       "distribution": "store",
       "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_DEMO_MODE": "false"
+      },
       "autoIncrement": true
     }
   },

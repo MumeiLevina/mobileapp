@@ -1,54 +1,88 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { privateStorage } from "../lib/storage";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "../store/session";
-import { registerDraft } from "../services/cleanup";
+import { readDraft, removeDraft, writeDraft } from "../services/cleanup";
 export function useDraft(name: string) {
   const user = useSession((s) => s.userId);
   const key = `mori.${user ?? "guest"}.${name}`;
-  const [text, setText] = useState("");
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState("");
+  const [state, setState] = useState({
+    key,
+    text: "",
+    ready: false,
+    error: "",
+  });
+  const scope = useMemo(() => ({ revision: 0, active: true }), [key]);
   const pending = useRef(Promise.resolve());
   useEffect(() => {
     let alive = true;
-    privateStorage
-      .getItem(key)
+    scope.active = true;
+    const revision = scope.revision;
+    setState((current) =>
+      current.key === key
+        ? current
+        : { key, text: "", ready: false, error: "" },
+    );
+    pending.current
+      .then(() => readDraft(key))
       .then((value) => {
         if (alive) {
-          setText(value ?? "");
-          setReady(true);
+          setState((current) => ({
+            ...current,
+            ready: true,
+            text: scope.revision === revision ? (value ?? "") : current.text,
+          }));
         }
       })
       .catch(() => {
         if (alive) {
-          setError("Không đọc được bản nháp trên thiết bị.");
-          setReady(true);
+          setState((current) => ({
+            ...current,
+            ready: true,
+            error: "Không đọc được bản nháp trên thiết bị.",
+          }));
         }
       });
     return () => {
       alive = false;
+      scope.active = false;
     };
-  }, [key]);
+  }, [key, scope]);
   const update = useCallback(
     (value: string) => {
-      setText(value);
-      pending.current = pending.current
-        .then(async () => {
-          await registerDraft(user ?? "guest", key);
-          await privateStorage.setItem(key, value);
-        })
-        .catch(() =>
-          setError(
-            "Chưa lưu được bản nháp trên thiết bị. Hãy giữ màn hình này mở.",
-          ),
-        );
+      scope.revision++;
+      setState((current) => ({ ...current, key, text: value }));
+      pending.current = writeDraft(user ?? "guest", key, value).catch(() => {
+        if (scope.active)
+          setState((current) => ({
+            ...current,
+            error:
+              "Chưa lưu được bản nháp trên thiết bị. Hãy giữ màn hình này mở.",
+          }));
+      });
     },
-    [key, user],
+    [key, user, scope],
   );
   const clear = useCallback(async () => {
-    await pending.current;
-    await privateStorage.removeItem(key);
-    setText("");
-  }, [key]);
-  return { text, setText: update, ready, error, clear };
+    const revision = ++scope.revision;
+    const deletion = removeDraft(key).then(() => {
+      if (scope.active && scope.revision === revision)
+        setState((current) => ({ ...current, text: "" }));
+    });
+    pending.current = deletion.catch(() => {
+      if (scope.active)
+        setState((current) => ({
+          ...current,
+          error: "Không xóa được bản nháp trên thiết bị.",
+        }));
+    });
+    await deletion;
+  }, [key, scope]);
+  const current =
+    state.key === key ? state : { text: "", ready: false, error: "" };
+  return {
+    text: current.text,
+    ready: current.ready,
+    error: current.error,
+    setText: update,
+    clear,
+  };
 }

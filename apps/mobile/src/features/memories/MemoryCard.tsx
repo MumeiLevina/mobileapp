@@ -1,5 +1,6 @@
 import { Memory } from "@mori/shared";
 import { MoriButton, MoriCard, MoriText } from "../../components/ui";
+import { useDateLocale } from "../../i18n";
 export function MemoryCard({
   memory,
   onEdit,
@@ -13,6 +14,7 @@ export function MemoryCard({
   onApprove: () => void;
   disabled?: boolean;
 }) {
+  const dateLocale = useDateLocale();
   const source = memory.memory_sources?.[0];
   const sourceLabels = {
     manual: "Bạn tự thêm",
@@ -38,14 +40,14 @@ export function MemoryCard({
           </MoriText>
           <MoriText variant="small" muted>
             Nguồn: {sourceLabels[source.source_type]} ·{" "}
-            {new Date(source.created_at).toLocaleDateString("vi-VN")}
+            {new Date(source.created_at).toLocaleDateString(dateLocale)}
           </MoriText>
         </>
       )}
       {memory.approved_at && (
         <MoriText variant="small" muted>
           Được bạn duyệt ngày{" "}
-          {new Date(memory.approved_at).toLocaleDateString("vi-VN")}
+          {new Date(memory.approved_at).toLocaleDateString(dateLocale)}
         </MoriText>
       )}
       {!memory.approved_by_user && (

@@ -11,9 +11,11 @@ import {
 } from "../../../components/ui";
 import { refresh, request } from "../../../services/api";
 import { cancelLetterNotification } from "../../../services/notifications";
+import { useDateLocale } from "../../../i18n";
 
 export default function OpenLetter() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const dateLocale = useDateLocale();
   const [letter, setLetter] = useState<Letter | null>(null);
   const open = useMutation({
     mutationFn: () => request<Letter>(`/letters/${id}/open`, "POST"),
@@ -51,7 +53,8 @@ export default function OpenLetter() {
             {letter.title}
           </MoriText>
           <MoriText muted variant="small">
-            Viết ngày {new Date(letter.created_at).toLocaleDateString("vi-VN")}
+            Viết ngày{" "}
+            {new Date(letter.created_at).toLocaleDateString(dateLocale)}
           </MoriText>
           <MoriCard>
             <MoriText translate={false} style={{ lineHeight: 28 }}>

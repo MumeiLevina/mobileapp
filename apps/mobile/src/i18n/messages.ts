@@ -1,5 +1,43 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "Chủ đề xuất hiện nhiều lần": "A recurring topic",
+  "Hoạt động bạn thường chọn": "An activity you often choose",
+  "Thời gian bạn thường viết": "When you tend to write",
+  "Một cụm từ lặp lại": "A recurring phrase",
+  "Hoạt động và các lần ghi tâm trạng sau đó":
+    "Activities and later mood entries",
+  "CHỦ ĐỀ LẶP LẠI": "RECURRING TOPIC",
+  "HOẠT ĐỘNG THƯỜNG CHỌN": "OFTEN CHOSEN ACTIVITY",
+  "THỜI GIAN": "TIME PATTERN",
+  "CỤM TỪ LẶP LẠI": "RECURRING PHRASE",
+  "TÂM TRẠNG & HOẠT ĐỘNG": "MOOD & ACTIVITY",
+  "NHỮNG ĐIỀU XUẤT HIỆN NHIỀU LẦN": "THINGS THAT KEEP APPEARING",
+  "Nhịp sống của mình": "My life patterns",
+  "Mori chỉ hiện một quan sát khi có ít nhất 5 ghi chép liên quan. Không có điểm số sức khỏe tinh thần.":
+    "Mori shows an observation only when at least 5 related entries support it. There is no mental health score.",
+  "Chưa có đủ thông tin.": "Not enough information yet.",
+  "Khi có thêm ghi chép, những điều lặp lại có thể xuất hiện ở đây.":
+    "As you add entries, recurring patterns may appear here.",
+  "Những quan sát gần đây": "Recent observations",
+  "Đây là một mẫu trong ghi chép của bạn, không phải bằng chứng về nguyên nhân hay chẩn đoán.":
+    "This is a pattern in your entries, not evidence of a cause or a diagnosis.",
+  "Riêng tư": "Private",
+  "Không lưu sau khi bạn rời đi": "Not saved after you leave",
+  "Rời cuộc trò chuyện riêng tư": "Leave private conversation",
+  "Chế độ trò chuyện riêng tư": "Private conversation mode",
+  "Một khoảng chỉ thuộc phiên này.": "A space just for this session.",
+  "Safety vẫn hoạt động. Nội dung không vào ký ức, nhật ký, dòng thời gian hay Ask Mori.":
+    "Safety remains active. Content stays out of memories, journals, the timeline and Ask Mori.",
+  "Nếu có nguy hiểm ngay lúc này, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc một người bạn tin tưởng.":
+    "If there is immediate danger, contact local emergency services or someone you trust.",
+  "Nội dung riêng tư": "Private message",
+  "Giữ lại cuộc trò chuyện này?": "Keep this conversation?",
+  "Mặc định Mori sẽ rời đi mà không lưu. Nếu chọn Lưu, toàn bộ tin nhắn trong phiên sẽ thành một cuộc trò chuyện thường.":
+    "Mori leaves without saving by default. If you choose Save, all messages in this session become a regular conversation.",
+  "Đang lưu cuộc trò chuyện…": "Saving conversation…",
+  Lưu: "Save",
+  "Rời đi mà không lưu": "Leave without saving",
+  "Tiếp tục trò chuyện": "Keep chatting",
   "THẾ GIỚI CỦA MÌNH": "MY PERSONAL WORLD",
   "Những dấu mốc nhỏ": "Small milestones",
   "Một vài khoảnh khắc đáng nhớ, không có thứ hạng hay điều gì phải đuổi theo.":

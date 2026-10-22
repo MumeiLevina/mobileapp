@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import {
   Choice,
   MoriButton,
+  MoriBottomSheet,
   MoriConfirmSheet,
   MoriIconButton,
 } from "../components/ui";
@@ -79,4 +80,27 @@ describe("shared interaction primitives", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });
+});
+
+test("bottom sheet follows visibility across rapid close, reopen and unmount", async () => {
+  const onClose = jest.fn();
+  const sheet = (visible: boolean) => (
+    <MoriBottomSheet visible={visible} onClose={onClose}>
+      <MoriButton onPress={jest.fn()}>Sheet action</MoriButton>
+    </MoriBottomSheet>
+  );
+  const view = await render(sheet(false));
+  expect(screen.queryByText("Sheet action")).toBeNull();
+  for (let i = 0; i < 3; i++) {
+    await view.rerender(sheet(true));
+    expect(screen.getByText("Sheet action")).toBeTruthy();
+    await fireEvent.press(
+      screen.getByLabelText("Đóng", { includeHiddenElements: true }),
+    );
+    expect(onClose).toHaveBeenCalledTimes(i + 1);
+    await view.rerender(sheet(false));
+    expect(screen.queryByText("Sheet action")).toBeNull();
+  }
+  await view.rerender(sheet(true));
+  await view.unmount();
 });

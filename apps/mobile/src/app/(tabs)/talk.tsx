@@ -15,10 +15,11 @@ import {
 } from "../../components/ui";
 import { GardenScene } from "../../features/garden/GardenScene";
 import { request, refresh } from "../../services/api";
-import { useT } from "../../i18n";
+import { useDateLocale, useT } from "../../i18n";
 export default function Talk() {
   const [mode, setMode] = useState<ConversationMode>("listen");
   const copy = useT();
+  const dateLocale = useDateLocale();
   const conversations = useQuery({
     queryKey: ["conversations"],
     queryFn: () => request<Conversation[]>("/conversations"),
@@ -92,7 +93,7 @@ export default function Talk() {
         <MoriPressable
           key={c.id}
           accessibilityRole="button"
-          accessibilityLabel={`${c.title}, ${new Date(c.created_at).toLocaleDateString("vi-VN")}`}
+          accessibilityLabel={`${c.title}, ${new Date(c.created_at).toLocaleDateString(dateLocale)}`}
           guardMs={350}
           onPress={() => router.push(`/conversation/${c.id}`)}
           style={(pressed) => ({ opacity: pressed ? 0.82 : 1 })}
@@ -101,7 +102,7 @@ export default function Talk() {
             <View>
               <MoriText>{c.title}</MoriText>
               <MoriText variant="small" muted>
-                {new Date(c.created_at).toLocaleDateString("vi-VN")}
+                {new Date(c.created_at).toLocaleDateString(dateLocale)}
               </MoriText>
             </View>
           </MoriCard>

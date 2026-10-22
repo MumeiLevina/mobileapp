@@ -7,6 +7,9 @@ export function useTranslate() {
       ? (english[value] ?? english[value.replace(/\s+/g, " ").trim()] ?? value)
       : value;
 }
+export function useDateLocale() {
+  return usePreferences((s) => s.locale) === "en" ? "en-US" : "vi-VN";
+}
 const vi = {
   home: "Khu vườn",
   talk: "Tâm sự",

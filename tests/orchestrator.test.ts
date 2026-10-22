@@ -39,6 +39,51 @@ function setup(provider: LLMProvider = new MockLLMProvider()) {
     ),
   };
 }
+test.each([
+  "Tôi muốn tự tử ngay bây giờ",
+  "Không có mình chắc mọi người sẽ nhẹ nhõm hơn.",
+])(
+  "private safety bypasses companion and all persistence: %s",
+  async (input) => {
+    const { service, repository, provider, memories } = setup();
+    const generate = jest.spyOn(provider, "generateText");
+    const result = await service.processPrivateMessage(
+      "user",
+      input,
+      "listen",
+      "client",
+      [],
+    );
+    expect(["elevated", "crisis"]).toContain(result.safetyLevel);
+    expect(generate).not.toHaveBeenCalled();
+    expect(memories.retrieveMemories).not.toHaveBeenCalled();
+    expect(memories.add).not.toHaveBeenCalled();
+    expect(repository.insert).not.toHaveBeenCalled();
+    expect(repository.rpc).not.toHaveBeenCalled();
+  },
+);
+
+test("private classifier failure fails closed without storing content", async () => {
+  const provider = {
+    generateText: jest.fn(),
+    generateStructured: jest.fn().mockRejectedValue(new Error("offline")),
+    embed: jest.fn(),
+  } as unknown as LLMProvider;
+  const { service, repository, memories } = setup(provider);
+  const result = await service.processPrivateMessage(
+    "user",
+    "I feel uncertain",
+    "listen",
+    "client",
+    [],
+  );
+  expect(result.safetyLevel).toBe("elevated");
+  expect(provider.generateText).not.toHaveBeenCalled();
+  expect(memories.retrieveMemories).not.toHaveBeenCalled();
+  expect(repository.insert).not.toHaveBeenCalled();
+  expect(repository.rpc).not.toHaveBeenCalled();
+});
+
 test("crisis bypasses companion, memory retrieval, self-care and candidate extraction", async () => {
   const { service, provider, memories, repository } = setup();
   const generate = jest.spyOn(provider, "generateText");

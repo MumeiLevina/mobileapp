@@ -42,9 +42,11 @@ import { SoftGoalsController } from "./modules/soft-goals/soft-goals.controller"
 import { SoftGoalsService } from "./modules/soft-goals/soft-goals.service";
 import { PersonalMilestonesController } from "./modules/milestones/personal-milestones.controller";
 import { PersonalMilestonesService } from "./modules/milestones/personal-milestones.service";
+import { HealthController } from "./modules/health/health.controller";
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 90 }])],
   controllers: [
+    HealthController,
     ProfileController,
     MoodsController,
     JournalsController,

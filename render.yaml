@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: mori-api-staging
+    runtime: node
+    branch: integration/android-closed-beta
+    autoDeployTrigger: off
+    buildCommand: npm ci && npm run build:api
+    startCommand: npm run start -w @mori/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: MOCK_AI
+        value: "false"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: LLM_EMBEDDING_MODEL
+        sync: false
+      - key: LLM_TEXT_TIMEOUT_MS
+        value: "60000"
+      - key: LLM_CLASSIFICATION_TIMEOUT_MS
+        value: "30000"
+      - key: LLM_EMBEDDING_TIMEOUT_MS
+        value: "30000"
