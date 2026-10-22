@@ -86,6 +86,9 @@ test("saving cannot dismiss the sheet and saves the complete session once", asyn
   await fireEvent.press(screen.getByLabelText("Leave private conversation"));
   await fireEvent.press(screen.getByText("Save"));
   await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+  // Wait until the saving UI is committed before attempting to dismiss the sheet.
+  // Otherwise the close event can race with the mutation's pending state in CI.
+  await screen.findByText("Saving conversation…");
   await fireEvent.press(
     screen.getByLabelText("Close", { includeHiddenElements: true }),
   );
