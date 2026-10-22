@@ -1,5 +1,10 @@
 # Real environment validation record
 
+> Android beta continuation on 2026-10-22 is recorded in
+> [ANDROID_BETA_BUILD.md](ANDROID_BETA_BUILD.md). The record below is the older
+> credential-free pass and must not be read as evidence for the current
+> connected preview candidate.
+
 Record only observed results. Never paste credentials, tokens, private test
 content or production data. `NOT RUN` means there is no execution evidence.
 

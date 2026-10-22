@@ -13,9 +13,11 @@ import {
   styles,
 } from "../components/ui";
 import { request } from "../services/api";
+import { useDateLocale } from "../i18n";
 
 export default function AskMoriScreen() {
   const [question, setQuestion] = useState("");
+  const dateLocale = useDateLocale();
   const ask = useMutation({
     mutationFn: () =>
       request<AskMoriResponse>("/insights/ask", "POST", { question }),
@@ -59,7 +61,7 @@ export default function AskMoriScreen() {
                 <MoriCard key={`${source.type}:${source.id}`}>
                   <MoriText>{source.label}</MoriText>
                   <MoriText muted variant="small">
-                    {new Date(source.occurredAt).toLocaleDateString("vi-VN")}
+                    {new Date(source.occurredAt).toLocaleDateString(dateLocale)}
                   </MoriText>
                 </MoriCard>
               ))}
