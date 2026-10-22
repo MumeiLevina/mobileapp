@@ -7,7 +7,8 @@ claimed here.
 ## Candidate and integration status
 
 - PR #12 targets `integration/android-closed-beta` from
-  `fix/mobile-beta-qa-round2` and remains an unmerged draft.
+  `fix/mobile-beta-qa-round2`, is ready for maintainer review, and remains
+  unmerged.
 - GitHub reported the PR mergeable at remote commit `02eb3e2`; a local
   `git merge-tree` simulation found no conflict with the target branch.
 - GitHub Actions `Mori checks` run #92 completed successfully for `02eb3e2`.
@@ -64,6 +65,7 @@ Set-Location apps/mobile
 npx eas-cli@latest login
 npx eas-cli@latest init
 $env:EAS_PROJECT_ID = Read-Host 'Reviewed Expo project UUID'
+npx eas-cli@latest env:set --environment preview --name EAS_PROJECT_ID --value $env:EAS_PROJECT_ID --visibility plaintext
 npx eas-cli@latest env:set --environment preview --name EXPO_PUBLIC_API_URL --value (Read-Host 'Staging API HTTPS URL') --visibility plaintext
 npx eas-cli@latest env:set --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value (Read-Host 'Staging Supabase HTTPS URL') --visibility plaintext
 $anon = Read-Host 'Staging anon/publishable key' -AsSecureString
@@ -74,7 +76,9 @@ $anonText = $null
 ```
 
 `EXPO_PUBLIC_DEMO_MODE=false` is already fixed in the preview profile. Do not
-copy server-only values to EAS.
+copy server-only values to EAS. `EAS_PROJECT_ID` is not a credential. It is
+needed locally for the first configuration evaluation; the cloud builder also
+provides the equivalent built-in `EAS_BUILD_PROJECT_ID`.
 
 ## Build the preview APK
 
