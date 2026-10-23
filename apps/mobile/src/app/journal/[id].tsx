@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Journal, journalSchema } from "@mori/shared";
@@ -17,21 +16,19 @@ import { useDraft } from "../../hooks/useDraft";
 import { newId } from "../../lib/id";
 import { useT } from "../../i18n";
 import { DraftStatus } from "../../components/DraftStatus";
-type EntryDraft = {
-  title: string;
-  content: string;
-  source: Journal["source"];
-  client_id: string;
-};
-const entryDraftSchema = journalSchema.extend({
-  title: z.string().max(120),
-  content: z.string().max(20000),
-});
+import { DraftRecovery } from "../../components/DraftRecovery";
+import {
+  EntryDraft,
+  readJournalDraft,
+} from "../../features/journal/journal-draft";
+import { useSession } from "../../store/session";
 export default function JournalEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <JournalEntry key={id} id={id} />;
+  const owner = useSession((s) => s.userId);
+  return <JournalEntry key={`${owner}:${id}`} id={id} />;
 }
 function JournalEntry({ id }: { id: string }) {
+  const owner = useSession((s) => s.userId);
   const draft = useDraft(`journal.${id}`);
   const copy = useT();
   const [entry, setEntry] = useState<EntryDraft>({
@@ -39,27 +36,26 @@ function JournalEntry({ id }: { id: string }) {
     content: "",
     source: "manual",
     client_id: newId(),
+    version: 1,
   });
   const [initialized, setInitialized] = useState(false);
-  const [invalidDraft, setInvalidDraft] = useState(false);
+  const [recovery, setRecovery] = useState<unknown>(null);
   const [confirm, setConfirm] = useState<"delete" | "discard" | null>(null);
   const existing = useQuery({
-    queryKey: ["journals"],
-    queryFn: () => request<Journal[]>("/journals"),
+    queryKey: ["journals", owner],
+    queryFn: () => request<Journal[]>("/journals", "GET", undefined, { owner }),
     enabled: id !== "new",
   });
   useEffect(() => {
     if (!draft.ready || initialized) return;
     if (draft.text) {
       try {
-        const value: unknown = JSON.parse(draft.text);
-        const parsed = entryDraftSchema.safeParse(value);
-        if (!parsed.success) throw new Error("Invalid draft");
-        setEntry(parsed.data);
+        setEntry(readJournalDraft(draft.text));
+        setRecovery(null);
         setInitialized(true);
         return;
-      } catch {
-        setInvalidDraft(true);
+      } catch (error) {
+        setRecovery(error);
         return;
       }
     }
@@ -76,7 +72,7 @@ function JournalEntry({ id }: { id: string }) {
     }
   }, [draft.ready, existing.data, id, draft.text, initialized]);
   function update(patch: Partial<EntryDraft>) {
-    const value = { ...entry, ...patch };
+    const value = { ...entry, ...patch, version: 1 as const };
     setEntry(value);
     draft.setText(JSON.stringify(value));
   }
@@ -92,6 +88,7 @@ function JournalEntry({ id }: { id: string }) {
         `/journals${id === "new" ? "" : `/${id}`}`,
         id === "new" ? "POST" : "PATCH",
         valid.data,
+        { owner },
       );
     },
     onSuccess: async () => {
@@ -101,7 +98,8 @@ function JournalEntry({ id }: { id: string }) {
     },
   });
   const remove = useMutation({
-    mutationFn: () => request(`/journals/${id}`, "DELETE"),
+    mutationFn: () =>
+      request(`/journals/${id}`, "DELETE", undefined, { owner }),
     onSuccess: async () => {
       await draft.clear();
       await refresh();
@@ -118,13 +116,15 @@ function JournalEntry({ id }: { id: string }) {
         <DraftStatus draft={draft} />
       </ScreenContainer>
     );
-  if (invalidDraft)
+  if (recovery)
     return (
-      <ScreenContainer back>
-        <MoriText>
-          Không đọc được nội dung bản nháp. Bản gốc vẫn được giữ trên thiết bị.
-        </MoriText>
-      </ScreenContainer>
+      <DraftRecovery
+        draft={draft}
+        error={recovery}
+        onDiscarded={() => {
+          setRecovery(null);
+        }}
+      />
     );
   if (!initialized)
     return (

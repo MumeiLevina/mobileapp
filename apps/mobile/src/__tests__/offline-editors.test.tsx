@@ -98,7 +98,7 @@ test("an existing journal draft opens while its server list is unavailable; retr
     }),
   );
   jest.mocked(request).mockImplementation(async (_path, method) => {
-    if (!method) return new Promise(() => undefined);
+    if (!method || method === "GET") return new Promise(() => undefined);
     throw new Error("Disconnected");
   });
   const cleanup = await setup(<JournalEditor />);
@@ -142,7 +142,7 @@ test("a journal read failure has a retry and cannot expose a blank editable entr
 test("a chat retry after remount reuses its committed ID; editing creates a new ID", async () => {
   mockRouteId = "conversation-1";
   jest.mocked(request).mockImplementation(async (_path, method) => {
-    if (!method)
+    if (!method || method === "GET")
       return {
         conversation: { id: mockRouteId, mode: "listen" },
         messages: [],
@@ -261,7 +261,7 @@ test("a reflection arriving after account cleanup cannot resurrect a journal dra
   mockRouteId = "late-reflection";
   let finish!: (value: unknown) => void;
   jest.mocked(request).mockImplementation(async (_path, method) => {
-    if (!method)
+    if (!method || method === "GET")
       return {
         conversation: { id: mockRouteId, mode: "listen" },
         messages: [

@@ -1,9 +1,12 @@
 import { letterCreateSchema } from "@mori/shared";
 import { newId } from "../../lib/id";
+import { z } from "zod";
+import { parseDraft } from "../../lib/draft-recovery";
 
 export type LetterDelay = "week" | "month" | "quarter" | "year" | "custom";
 
 export type LetterDraft = {
+  version?: 1;
   title: string;
   content: string;
   delay: LetterDelay;
@@ -12,6 +15,7 @@ export type LetterDraft = {
 };
 
 export const createLetterDraft = (): LetterDraft => ({
+  version: 1,
   title: "",
   content: "",
   delay: "month",
@@ -21,23 +25,17 @@ export const createLetterDraft = (): LetterDraft => ({
 
 export function readLetterDraft(value: string): LetterDraft {
   if (!value) return createLetterDraft();
-  try {
-    const parsed = JSON.parse(value) as Partial<LetterDraft>;
-    if (
-      typeof parsed.title === "string" &&
-      typeof parsed.content === "string" &&
-      ["week", "month", "quarter", "year", "custom"].includes(
-        parsed.delay ?? "",
-      ) &&
-      typeof parsed.customDate === "string" &&
-      typeof parsed.clientId === "string"
-    ) {
-      return parsed as LetterDraft;
-    }
-  } catch {
-    // A corrupt local value starts a fresh draft without touching server data.
-  }
-  return createLetterDraft();
+  return parseDraft(
+    value,
+    z.object({
+      version: z.literal(1).optional(),
+      title: z.string().max(120),
+      content: z.string().max(20000),
+      delay: z.enum(["week", "month", "quarter", "year", "custom"]),
+      customDate: z.string(),
+      clientId: z.string().uuid(),
+    }),
+  );
 }
 
 export function letterOpenDate(draft: LetterDraft, now = new Date()): Date {

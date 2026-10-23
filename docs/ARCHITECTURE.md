@@ -15,6 +15,23 @@ Mori is a Vietnamese-first emotional companion, not a clinician. Product loop: f
 
 JWTs are stored in SecureStore on native. Web sessions use browser storage. Native journal drafts use SecureStore; web drafts use local browser storage with privacy disclosure. Drafts are namespaced per user, cleared on account deletion/sign out. No private text in logs or analytics.
 
+Journal, Guided Journal and Letter draft readers validate versions and structure.
+Malformed/incompatible payloads remain unchanged in the original encrypted,
+owner-scoped key until explicit confirmed discard or account cleanup. Recovery
+offers reread and selectable original text; it never silently creates a replacement.
+Memory edits remain only in RAM until explicit save/approval, with dirty dismissal
+and partial-update feedback. An uncertain memory create cannot automatically POST
+again; checking the normal memory list and choosing a possible match are explicit.
+The bundled curated self-care catalog is browsable without API access. Local
+practice does not create a server session, completion, sync task or Garden award;
+account completion still requires a server acknowledgement.
+Touched draft and memory operations bind their requests to the captured account;
+token lookup/refresh rejects a changed owner before sending or replaying a body.
+This client guard supplements the unchanged JWT and owner-scoped server queries.
+Mutations attempt immediately with no automatic retries rather than pausing a
+write for reconnect; local recovery storage mutations are independent of online
+state. Read queries retain their existing cache/retry behavior.
+
 ## AI
 
 Normalize → lexical safety → independent model safety classification → intent/emotion → approved vector memories (max 4) → compose separated identity/style/policy/memory/current input → provider → independent output validation → persist. Crisis/elevated risk bypass companion generation. A failed or invalid safety classification enters an internal `unavailable` state, persists the classifier status, returns conservative localized copy and never calls the normal companion. Output review also fails closed to a safe fallback. Candidates remain unapproved and excluded from retrieval. Recent context uses a bounded conversation window, no automatic long-term extraction.

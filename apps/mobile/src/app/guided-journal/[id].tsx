@@ -24,35 +24,50 @@ import { refresh, request } from "../../services/api";
 import { usePreferences } from "../../store/preferences";
 import { useTheme } from "../../theme";
 import { DraftStatus } from "../../components/DraftStatus";
+import { DraftRecovery } from "../../components/DraftRecovery";
+import { useSession } from "../../store/session";
 
 export default function GuidedJournalSession() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <GuidedSession key={id} id={id} />;
+  const owner = useSession((s) => s.userId);
+  return <GuidedSession key={`${owner}:${id}`} id={id} />;
 }
 function GuidedSession({ id }: { id: string }) {
+  const owner = useSession((s) => s.userId);
   const template = getGuidedJournalTemplate(id ?? "");
   const localDraft = useDraft(`guided-journal.${id}`);
   const locale = usePreferences((state) => state.locale);
   const theme = useTheme();
   const initialized = useRef(false);
   const [session, setSession] = useState<GuidedJournalDraft | null>(null);
+  const [recovery, setRecovery] = useState<unknown>(null);
 
   useEffect(() => {
     if (!template || !localDraft.ready || initialized.current) return;
-    initialized.current = true;
-    setSession(readGuidedJournalDraft(localDraft.text, template));
+    try {
+      setSession(readGuidedJournalDraft(localDraft.text, template));
+      setRecovery(null);
+      initialized.current = true;
+    } catch (error) {
+      setRecovery(error);
+    }
   }, [localDraft.ready, localDraft.text, template]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!template || !session) throw new Error("Bản nháp chưa sẵn sàng.");
       await localDraft.persist(JSON.stringify(session));
-      return request("/journals", "POST", {
-        title: locale === "en" ? template.titleEn : template.titleVi,
-        content: buildGuidedJournalContent(template, session.answers, locale),
-        source: "guided",
-        client_id: session.clientId,
-      });
+      return request(
+        "/journals",
+        "POST",
+        {
+          title: locale === "en" ? template.titleEn : template.titleVi,
+          content: buildGuidedJournalContent(template, session.answers, locale),
+          source: "guided",
+          client_id: session.clientId,
+        },
+        { owner },
+      );
     },
     onSuccess: async () => {
       await localDraft.clear();
@@ -74,6 +89,16 @@ function GuidedSession({ id }: { id: string }) {
     );
   }
 
+  if (localDraft.ready && recovery)
+    return (
+      <DraftRecovery
+        draft={localDraft}
+        error={recovery}
+        onDiscarded={() => {
+          setRecovery(null);
+        }}
+      />
+    );
   if (!localDraft.ready || !session) {
     return (
       <ScreenContainer back>

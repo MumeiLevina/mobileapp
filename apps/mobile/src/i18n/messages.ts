@@ -1,5 +1,91 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.":
+    "The account changed. Reopen this screen to continue.",
+  "Tiêu đề lá thư": "Letter title",
+  "Nội dung lá thư": "Letter content",
+  "Tên lá thư…": "Give this letter a name…",
+  "Gửi mình của tương lai…": "Dear future me…",
+  "Gửi một lời cho mình.": "A few words for yourself.",
+  "Lá thư này là dữ liệu riêng tư. Mori không tự đọc hoặc dùng nó trong trò chuyện.":
+    "This letter is private. Mori does not automatically read it or use it in conversations.",
+  "Mở sau": "Open after",
+  "1 tuần": "1 week",
+  "1 tháng": "1 month",
+  "3 tháng": "3 months",
+  "1 năm": "1 year",
+  "Ngày khác": "Another date",
+  "Ngày mở lá thư": "Letter opening date",
+  "Cất lá thư": "Save letter",
+  "Đang cất lá thư…": "Saving letter…",
+  "Xóa lá thư": "Delete letter",
+  "Xóa lá thư?": "Delete this letter?",
+  "Lá thư sẽ được xóa khỏi kho của bạn.":
+    "This letter will be removed from your collection.",
+  "Hãy nhập ngày theo dạng YYYY-MM-DD.": "Enter a date as YYYY-MM-DD.",
+  "Ngày bạn chọn chưa hợp lệ.": "The selected date is not valid.",
+  "Hãy chọn một ngày trong tương lai.": "Choose a future date.",
+  "Đang thực hành trên thiết bị. Không gửi dữ liệu lên tài khoản.":
+    "Practising on this device. No data is sent to your account.",
+  "Tiếp tục": "Continue",
+  "Bản nháp này dùng phiên bản hoặc bộ câu hỏi chưa tương thích. Bản gốc vẫn được giữ nguyên.":
+    "This draft uses an unsupported version or prompt set. The original is unchanged.",
+  "Chưa đọc được nội dung bản nháp. Bản gốc vẫn được giữ nguyên.":
+    "Could not read this draft. The original is unchanged.",
+  "Giữ lại những gì bạn đã viết.": "Keep what you have written.",
+  "Đọc lại không thay đổi dữ liệu. Bạn có thể xem và sao chép bản gốc trước khi quyết định; nội dung không được gửi đi.":
+    "Reading again does not change your data. You can view and copy the original before deciding; its content is not sent anywhere.",
+  "Ẩn bản gốc": "Hide original",
+  "Xem bản gốc để sao chép": "View original to copy",
+  "Đọc lại bản nháp": "Read draft again",
+  "Giữ nguyên và quay lại": "Keep original and go back",
+  "Bỏ bản nháp lỗi": "Discard unreadable draft",
+  "Bỏ bản nháp lỗi?": "Discard this unreadable draft?",
+  "Bản gốc trên thiết bị sẽ bị xóa và không thể khôi phục. Chỉ tiếp tục sau khi bạn đã giữ lại nội dung cần thiết.":
+    "The original on this device will be deleted permanently. Continue only after keeping the content you need.",
+  "Xóa bản nháp trên thiết bị": "Delete draft from this device",
+  "Giữ bản gốc": "Keep original",
+  "GỬI MÌNH CỦA TƯƠNG LAI": "DEAR FUTURE ME",
+  "Phiên chỉnh sửa đã kết thúc.": "This editing session has ended.",
+  "Hãy kiểm tra kết quả lưu trước khi tạo lại ký ức.":
+    "Check the save result before creating another memory.",
+  "Bạn còn thay đổi đang mở.": "You have edits in progress.",
+  "Chỉnh sửa chỉ nằm trong màn hình này cho đến khi bạn chọn lưu. Không tự lưu bản nháp ký ức trên thiết bị.":
+    "Edits stay on this screen until you choose Save. Memory drafts are not automatically saved on this device.",
+  "Nội dung đã được cập nhật trên máy chủ. Chưa xác nhận xong bước cho phép ghi nhớ; quyền đã cấp trước đó không bị thu hồi.":
+    "The server confirmed the content update. The approval step is not confirmed; previously granted permission has not been revoked.",
+  "Chưa xác nhận được ký ức đã tạo hay chưa. Để tránh tạo trùng, hãy kiểm tra danh sách; nội dung đang nhập vẫn ở đây.":
+    "Creation is not confirmed. Check the list to avoid a duplicate; your input is still here.",
+  "Bỏ chỉnh sửa chỉ xóa phần chưa gửi trên màn hình. Không hoàn tác dữ liệu đã được máy chủ lưu.":
+    "Discarding removes only unsent edits on this screen. It does not undo data already saved by the server.",
+  "Kiểm tra kết quả lưu": "Check save result",
+  "Chưa tìm thấy ký ức khớp. Bạn có thể kiểm tra lại; chưa có yêu cầu tạo mới nào được gửi thêm.":
+    "No matching memory found yet. You can check again; no additional creation request has been sent.",
+  "Mở ký ức tìm thấy": "Open matching memory",
+  "Tiếp tục chỉnh sửa": "Continue editing",
+  "Bỏ chỉnh sửa": "Discard edits",
+  "Đóng trình chỉnh sửa": "Close editor",
+  "Các hướng dẫn có sẵn trong ứng dụng. Bạn có thể thực hành không lưu; chỉ ghi nhận lên tài khoản khi máy chủ xác nhận.":
+    "These guides are included in the app. You can practise without saving; account completion needs server confirmation.",
+  "Chưa có hoạt động phù hợp trong thư viện này.":
+    "No activities are available in this library.",
+  "Khoảng nghỉ này chỉ diễn ra trên thiết bị. Chưa gửi lên tài khoản hay ghi nhận tiến triển khu vườn.":
+    "This break stayed on your device. It was not sent to your account or recorded as Garden progress.",
+  "Máy chủ đã xác nhận hoàn thành. Bạn có thể trở về với ngày của mình.":
+    "The server confirmed completion. You can return to your day.",
+  "Thực hành không lưu": "Practise without saving",
+  "Thực hành không lưu không gửi yêu cầu hoàn thành, không đồng bộ và không thay đổi khu vườn.":
+    "Practising without saving sends no completion request, does not sync, and does not change your Garden.",
+  "Bạn đang thế nào?": "How are you feeling?",
+  "Viết tự do": "Write freely",
+  "Gợi ý để bắt đầu": "Prompts to begin",
+  "Xem tất cả gợi ý": "See all prompts",
+  "Hỏi Mori về những điều mình đã lưu": "Ask Mori about what I have saved",
+  "Trò chuyện riêng tư": "Private conversation",
+  "THƯ VIỆN NHẬT KÝ": "JOURNAL PROMPTS",
+  "Một gợi ý để bắt đầu.": "A prompt to begin.",
+  "Chọn điều gần với bạn lúc này. Bạn có thể dừng và quay lại bất cứ khi nào.":
+    "Choose what feels relevant now. You can stop and return whenever you like.",
   "Phiên viết đã kết thúc. Nội dung mới chưa được lưu.":
     "This writing session has ended. The new content was not saved.",
   "Lưu vào nhật ký": "Save to journal",

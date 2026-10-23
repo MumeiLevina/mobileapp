@@ -140,6 +140,7 @@ export function useDraft(name: string) {
     setText: update,
     persist,
     clear,
+    reload: load,
     retry: () => retryAction.current(),
   };
 }

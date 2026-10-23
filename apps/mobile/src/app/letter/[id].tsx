@@ -28,6 +28,8 @@ import {
 } from "../../services/notifications";
 import { useTheme } from "../../theme";
 import { DraftStatus } from "../../components/DraftStatus";
+import { DraftRecovery } from "../../components/DraftRecovery";
+import { useSession } from "../../store/session";
 
 const choices: { value: LetterDelay; label: string }[] = [
   { value: "week", label: "1 tuần" },
@@ -39,26 +41,41 @@ const choices: { value: LetterDelay; label: string }[] = [
 
 export default function LetterEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const owner = useSession((s) => s.userId);
+  return <LetterEntry key={`${owner}:${id}`} id={id} />;
+}
+function LetterEntry({ id }: { id: string }) {
+  const owner = useSession((s) => s.userId);
   const local = useDraft(`letter.${id}`);
   const theme = useTheme();
   const initialized = useRef(false);
   const [draft, setDraft] = useState<LetterDraft>(createLetterDraft);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [recovery, setRecovery] = useState<unknown>(null);
+  const [ready, setReady] = useState(false);
   const existing = useQuery({
-    queryKey: ["letter-edit", id],
-    queryFn: () => request<Letter>(`/letters/${id}/edit`),
+    queryKey: ["letter-edit", owner, id],
+    queryFn: () =>
+      request<Letter>(`/letters/${id}/edit`, "GET", undefined, { owner }),
     enabled: id !== "new",
   });
 
   useEffect(() => {
     if (!local.ready || initialized.current) return;
     if (local.text) {
-      setDraft(readLetterDraft(local.text));
-      initialized.current = true;
+      try {
+        setDraft(readLetterDraft(local.text));
+        setRecovery(null);
+        initialized.current = true;
+        setReady(true);
+      } catch (error) {
+        setRecovery(error);
+      }
       return;
     }
     if (id === "new") {
       initialized.current = true;
+      setReady(true);
       return;
     }
     if (existing.data) {
@@ -70,11 +87,12 @@ export default function LetterEditor() {
         clientId: existing.data.client_id ?? createLetterDraft().clientId,
       });
       initialized.current = true;
+      setReady(true);
     }
   }, [existing.data, id, local.ready, local.text]);
 
   function update(patch: Partial<LetterDraft>) {
-    const next = { ...draft, ...patch };
+    const next = { ...draft, ...patch, version: 1 as const };
     setDraft(next);
     local.setText(JSON.stringify(next));
   }
@@ -82,6 +100,7 @@ export default function LetterEditor() {
   const save = useMutation({
     mutationFn: async () => {
       const payload = letterPayload(draft);
+      await local.persist(JSON.stringify(draft));
       return request<Letter>(
         id === "new" ? "/letters" : `/letters/${id}`,
         id === "new" ? "POST" : "PATCH",
@@ -92,6 +111,7 @@ export default function LetterEditor() {
               content: payload.content,
               open_at: payload.open_at,
             },
+        { owner },
       );
     },
     onSuccess: async (letter) => {
@@ -104,7 +124,7 @@ export default function LetterEditor() {
     },
   });
   const remove = useMutation({
-    mutationFn: () => request(`/letters/${id}`, "DELETE"),
+    mutationFn: () => request(`/letters/${id}`, "DELETE", undefined, { owner }),
     onSuccess: async () => {
       await local.clear();
       await cancelLetterNotification(id).catch(() => undefined);
@@ -113,17 +133,31 @@ export default function LetterEditor() {
     },
   });
 
-  if (!local.ready || (id !== "new" && existing.isPending))
+  if (local.ready && recovery)
+    return (
+      <DraftRecovery
+        draft={local}
+        error={recovery}
+        onDiscarded={() => {
+          setRecovery(null);
+        }}
+      />
+    );
+  if (!local.ready || !ready)
     return (
       <ScreenContainer back>
         <DraftStatus draft={local} />
-        {local.ready && <Loading />}
+        {local.ready && existing.isPending && <Loading />}
+        <ErrorNote
+          error={existing.error}
+          retry={() => void existing.refetch()}
+        />
       </ScreenContainer>
     );
   return (
     <ScreenContainer back>
       <MoriText muted variant="small" style={{ letterSpacing: 2 }}>
-        DEAR FUTURE ME
+        GỬI MÌNH CỦA TƯƠNG LAI
       </MoriText>
       <MoriText variant="title">Gửi một lời cho mình.</MoriText>
       <MoriText muted>
