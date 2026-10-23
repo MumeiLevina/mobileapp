@@ -53,10 +53,19 @@ export async function request<T>(
       );
     return (await response.json()) as T;
   } catch (error) {
+    if (
+      error instanceof Error &&
+      ["AbortError", "TimeoutError"].includes(error.name)
+    )
+      throw new Error(
+        "Kết nối mất quá lâu. Chưa xác nhận được kết quả. Bạn có thể thử lại.",
+      );
     if (error instanceof TypeError)
       throw new Error(
-        "Chưa kết nối được. Nội dung bạn đang viết vẫn được giữ lại.",
+        "Chưa kết nối được. Chưa xác nhận được kết quả. Bạn có thể thử lại.",
       );
+    if (error instanceof SyntaxError)
+      throw new Error("Chưa đọc được phản hồi từ máy chủ. Bạn có thể thử lại.");
     throw error;
   }
 }

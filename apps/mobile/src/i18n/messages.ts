@@ -1,5 +1,44 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "Phiên viết đã kết thúc. Nội dung mới chưa được lưu.":
+    "This writing session has ended. The new content was not saved.",
+  "Lưu vào nhật ký": "Save to journal",
+  "Những điều bạn muốn giữ lại.": "Thoughts you want to keep.",
+  "Chỉ khi bạn bấm lưu, những câu trả lời này mới trở thành một trang nhật ký.":
+    "These answers only become a journal entry when you choose Save.",
+  "Sửa câu trả lời": "Edit answer",
+  "Không tìm thấy gợi ý này.": "This prompt could not be found.",
+  "Xem thư viện nhật ký": "Browse journal prompts",
+  "XEM LẠI": "REVIEW",
+  "Không cần viết thật hay. Viết vừa đủ với bạn.":
+    "You do not need perfect words. Write as much as feels right.",
+  "Mình đang nghĩ…": "I am thinking…",
+  "Xem lại câu trả lời": "Review answers",
+  "Câu tiếp theo": "Next question",
+  "Đang khôi phục bản nháp…": "Restoring your draft…",
+  "Đang giữ bản nháp trên thiết bị…": "Saving your draft on this device…",
+  "Đã giữ bản nháp trên thiết bị. Chưa lưu lên tài khoản.":
+    "Draft saved on this device. Not saved to your account yet.",
+  "Không đọc được bản nháp trên thiết bị.":
+    "Could not read the draft on this device.",
+  "Chưa lưu được bản nháp trên thiết bị. Hãy giữ màn hình này mở.":
+    "Could not save the draft on this device. Keep this screen open.",
+  "Không xóa được bản nháp trên thiết bị.":
+    "Could not remove the draft on this device.",
+  "Không đọc được nội dung bản nháp. Bản gốc vẫn được giữ trên thiết bị.":
+    "Could not read the draft content. The original is still on this device.",
+  "Không tìm thấy trang viết này.": "This journal entry could not be found.",
+  "Bạn còn một bản nháp nhật ký. Hãy mở và lưu hoặc bỏ bản nháp đó trước.":
+    "You already have a journal draft. Open and save or discard it first.",
+  "Mở bản nháp nhật ký hiện có": "Open existing journal draft",
+  "Bạn còn nội dung chưa gửi. Hãy tiếp tục trò chuyện để gửi hoặc xóa nội dung đó trước khi lưu.":
+    "You have an unsent message. Keep chatting to send or clear it before saving.",
+  "Kết nối mất quá lâu. Chưa xác nhận được kết quả. Bạn có thể thử lại.":
+    "The connection took too long. The result is not confirmed. You can try again.",
+  "Chưa kết nối được. Chưa xác nhận được kết quả. Bạn có thể thử lại.":
+    "Could not connect. The result is not confirmed. You can try again.",
+  "Chưa đọc được phản hồi từ máy chủ. Bạn có thể thử lại.":
+    "Could not read the server response. You can try again.",
   "Chủ đề xuất hiện nhiều lần": "A recurring topic",
   "Hoạt động bạn thường chọn": "An activity you often choose",
   "Thời gian bạn thường viết": "When you tend to write",

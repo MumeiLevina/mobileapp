@@ -9,6 +9,7 @@ import {
   MoriText,
   ScreenContainer,
   ErrorNote,
+  Loading,
   MoriPressable,
   MoriSegmentedControl,
   SectionHeading,
@@ -83,6 +84,7 @@ export default function Talk() {
         error={conversations.error}
         retry={() => void conversations.refetch()}
       />
+      {conversations.isPending && <Loading />}
       {conversations.data?.length === 0 && (
         <MoriText muted>
           Chưa có cuộc trò chuyện nào. Bạn có thể bắt đầu bất cứ khi nào sẵn
