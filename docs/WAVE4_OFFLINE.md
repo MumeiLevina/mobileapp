@@ -1,4 +1,7 @@
-# Wave 4 — offline audit and Sprint 1
+# Wave 4 — offline development
+
+The first part records Sprint 1. The separately authorized Sprint 2 audit,
+implementation and verification are recorded under **Sprint 2 — recovery** below.
 
 Date: 2026-10-23 (Asia/Saigon). Base: `integration/android-closed-beta`
 at `61f6dfdd96523a514255fa2893b3db425d2564af`. Branch:
@@ -243,5 +246,216 @@ after leaving or process death. Requests acknowledged by neither side may have
 completed remotely; retry identity helps the existing idempotent API reconcile
 the same payload but is not a general offline synchronization system.
 
-Stop after delivering Sprint 1, verification and review PR. The two Sprint 2
-proposals above are recommendations only and have not been implemented.
+Sprint 1 stopped after its review PR. PR #13 was subsequently merged by the
+maintainer; the following work is the separately authorized Sprint 2 continuation.
+
+## Sprint 2 — recovery
+
+Date: 2026-10-23 (Asia/Saigon). Branch: `feature/wave4-sprint2-recovery`.
+Worktree: `C:\mw4-sprint2`. Base: `72f3766cac7ae602352de79cba3584400ffee38e`
+on `integration/android-closed-beta`.
+
+### Preparation and audit
+
+- Fetched latest origin; GitHub confirms PR #13 merged at `72f3766`. Git ancestry
+  confirms Sprint 1 head `9a57358` is included. Its GitHub **Mori checks #100**
+  succeeded; the PR discussion had no review comments when inspected.
+- Inspected all worktrees. The target Sprint 2 branch/worktree already existed,
+  was clean and at the latest integration commit, so it was reused. No reset,
+  stash, overwrite or deletion of existing work was needed. Other QA worktrees,
+  artifacts and the Live2D branch remain untouched.
+- Read this report, ARCHITECTURE and BETA_QA_ROUND2 and audited the actual draft
+  parsers/editors, memory controller/service, curated dataset and activity flow.
+  Sprint 1 draft status/retry, cleanup queue and encryption were retained.
+
+| Priority | Existing behavior / problem | Sprint 2 result |
+| --- | --- | --- |
+| P0 Draft recovery | Guided/Letter parsers silently returned a fresh draft on invalid content; Journal blocked without recovery actions; unknown versions were not consistently checked | Typed malformed/incompatible states, read-only original/copy, reread, keep/back and confirmed discard; no replacement writes |
+| P0 Owner/lifecycle | Screen initialization was tied to route ID; query caches and pending token refresh could span an owner change | Editors remount per owner/route; Journal/Letter/Memory query keys include owner; touched private requests verify expected owner before sending and after token refresh |
+| P0 Memory edits | Sheet dismissal erased RAM edits; save performed PATCH then approval without identifying which step succeeded | Dirty-close choice, route-removal/reload guards, explicit save/discard, in-flight lock and separate acknowledged-update/approval state |
+| P0 Ambiguous creation | Memory create has no server client-ID contract; retry after a lost response could create a second record | Block another create from the same uncertain attempt; manual list check and explicit selection of matching records |
+| P1 Self-care | Both library and instructions waited for API; completion copy always implied Garden growth | Existing curated enabled library is bundled; local practice sends no request; server completion remains separate and needs acknowledgement |
+| P1 Localization/UX | New recovery copy was absent; free writing, Ask Mori, mood heading and some continue labels stayed Vietnamese in English UI | Bilingual recovery/editor/local-practice states and targeted catalog gaps; localized duration composition; memory sheet opts into keyboard avoidance |
+
+### Draft recovery contract
+
+Journal and Letter accept the existing unversioned format and version 1;
+new/edited drafts carry version 1. Guided Journal requires its established
+version 1 plus the matching template, answer count and valid step. Unsupported
+versions, malformed JSON, invalid field types/limits and incompatible prompt
+sets are rejected into recovery, never replaced with a new draft.
+
+The original string stays in the same private owner-scoped storage key. The
+recovery screen can reread it or reveal a selectable read-only original for
+manual copying. It does not upload, log, share, convert, truncate or reserialize
+that payload. The user can leave while keeping it, or confirm permanent local
+discard after retaining needed text. Failed deletion leaves both original and
+recovery state available. Discard does not delete a server Journal/Letter.
+Account cleanup still deletes the registered original through the existing
+queue; this work introduces no recovery copies outside its index.
+
+Journal, Guided Journal, Letter and Memories requests supply the captured owner
+to the transport. Session lookup, pre-request expiry refresh and the 401 refresh
+path reject a different owner before a request/replay. This prevents queued
+private payloads from using a later account's token; JWT verification, RLS and
+consent rules on the server are unchanged. The option is additive for other
+callers, not a claim that all historical writers have been migrated.
+
+Recovered valid local Letter edits now open without waiting for the API, and a
+Letter save commits its current payload locally before sending. A failed server
+read cannot expose an uninitialized blank Letter editor. Journal/Guided retain
+their Sprint 1 durability-before-save behavior. Unknown-version content is not
+automatically migrated: copying out useful text and explicitly discarding is
+the available manual recovery path. OS keystore corruption may require a storage
+reread rather than payload recovery; no promise is made to reconstruct lost chunks.
+
+Affected code: `lib/draft-recovery`, three draft helpers/editors,
+`components/DraftRecovery`, and the additive `useDraft.reload` action.
+
+### Memory editor contract and partial-failure audit
+
+The editor keeps content/category only in component memory. Dirty backdrop,
+close and router removal open Continue Editing / Discard Edits / Save choices.
+Browser unload is guarded while work is unresolved. In-flight save prevents
+editing, dismissal and duplicate taps. Owner changes destroy these RAM edits;
+late update responses cannot begin approval for the next owner.
+
+The unchanged server contract was inspected:
+
+- Manual creation explicitly creates an approved memory; the Save label still
+  requests permission to remember. No autosave, retrieval or approval path was added.
+- PATCH updates content/category and preserves existing approval. An already
+  approved memory remains approved; this UI does not imply its permission was
+  revoked during an approval retry.
+- After PATCH acknowledgement, the editor records its payload in RAM and reports
+  that content is saved but approval completion is not confirmed. Retrying the
+  unchanged payload sends only approval. Editing again requires a fresh PATCH.
+- If PATCH itself is not acknowledged, no approval request is made; the same
+  existing ID/payload can be retried. No success is announced on network error.
+- If a new POST is not acknowledged, it may already have committed (including
+  a later provenance/Garden failure). A second POST is disabled for this attempt.
+  A manual GET of the ordinary memory list searches exact content/category among
+  IDs absent when the editor opened. The user must explicitly choose a match;
+  it is not silently adopted, approved or sent into AI retrieval.
+- If checking finds no match, preserve the text and offer checking again or an
+  explicit local discard. This conservative UI cannot establish distributed
+  create idempotency without a server client-ID contract. There is no automatic
+  retry queue. Discard never claims to undo server writes or uncertain creation.
+
+Navigation uses the installed Expo Router public navigation hook. The shared
+sheet's keyboard avoidance is opt-in for this editor; other sheets retain their
+previous layout behavior. Device Back/gesture/keyboard behavior still requires
+Android/iOS QA; mocked hooks and Chromium are limited evidence.
+
+### Offline self-care contract
+
+The existing `@mori/shared` activity dataset supplies enabled activities,
+instructions and durations locally. This is curated content, not mock AI.
+Browsing no longer requests `/self-care`. Updating the bundled catalog requires
+an app update; no remote catalog synchronization is claimed.
+
+The user explicitly chooses ordinary account-backed start or **Practise without
+saving**. Local start/pause/resume/finish makes no start/completion request,
+stores no session history and awards no Garden progress. It never changes modes
+automatically after a server error. A failed server start can be followed by a
+user-selected local practice. A pending request remains pending rather than
+claiming local or remote completion.
+
+Server sessions retain their existing session ID on manual completion retry.
+Only an acknowledged completion shows server-confirmed copy. The old blanket
+claim that the Garden grew was removed because a confirmation does not prove a
+new growth award on every retry. Reduced-motion and breathing animation logic,
+curated safety wording and the API growth rules are unchanged.
+
+App mutations now use `networkMode: always` with zero automatic retries: being
+offline produces an immediate attempted failure instead of a paused write that
+replays on reconnect. Recovery storage actions explicitly run independently of
+network state. Regressions set the query manager offline, verify local discard
+still works, and verify reconnect does not replay an editor write. No background
+request queue or mode fallback is introduced.
+
+### Verification and evidence
+
+All gates below were actually executed locally. Validation uses synthetic data;
+`RUN_PROVIDER_SAFETY_EVALS=false`, `RUN_SUPABASE_INTEGRATION_TESTS=false` and
+`EXPO_PUBLIC_DEMO_MODE=true` were set for the full local chain. Dedicated transport
+and self-care tests mock Connected Mode/offline failures without network calls.
+No secrets or original QA scratch tests were copied into this worktree.
+
+| Gate | Final result | Evidence / limits |
+| --- | --- | --- |
+| `npm run typecheck` | PASS | Three workspaces |
+| `npm run lint` | PASS | No errors |
+| `npm test` | PASS for executed tests | 252 passed, 85 skipped; 24 passed suites, two skipped suites |
+| `npm run test:mobile` | PASS | 108/108, 30 suites; 31 additional tests over Sprint 1 |
+| `npm run eval` | PASS | 79/79 offline cases, FP=0, FN=0, critical FN=0 |
+| `npm run test:database` | PASS | 19 local PGlite checks; no hosted project |
+| `npm run test:e2e` | PASS | Web export and 21/21 Chromium journeys; three additional journeys, recovery covers all three editors |
+| `npm run export:native -- --output-dir dist-native` | PASS | Android/iOS Hermes JS/assets; not an APK or device pass |
+| Web presentation/large text smoke | PASS within stated scope | 38 captures, widths 320/1024, Vietnamese/light and English/dark; keyboard focus and 175% web text stress; native unverified |
+| Render/API staging integration | NOT RUN | Excluded from this offline phase; no deployment or probe |
+| Hosted Supabase | NOT RUN | 28 integration tests skipped; no remote migration/data change |
+| Real LLM / provider evaluation | NOT RUN | 57 provider tests skipped; no live model/embedding requests |
+| Android/iOS device, Back/gesture, keyboard, keystore, notifications, OS font scale | NOT RUN | Requires device/build QA; browser/Jest/export cannot establish native behavior |
+| New PR GitHub CI | Not claimed by this local report | Check the review PR for remote status |
+| Merge / deployment / production release | NOT RUN | Outside this delivery |
+
+No local quality gate remains failed at closeout. Earlier failures were retained
+and resolved: the first E2E run passed 20/21 and exposed a real discard lifecycle
+race (a late initialization reset could leave Journal loading after deletion).
+Removing that reset and asserting a ready blank editor after discard fixes all
+three editors; the final browser run passes 21/21. An English Continue/Letter
+label gap was corrected. Test harness fixes include the nullable/different
+Supabase response shapes, hidden backdrop selectors, awaiting committed pending
+UI, lint-compliant native mocks and disabling a fixture-only cache GC timer so
+Jest exits cleanly. These are not native touch fixes.
+
+Regression coverage includes malformed JSON, unsupported versions, template/field
+incompatibility, read-only payload preservation across retry/remount, failed and
+confirmed discard, encrypted cleanup/owner changes, owner-isolated server caches,
+token-refresh owner changes, memory dismissal/route removal/slow saves, ambiguous
+creation checks, partial approval retry and offline/reconnect without replay.
+Existing encrypted-chunk, cleanup sequencing and safety tests remain in the suite.
+
+Raw local logs: `C:\mw4-sprint2-logs\delivery-root.log` for the root gate,
+`closeout-*.log` / `closeout-results.jsonl` for final client/build checks, and the
+earlier reproduction/attempt logs in the same directory. Screenshots and the
+standalone presentation script/results are local only. None are source changes;
+credentials, user data, exported bundles and generated binaries are excluded
+from the review commit.
+
+Presentation smoke captured the eight core surfaces at 320/1024 px in
+Vietnamese/light and English/dark, plus large-text memory/recovery and local
+practice states. No uncaught page error or document horizontal overflow was
+observed. Representative captures were visually inspected. Keyboard Tab moves
+focus from the memory field; save/continue/discard controls remain reachable
+through scrolling under a 175% DOM text enlargement stress test. This is not OS
+font scaling, native keyboard avoidance or a complete screen-reader audit.
+Long labels wrap and dialogs require scrolling at this size. Dynamic Garden
+hotspot names still contain Vietnamese in English UI and remain Sprint 3 work.
+
+### Sprint 3 recommendations
+
+1. **Memory creation idempotency and save reconciliation:** add a reviewed
+   server client-ID/atomic write contract before offering automatic creation
+   retry or resolving ambiguous cross-device matches. Keep explicit consent and
+   test partial provenance/Garden failures. Requires local contract/migration
+   tests first, then separately authorized hosted verification.
+2. **Editable recovery with an intact original:** assess an explicit recovery
+   fork for extractable text and supported schema upgrades. Any additional copy
+   must use the same encrypted owner index/cleanup queue and be user initiated.
+   Test interrupted recovery, write failure and logout before adoption.
+3. **Native accessibility/lifecycle:** physical Android/iOS tests for keyboard
+   avoidance, hardware Back, gesture navigation, TalkBack/VoiceOver, 200% font
+   scale, secure storage and interrupted timers. Do not infer native touch fixes
+   from JS exports or browser results.
+4. **Remaining presentation/catalog work:** complete dynamic Garden hotspot and
+   API-derived language review; evaluate larger text and restored Garden loading
+   without adding independent screens. Preserve curated safety wording and the
+   existing token system.
+5. **Owner-bound transport coverage:** review the remaining private writers for
+   the same session-switch/refresh race and adopt the new captured-owner option
+   with lifecycle tests. Do not change server authorization or consent rules.
+
+Sprint 2 stops at the review PR. No automatic merge or deployment; Sprint 3 is
+recommended only and has not been started.

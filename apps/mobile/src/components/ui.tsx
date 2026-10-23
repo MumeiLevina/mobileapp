@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Animated,
   Modal,
   Platform,
@@ -396,7 +397,12 @@ export function MoriBottomSheet({
   visible,
   onClose,
   children,
-}: PropsWithChildren<{ visible: boolean; onClose: () => void }>) {
+  avoidKeyboard = false,
+}: PropsWithChildren<{
+  visible: boolean;
+  onClose: () => void;
+  avoidKeyboard?: boolean;
+}>) {
   const t = useTheme();
   const reducedMotion = useReducedMotion();
   const tr = useTranslate();
@@ -407,7 +413,11 @@ export function MoriBottomSheet({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        enabled={avoidKeyboard}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.overlay}
+      >
         <Pressable
           accessibilityLabel={tr("Đóng")}
           onPress={onClose}
@@ -431,7 +441,7 @@ export function MoriBottomSheet({
             {children}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

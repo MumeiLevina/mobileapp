@@ -4,6 +4,7 @@ import {
 } from "@mori/shared";
 import { z } from "zod";
 import { newId } from "../../lib/id";
+import { DraftRecoveryError, parseDraft } from "../../lib/draft-recovery";
 
 const guidedJournalDraftSchema = z.object({
   version: z.literal(1),
@@ -31,19 +32,16 @@ export function readGuidedJournalDraft(
   stored: string,
   template: GuidedJournalTemplate,
 ) {
-  try {
-    const parsed = guidedJournalDraftSchema.parse(JSON.parse(stored));
-    if (
-      parsed.templateId !== template.id ||
-      parsed.answers.length !== template.prompts.length ||
-      parsed.step > template.prompts.length
-    ) {
-      return createGuidedJournalDraft(template);
-    }
-    return parsed;
-  } catch {
-    return createGuidedJournalDraft(template);
+  if (!stored) return createGuidedJournalDraft(template);
+  const parsed = parseDraft(stored, guidedJournalDraftSchema);
+  if (
+    parsed.templateId !== template.id ||
+    parsed.answers.length !== template.prompts.length ||
+    parsed.step > template.prompts.length
+  ) {
+    throw new DraftRecoveryError("incompatible");
   }
+  return parsed;
 }
 
 export function buildGuidedJournalContent(

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Activity } from "@mori/shared";
+import { useMutation } from "@tanstack/react-query";
+import { activities } from "@mori/shared";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -19,39 +19,49 @@ import {
   MoriText,
   ScreenContainer,
   ErrorNote,
-  Loading,
 } from "../../components/ui";
 import { GardenScene } from "../../features/garden/GardenScene";
 import { request, refresh } from "../../services/api";
 import { useTheme } from "../../theme";
+import { useSession } from "../../store/session";
 export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const owner = useSession((s) => s.userId);
+  return <ActivitySession key={`${owner}:${id}`} id={id} />;
+}
+function ActivitySession({ id }: { id: string }) {
   const t = useTheme();
   const reduced = useReducedMotion();
   const [session, setSession] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
+  const [localSession, setLocalSession] = useState(false);
+  const lock = useRef(false);
   const scale = useSharedValue(1);
-  const list = useQuery({
-    queryKey: ["self-care"],
-    queryFn: () => request<Activity[]>("/self-care"),
-  });
-  const activity = list.data?.find((a) => a.id === id);
+  const activity = activities.find((a) => a.id === id && a.enabled);
   const start = useMutation({
+    networkMode: "always",
     mutationFn: () => request<{ id: string }>(`/self-care/${id}/start`, "POST"),
     onSuccess: (result) => {
       setSession(result.id);
       setRunning(true);
     },
+    onSettled: () => {
+      lock.current = false;
+    },
   });
   const complete = useMutation({
+    networkMode: "always",
     mutationFn: () =>
       request(`/self-care/${id}/complete`, "POST", { session_id: session }),
     onSuccess: () => {
       setDone(true);
       setRunning(false);
       void refresh();
+    },
+    onSettled: () => {
+      lock.current = false;
     },
   });
   useEffect(() => {
@@ -95,19 +105,10 @@ export default function ActivityScreen() {
   const breathing = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  if (list.isPending)
-    return (
-      <ScreenContainer back>
-        <Loading />
-      </ScreenContainer>
-    );
   if (!activity)
     return (
       <ScreenContainer back>
-        <ErrorNote
-          error={list.error ?? "Không tìm thấy hoạt động."}
-          retry={() => void list.refetch()}
-        />
+        <ErrorNote error="Không tìm thấy hoạt động." />
       </ScreenContainer>
     );
   const remaining = Math.max(0, activity.duration - elapsed);
@@ -121,9 +122,16 @@ export default function ActivityScreen() {
       </MoriText>
       <MoriText muted>
         {done
-          ? "Khu vườn vừa lớn thêm một chút. Bạn có thể trở về với ngày của mình."
+          ? localSession
+            ? "Khoảng nghỉ này chỉ diễn ra trên thiết bị. Chưa gửi lên tài khoản hay ghi nhận tiến triển khu vườn."
+            : "Máy chủ đã xác nhận hoàn thành. Bạn có thể trở về với ngày của mình."
           : activity.description}
       </MoriText>
+      {localSession && !done && (
+        <MoriText muted variant="small" accessibilityLiveRegion="polite">
+          Đang thực hành trên thiết bị. Không gửi dữ liệu lên tài khoản.
+        </MoriText>
+      )}
       {activity.category === "breathing" ? (
         <View
           style={{
@@ -178,29 +186,68 @@ export default function ActivityScreen() {
             </View>
           ))}
           <ErrorNote error={start.error ?? complete.error} />
-          {!session ? (
-            <MoriButton
-              loading={start.isPending}
-              onPress={() => start.mutate()}
-            >
-              Bắt đầu khi bạn sẵn sàng
-            </MoriButton>
+          {!session && !localSession ? (
+            <>
+              <MoriButton
+                loading={start.isPending}
+                onPress={() => {
+                  if (!lock.current) {
+                    lock.current = true;
+                    start.mutate();
+                  }
+                }}
+              >
+                Bắt đầu khi bạn sẵn sàng
+              </MoriButton>
+              <MoriButton
+                secondary
+                disabled={start.isPending}
+                onPress={() => {
+                  setLocalSession(true);
+                  setRunning(true);
+                  start.reset();
+                }}
+              >
+                Thực hành không lưu
+              </MoriButton>
+              <MoriText muted variant="small">
+                Thực hành không lưu không gửi yêu cầu hoàn thành, không đồng bộ
+                và không thay đổi khu vườn.
+              </MoriText>
+            </>
           ) : (
             <>
               <MoriButton
                 loading={complete.isPending}
-                onPress={() => complete.mutate()}
+                onPress={() => {
+                  if (lock.current) return;
+                  if (localSession) {
+                    setDone(true);
+                    setRunning(false);
+                  } else {
+                    lock.current = true;
+                    complete.mutate();
+                  }
+                }}
               >
                 {remaining === 0 ? "Hoàn thành" : "Mình đã thực hiện xong"}
               </MoriButton>
               {remaining > 0 && (
-                <MoriButton secondary onPress={() => setRunning(!running)}>
+                <MoriButton
+                  secondary
+                  disabled={complete.isPending}
+                  onPress={() => setRunning(!running)}
+                >
                   {running ? "Tạm dừng" : "Tiếp tục"}
                 </MoriButton>
               )}
             </>
           )}
-          <MoriButton secondary onPress={() => router.replace("/(tabs)")}>
+          <MoriButton
+            secondary
+            disabled={start.isPending || complete.isPending}
+            onPress={() => router.replace("/(tabs)")}
+          >
             Dừng ở đây cũng được
           </MoriButton>
         </>
