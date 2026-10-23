@@ -77,6 +77,92 @@ async function completeOnboarding(page: Page) {
   await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
 }
 
+test("offline UX retains a journal draft through reload and protects it during a chat handoff", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.goto("/journal/new");
+  await page.getByLabel("Tiêu đề nhật ký").fill("Trang chưa hoàn thành");
+  await page
+    .getByLabel("Nội dung nhật ký")
+    .fill("Mình muốn giữ nguyên những dòng này.");
+  await expect(
+    page.getByText("Đã giữ bản nháp trên thiết bị. Chưa lưu lên tài khoản."),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Nội dung nhật ký")).toHaveValue(
+    "Mình muốn giữ nguyên những dòng này.",
+  );
+  await page.screenshot({
+    path: "artifacts/wave4-journal-draft.png",
+    fullPage: true,
+  });
+  await page.goto("/talk");
+  await page
+    .getByRole("button", { name: "Tâm sự cùng Mori", exact: true })
+    .click();
+  await page
+    .getByLabel("Nội dung tin nhắn")
+    .fill("Hôm nay mình muốn lắng nghe một chút.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(page.getByLabel("Nội dung tin nhắn")).toHaveValue("");
+  await page.getByLabel("Tùy chọn cuộc trò chuyện").click();
+  await page
+    .getByRole("button", { name: "Tạo bản nháp nhật ký", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Bạn còn một bản nháp nhật ký. Hãy mở và lưu hoặc bỏ bản nháp đó trước.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Mở bản nháp nhật ký hiện có" })
+    .click();
+  await expect(page.getByLabel("Tiêu đề nhật ký")).toHaveValue(
+    "Trang chưa hoàn thành",
+  );
+  await expect(page.getByLabel("Nội dung nhật ký")).toHaveValue(
+    "Mình muốn giữ nguyên những dòng này.",
+  );
+});
+
+test("private save explains unsent text and allows returning to it", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.goto("/private-conversation");
+  await page.getByLabel("Nội dung riêng tư").fill("Mình muốn nói một câu.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(page.getByLabel("Nội dung riêng tư")).toHaveValue("");
+  await page.getByLabel("Nội dung riêng tư").fill("Mình còn một câu chưa gửi.");
+  await page.getByLabel("Rời cuộc trò chuyện riêng tư").click();
+  await expect(
+    page.getByText(
+      "Bạn còn nội dung chưa gửi. Hãy tiếp tục trò chuyện để gửi hoặc xóa nội dung đó trước khi lưu.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Lưu", exact: true }),
+  ).toBeDisabled();
+  await page.screenshot({
+    path: "artifacts/wave4-private-unsent.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Tiếp tục trò chuyện", exact: true })
+    .click();
+  await expect(page.getByLabel("Nội dung riêng tư")).toHaveValue(
+    "Mình còn một câu chưa gửi.",
+  );
+  expect(
+    await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) =>
+        key.includes("private-conversation"),
+      ),
+    ),
+  ).toEqual([]);
+});
+
 async function openGarden(page: Page) {
   await page.evaluate(() => {
     const stored = localStorage.getItem("mori-demo");

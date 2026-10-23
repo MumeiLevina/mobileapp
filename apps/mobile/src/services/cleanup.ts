@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { privateStorage } from "../lib/storage";
 import { cancelAllMoriNotifications } from "./notifications";
 let queue = Promise.resolve();
+const draftGenerations = new Map<string, number>();
 function enqueue(action: () => Promise<void>) {
   queue = queue.catch(() => undefined).then(action);
   return queue;
@@ -25,6 +26,26 @@ export function writeDraft(user: string, key: string, value: string) {
     await privateStorage.setItem(key, value);
   });
 }
+export class DraftConflictError extends Error {
+  constructor() {
+    super(
+      "Bạn còn một bản nháp nhật ký. Hãy mở và lưu hoặc bỏ bản nháp đó trước.",
+    );
+  }
+}
+// Capture before awaiting external work. Cleanup invalidates late results, even
+// when it completes before the network response arrives.
+export function createDraftIfEmptyWriter(user: string, key: string) {
+  const generation = draftGenerations.get(user) ?? 0;
+  return (value: string) =>
+    enqueue(async () => {
+      if (generation !== (draftGenerations.get(user) ?? 0))
+        throw new Error("Phiên viết đã kết thúc. Nội dung mới chưa được lưu.");
+      if (await privateStorage.getItem(key)) throw new DraftConflictError();
+      await rememberDraft(user, key);
+      await privateStorage.setItem(key, value);
+    });
+}
 export function removeDraft(key: string) {
   return enqueue(() => privateStorage.removeItem(key));
 }
@@ -35,6 +56,7 @@ export async function readDraft(key: string) {
   return privateStorage.getItem(key);
 }
 export function clearUserDeviceData(user: string) {
+  draftGenerations.set(user, (draftGenerations.get(user) ?? 0) + 1);
   return enqueue(async () => {
     const index = `mori-drafts.${user}`;
     const keys = JSON.parse(

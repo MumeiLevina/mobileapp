@@ -19,12 +19,10 @@ jest.mock("../services/api", () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   usePreferences.setState({ locale: "en" });
-  jest
-    .mocked(request)
-    .mockResolvedValue({
-      message: { id: "reply", role: "assistant", content: "A private reply" },
-      safetyLevel: "normal",
-    });
+  jest.mocked(request).mockResolvedValue({
+    message: { id: "reply", role: "assistant", content: "A private reply" },
+    safetyLevel: "normal",
+  });
 });
 afterEach(() => usePreferences.setState({ locale: "vi" }));
 
@@ -111,5 +109,40 @@ test("saving cannot dismiss the sheet and saves the complete session once", asyn
   await waitFor(() =>
     expect(router.replace).toHaveBeenCalledWith("/conversation/saved-private"),
   );
+  await cleanup();
+});
+
+test("an unsent message blocks explicit save and remains available when resuming", async () => {
+  const cleanup = await setup();
+  await sendMessage();
+  await fireEvent.changeText(
+    screen.getByLabelText("Private message"),
+    "Chưa gửi",
+  );
+  await fireEvent.press(screen.getByLabelText("Leave private conversation"));
+  await screen.findByText(
+    "You have an unsent message. Keep chatting to send or clear it before saving.",
+  );
+  await fireEvent.press(screen.getByText("Save"));
+  expect(request).toHaveBeenCalledTimes(1);
+  await fireEvent.press(screen.getByText("Keep chatting"));
+  expect(screen.getByLabelText("Private message").props.value).toBe("Chưa gửi");
+  await cleanup();
+});
+
+test("a private send failure offers manual retry without a persisted draft", async () => {
+  jest.mocked(request).mockRejectedValueOnce(new Error("Disconnected"));
+  const cleanup = await setup();
+  await fireEvent.changeText(
+    screen.getByLabelText("Private message"),
+    "Chưa gửi",
+  );
+  await fireEvent.press(screen.getByLabelText("Send"));
+  await screen.findByText("Disconnected");
+  expect(screen.getByLabelText("Private message").props.value).toBe("Chưa gửi");
+  await fireEvent.press(screen.getByText("Try again"));
+  await screen.findByText("A private reply");
+  expect(request).toHaveBeenCalledTimes(2);
+  expect(screen.getAllByText("Chưa gửi")).toHaveLength(1);
   await cleanup();
 });

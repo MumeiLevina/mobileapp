@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Journal, journalSchema } from "@mori/shared";
@@ -15,14 +16,22 @@ import { request, refresh } from "../../services/api";
 import { useDraft } from "../../hooks/useDraft";
 import { newId } from "../../lib/id";
 import { useT } from "../../i18n";
+import { DraftStatus } from "../../components/DraftStatus";
 type EntryDraft = {
   title: string;
   content: string;
   source: Journal["source"];
   client_id: string;
 };
+const entryDraftSchema = journalSchema.extend({
+  title: z.string().max(120),
+  content: z.string().max(20000),
+});
 export default function JournalEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  return <JournalEntry key={id} id={id} />;
+}
+function JournalEntry({ id }: { id: string }) {
   const draft = useDraft(`journal.${id}`);
   const copy = useT();
   const [entry, setEntry] = useState<EntryDraft>({
@@ -31,7 +40,8 @@ export default function JournalEditor() {
     source: "manual",
     client_id: newId(),
   });
-  const initialized = useRef(false);
+  const [initialized, setInitialized] = useState(false);
+  const [invalidDraft, setInvalidDraft] = useState(false);
   const [confirm, setConfirm] = useState<"delete" | "discard" | null>(null);
   const existing = useQuery({
     queryKey: ["journals"],
@@ -39,27 +49,32 @@ export default function JournalEditor() {
     enabled: id !== "new",
   });
   useEffect(() => {
-    if (!draft.ready || initialized.current) return;
+    if (!draft.ready || initialized) return;
     if (draft.text) {
       try {
-        const value = JSON.parse(draft.text) as EntryDraft;
-        setEntry(value);
-        initialized.current = true;
+        const value: unknown = JSON.parse(draft.text);
+        const parsed = entryDraftSchema.safeParse(value);
+        if (!parsed.success) throw new Error("Invalid draft");
+        setEntry(parsed.data);
+        setInitialized(true);
         return;
       } catch {
-        /* Leave corrupt draft in storage until explicit save/discard. */
+        setInvalidDraft(true);
+        return;
       }
     }
     if (id === "new") {
-      initialized.current = true;
+      setInitialized(true);
       return;
     }
     if (existing.data) {
       const journal = existing.data.find((j) => j.id === id);
-      if (journal) setEntry(journal);
-      initialized.current = true;
+      if (journal) {
+        setEntry(journal);
+        setInitialized(true);
+      }
     }
-  }, [draft.ready, existing.data, id, draft.text]);
+  }, [draft.ready, existing.data, id, draft.text, initialized]);
   function update(patch: Partial<EntryDraft>) {
     const value = { ...entry, ...patch };
     setEntry(value);
@@ -72,6 +87,7 @@ export default function JournalEditor() {
         throw new Error(
           "Bạn hãy thêm tiêu đề và vài dòng nội dung trước khi lưu.",
         );
+      await draft.persist(JSON.stringify(entry));
       return request(
         `/journals${id === "new" ? "" : `/${id}`}`,
         id === "new" ? "POST" : "PATCH",
@@ -96,10 +112,31 @@ export default function JournalEditor() {
     mutationFn: draft.clear,
     onSuccess: () => router.replace("/(tabs)/journal"),
   });
-  if (!draft.ready || (id !== "new" && existing.isPending))
+  if (!draft.ready)
     return (
       <ScreenContainer back>
-        <Loading />
+        <DraftStatus draft={draft} />
+      </ScreenContainer>
+    );
+  if (invalidDraft)
+    return (
+      <ScreenContainer back>
+        <MoriText>
+          Không đọc được nội dung bản nháp. Bản gốc vẫn được giữ trên thiết bị.
+        </MoriText>
+      </ScreenContainer>
+    );
+  if (!initialized)
+    return (
+      <ScreenContainer back>
+        <ErrorNote
+          error={existing.error}
+          retry={() => void existing.refetch()}
+        />
+        {existing.isPending && <Loading />}
+        {existing.isSuccess && (
+          <MoriText>Không tìm thấy trang viết này.</MoriText>
+        )}
       </ScreenContainer>
     );
   return (
@@ -135,10 +172,8 @@ export default function JournalEditor() {
         maxLength={20000}
         style={{ minHeight: 300, lineHeight: 27 }}
       />
-      <MoriText muted variant="small">
-        Bản nháp được giữ trên thiết bị khi bạn viết.
-      </MoriText>
-      <ErrorNote error={save.error ?? existing.error ?? draft.error} />
+      <DraftStatus draft={draft} />
+      <ErrorNote error={save.error} />
       <MoriButton
         loading={save.isPending}
         loadingLabel="Đang lưu trang viết…"

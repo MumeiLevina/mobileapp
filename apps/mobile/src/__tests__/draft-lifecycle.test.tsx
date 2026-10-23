@@ -100,3 +100,42 @@ test("failed deletion preserves editable text and exposes the storage error", as
     "Không xóa được bản nháp trên thiết bị.",
   );
 });
+
+test("a failed read blocks readiness and can be manually retried without writing", async () => {
+  jest
+    .mocked(privateStorage.getItem)
+    .mockRejectedValueOnce(new Error("locked"));
+  const view = await renderHook(() => useDraft("read-retry"));
+  await waitFor(() => expect(view.result.current.status).toBe("error"));
+  expect(view.result.current.ready).toBe(false);
+  jest.mocked(privateStorage.getItem).mockResolvedValueOnce("Recovered text");
+  await act(async () => {
+    await view.result.current.retry();
+  });
+  expect(view.result.current.text).toBe("Recovered text");
+  expect(view.result.current.status).toBe("saved");
+  expect(privateStorage.setItem).not.toHaveBeenCalled();
+});
+
+test("saving is reported only after the latest write commits; manual retry clears its error", async () => {
+  const view = await renderHook(() => useDraft("write-retry"));
+  await waitFor(() => expect(view.result.current.ready).toBe(true));
+  const write = deferred<void>();
+  jest.mocked(privateStorage.setItem).mockReturnValueOnce(write.promise);
+  await act(async () => view.result.current.setText("Older text"));
+  expect(view.result.current.status).toBe("saving");
+  jest.mocked(privateStorage.setItem).mockRejectedValueOnce(new Error("full"));
+  await act(async () => view.result.current.setText("Newest text"));
+  await act(async () => write.resolve());
+  await waitFor(() => expect(view.result.current.status).toBe("error"));
+  expect(view.result.current.text).toBe("Newest text");
+  await act(async () => {
+    await view.result.current.retry();
+  });
+  expect(privateStorage.setItem).toHaveBeenLastCalledWith(
+    "mori.draft-user.write-retry",
+    "Newest text",
+  );
+  expect(view.result.current.status).toBe("saved");
+  expect(view.result.current.error).toBe("");
+});

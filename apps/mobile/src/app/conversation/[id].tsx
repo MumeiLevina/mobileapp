@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Linking,
@@ -25,6 +25,7 @@ import {
   MoriSegmentedControl,
   ScreenContainer,
   ErrorNote,
+  Loading,
   styles,
 } from "../../components/ui";
 import { ConversationBubble } from "../../features/conversation/ConversationBubble";
@@ -32,18 +33,26 @@ import { request, refresh } from "../../services/api";
 import { newId } from "../../lib/id";
 import { useDraft } from "../../hooks/useDraft";
 import { useT } from "../../i18n";
-import { privateStorage } from "../../lib/storage";
 import { useSession } from "../../store/session";
-import { registerDraft } from "../../services/cleanup";
+import {
+  DraftConflictError,
+  readDraft,
+  createDraftIfEmptyWriter,
+} from "../../services/cleanup";
+import { DraftStatus } from "../../components/DraftStatus";
+import { readChatDraft } from "../../features/conversation/chat-draft";
 import { interactionFeedback } from "../../services/interaction-feedback";
 import { SelfCareCard } from "../../features/selfcare/SelfCareCard";
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  return <ConversationEditor key={id} id={id} />;
+}
+function ConversationEditor({ id }: { id: string }) {
   const copy = useT();
   const draft = useDraft(`chat.${id}`);
   const user = useSession((s) => s.userId);
   const [mode, setMode] = useState<ConversationMode>("listen");
-  const [clientId, setClientId] = useState(newId);
+  const messageDraft = useMemo(() => readChatDraft(draft.text), [draft.text]);
   const [end, setEnd] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [candidate, setCandidate] = useState<ChatResult["memory"]>();
@@ -62,24 +71,37 @@ export default function ConversationScreen() {
       ),
   });
   useEffect(() => {
-    if (data.data?.conversation) setMode(data.data.conversation.mode);
-  }, [data.data?.conversation.id]);
+    if (draft.ready)
+      setMode(
+        draft.text
+          ? messageDraft.mode
+          : (data.data?.conversation.mode ?? "listen"),
+      );
+  }, [
+    draft.ready,
+    draft.text,
+    messageDraft.mode,
+    data.data?.conversation.mode,
+  ]);
   const send = useMutation({
-    mutationFn: () =>
-      request<ChatResult>(`/conversations/${id}/messages`, "POST", {
-        content: draft.text,
+    mutationFn: async () => {
+      // Commit the retry identity before making a request that may reach the server.
+      await draft.persist(JSON.stringify({ ...messageDraft, mode }));
+      return request<ChatResult>(`/conversations/${id}/messages`, "POST", {
+        content: messageDraft.content,
         mode,
-        client_id: clientId,
-      }),
+        client_id: messageDraft.clientId,
+      });
+    },
     onSuccess: async (result) => {
-      await draft.clear();
       void interactionFeedback.success();
-      setClientId(newId());
       setCandidate(result.memory);
       setActivity(result.activity);
       setCrisis(["crisis", "elevated"].includes(result.safetyLevel));
       setCrisisResources(result.crisisResources ?? []);
+      // Refresh even if local cleanup fails, including safety responses.
       await refresh();
+      await draft.clear();
     },
   });
   const memory = useMutation({
@@ -95,13 +117,14 @@ export default function ConversationScreen() {
   });
   const reflect = useMutation({
     mutationFn: async () => {
+      const key = `mori.${user ?? "guest"}.journal.new`;
+      const writeReflection = createDraftIfEmptyWriter(user ?? "guest", key);
+      if (await readDraft(key)) throw new DraftConflictError();
       const reflection = await request<{ title: string; content: string }>(
         `/conversations/${id}/journal-draft`,
         "POST",
       );
-      await registerDraft(user ?? "guest", `mori.${user}.journal.new`);
-      await privateStorage.setItem(
-        `mori.${user}.journal.new`,
+      await writeReflection(
         JSON.stringify({
           ...reflection,
           source: "conversation",
@@ -151,8 +174,13 @@ export default function ConversationScreen() {
           value,
           label: copy[value],
         }))}
-        disabled={send.isPending}
-        onChange={setMode}
+        disabled={send.isPending || !draft.ready}
+        onChange={(value) => {
+          setMode(value);
+          draft.setText(
+            JSON.stringify({ ...messageDraft, mode: value, clientId: newId() }),
+          );
+        }}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -167,6 +195,7 @@ export default function ConversationScreen() {
           contentContainerStyle={{ paddingBottom: 20 }}
         >
           <ErrorNote error={data.error} retry={() => void data.refetch()} />
+          {data.isPending && <Loading />}
           {data.data?.messages.length === 0 && (
             <View style={{ paddingVertical: 38, gap: 15 }}>
               <MoriText variant="title">Bạn cứ bắt đầu từ bất cứ đâu.</MoriText>
@@ -264,14 +293,27 @@ export default function ConversationScreen() {
             </MoriCard>
           )}
         </ScrollView>
-        <ErrorNote error={send.error ?? draft.error} />
+        <ErrorNote
+          error={send.error}
+          retry={
+            send.isError && !send.isPending ? () => send.mutate() : undefined
+          }
+        />
+        <DraftStatus draft={draft} />
         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
           <MoriInput
             accessibilityLabel="Nội dung tin nhắn"
-            value={draft.text}
+            value={messageDraft.content}
             onChangeText={(value) => {
-              draft.setText(value);
-              if (send.isError) setClientId(newId());
+              draft.setText(
+                JSON.stringify({
+                  ...messageDraft,
+                  content: value,
+                  mode,
+                  clientId: newId(),
+                }),
+              );
+              send.reset();
             }}
             placeholder={copy.input}
             multiline
@@ -282,7 +324,9 @@ export default function ConversationScreen() {
           <MoriIconButton
             icon="arrow-up"
             accessibilityLabel={copy.send}
-            disabled={!draft.text.trim() || send.isPending}
+            disabled={
+              !messageDraft.content.trim() || !draft.ready || send.isPending
+            }
             loading={send.isPending}
             variant="primary"
             onPress={() => send.mutate()}
@@ -309,6 +353,17 @@ export default function ConversationScreen() {
             Bản nháp AI sẽ mở để bạn sửa. Chỉ lưu khi bạn chọn Lưu lại.
           </MoriText>
           <ErrorNote error={reflect.error ?? remove.error} />
+          {reflect.error instanceof DraftConflictError && (
+            <MoriButton
+              secondary
+              onPress={() => {
+                setEnd(false);
+                router.push("/journal/new");
+              }}
+            >
+              Mở bản nháp nhật ký hiện có
+            </MoriButton>
+          )}
           <MoriButton
             loading={reflect.isPending}
             disabled={!data.data?.messages.length}

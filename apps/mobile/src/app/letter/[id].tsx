@@ -27,6 +27,7 @@ import {
   scheduleLetterNotification,
 } from "../../services/notifications";
 import { useTheme } from "../../theme";
+import { DraftStatus } from "../../components/DraftStatus";
 
 const choices: { value: LetterDelay; label: string }[] = [
   { value: "week", label: "1 tuần" },
@@ -115,7 +116,8 @@ export default function LetterEditor() {
   if (!local.ready || (id !== "new" && existing.isPending))
     return (
       <ScreenContainer back>
-        <Loading />
+        <DraftStatus draft={local} />
+        {local.ready && <Loading />}
       </ScreenContainer>
     );
   return (
@@ -184,10 +186,8 @@ export default function LetterEditor() {
           maxLength={10}
         />
       )}
-      <MoriText muted variant="small">
-        Bản nháp được giữ riêng trên thiết bị khi bạn viết.
-      </MoriText>
-      <ErrorNote error={save.error ?? existing.error ?? local.error} />
+      <DraftStatus draft={local} />
+      <ErrorNote error={save.error ?? existing.error} />
       <MoriButton
         loading={save.isPending}
         loadingLabel="Đang cất lá thư…"

@@ -114,6 +114,7 @@ export default function PrivateConversation() {
       >
         <ScrollView
           ref={scroll}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 20, gap: 10 }}
           onContentSizeChange={() =>
             scroll.current?.scrollToEnd({ animated: false })
@@ -148,7 +149,14 @@ export default function PrivateConversation() {
             </MoriText>
           )}
         </ScrollView>
-        <ErrorNote error={send.error} />
+        <ErrorNote
+          error={send.error}
+          retry={
+            send.isError && !send.isPending && !save.isPending
+              ? () => send.mutate()
+              : undefined
+          }
+        />
         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
           <MoriInput
             accessibilityLabel="Nội dung riêng tư"
@@ -183,10 +191,16 @@ export default function PrivateConversation() {
             trong phiên sẽ thành một cuộc trò chuyện thường.
           </MoriText>
           <ErrorNote error={save.error} />
+          {!!text.trim() && (
+            <MoriText muted>
+              Bạn còn nội dung chưa gửi. Hãy tiếp tục trò chuyện để gửi hoặc xóa
+              nội dung đó trước khi lưu.
+            </MoriText>
+          )}
           <MoriButton
             loading={save.isPending}
             loadingLabel="Đang lưu cuộc trò chuyện…"
-            disabled={messages.length < 2 || send.isPending}
+            disabled={messages.length < 2 || send.isPending || !!text.trim()}
             onPress={() => save.mutate()}
           >
             Lưu

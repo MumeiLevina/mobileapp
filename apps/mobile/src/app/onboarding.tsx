@@ -10,7 +10,6 @@ import {
   ScreenContainer,
   Choice,
   ErrorNote,
-  Loading,
   styles,
 } from "../components/ui";
 import { GardenScene } from "../features/garden/GardenScene";
@@ -20,6 +19,7 @@ import { useT } from "../i18n";
 import { usePreferences } from "../store/preferences";
 import { OnboardingScaffold } from "../components/OnboardingScaffold";
 import { useDraft } from "../hooks/useDraft";
+import { DraftStatus } from "../components/DraftStatus";
 import { readOnboardingDraft } from "../features/onboarding/onboarding-draft";
 const goals = [
   "Một nơi để tâm sự",
@@ -34,18 +34,14 @@ export default function Onboarding() {
   if (!draft.ready) {
     return (
       <ScreenContainer>
-        <Loading />
+        <DraftStatus draft={draft} />
       </ScreenContainer>
     );
   }
   return <OnboardingContent draft={draft} />;
 }
 
-function OnboardingContent({
-  draft,
-}: {
-  draft: ReturnType<typeof useDraft>;
-}) {
+function OnboardingContent({ draft }: { draft: ReturnType<typeof useDraft> }) {
   const [initial] = useState(() => readOnboardingDraft(draft.text));
   const [step, setStep] = useState(initial.step);
   const [name, setName] = useState(initial.name);
@@ -58,9 +54,7 @@ function OnboardingContent({
 
   useEffect(() => {
     if (step > 5) return;
-    draft.setText(
-      JSON.stringify({ version: 1, step, name, selected, style }),
-    );
+    draft.setText(JSON.stringify({ version: 1, step, name, selected, style }));
   }, [draft.setText, name, selected, step, style]);
 
   const save = useMutation({
