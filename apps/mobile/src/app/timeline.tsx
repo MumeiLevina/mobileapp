@@ -15,6 +15,7 @@ import {
   styles,
 } from "../components/ui";
 import { request } from "../services/api";
+import { useDateLocale } from "../i18n";
 
 const filterLabels: Record<TimelineFilter, string> = {
   all: "Tất cả",
@@ -36,6 +37,7 @@ const typeLabels: Record<TimelineItem["type"], string> = {
 
 export default function TimelineScreen() {
   const [filter, setFilter] = useState<TimelineFilter>("all");
+  const dateLocale = useDateLocale();
   const timeline = useQuery({
     queryKey: ["reflection-timeline", filter],
     queryFn: () =>
@@ -65,7 +67,7 @@ export default function TimelineScreen() {
       {timeline.isPending && <Loading />}
       {timeline.data?.map((item) => {
         const itemMonth = new Date(item.occurredAt).toLocaleDateString(
-          "vi-VN",
+          dateLocale,
           { month: "long", year: "numeric" },
         );
         const showMonth = itemMonth !== month;
@@ -76,7 +78,7 @@ export default function TimelineScreen() {
             <MoriCard>
               <MoriText muted variant="small">
                 {typeLabels[item.type]} ·{" "}
-                {new Date(item.occurredAt).toLocaleDateString("vi-VN", {
+                {new Date(item.occurredAt).toLocaleDateString(dateLocale, {
                   day: "numeric",
                   month: "short",
                 })}

@@ -25,6 +25,8 @@ export type OutputEvalCase = {
     | "romantic attachment"
     | "manipulative engagement"
     | "guaranteed outcome"
+    | "safe empathy"
+    | "session reference"
     | "prompt injection";
   output: string;
   expectedRejected: boolean;
@@ -40,9 +42,10 @@ export type AdviceEvalCase = {
 
 export type MemoryEvalCase = {
   id: string;
-  group: "memory hallucination";
+  group: "memory hallucination" | "session reference";
   output: string;
   approvedMemories: string[];
+  currentSessionMessages?: string[];
   reviewerSafe: boolean;
   expectedRejected: boolean;
 };

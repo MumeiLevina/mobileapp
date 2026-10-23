@@ -27,6 +27,7 @@ test("quick mood save omits tags and note", async () => {
   );
 
   await fireEvent.press(screen.getByLabelText("Rạng rỡ"));
+  await waitFor(() => expect(screen.getByLabelText("Công việc")).toBeTruthy());
   await fireEvent.press(screen.getByLabelText("Công việc"));
   await fireEvent.changeText(
     screen.getByLabelText("Ghi chú cảm xúc"),
@@ -45,9 +46,11 @@ test("quick mood save omits tags and note", async () => {
     }),
   );
   expect(router.push).not.toHaveBeenCalled();
-  expect(
-    screen.getByText("Bạn muốn điều gì lúc này?", { exact: false }),
-  ).toBeTruthy();
+  await waitFor(() =>
+    expect(
+      screen.getByText("Bạn muốn điều gì lúc này?", { exact: false }),
+    ).toBeTruthy(),
+  );
   await view.unmount();
   queryClient.clear();
 });

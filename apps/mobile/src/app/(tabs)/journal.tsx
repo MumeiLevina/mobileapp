@@ -19,9 +19,12 @@ import {
 import { GuidedJournalCard } from "../../features/journal/GuidedJournalCard";
 import { request } from "../../services/api";
 import { useT } from "../../i18n";
+import { usePreferences } from "../../store/preferences";
 import { useTheme } from "../../theme";
 export default function JournalList() {
   const copy = useT();
+  const locale = usePreferences((s) => s.locale);
+  const dateLocale = locale === "en" ? "en-US" : "vi-VN";
   const t = useTheme();
   const [search, setSearch] = useState("");
   const [calendar, setCalendar] = useState(false);
@@ -99,7 +102,7 @@ export default function JournalList() {
           accessibilityLabel="Lịch nhật ký"
           selected={calendar}
           onPress={() => {
-            setCalendar(!calendar);
+            setCalendar((current) => !current);
             setDay(null);
           }}
         />
@@ -124,7 +127,7 @@ export default function JournalList() {
               }}
             />
             <MoriText>
-              {month.toLocaleDateString("vi-VN", {
+              {month.toLocaleDateString(dateLocale, {
                 month: "long",
                 year: "numeric",
               })}
@@ -141,7 +144,10 @@ export default function JournalList() {
             />
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (
+            {(locale === "en"
+              ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+              : ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+            ).map((d) => (
               <MoriText
                 key={d}
                 variant="small"
@@ -180,7 +186,11 @@ export default function JournalList() {
                 <MoriPressable
                   key={n}
                   accessibilityRole="button"
-                  accessibilityLabel={`Ngày ${n}${hasEntry ? ", có nhật ký" : ""}`}
+                  accessibilityLabel={
+                    locale === "en"
+                      ? `Day ${n}${hasEntry ? ", has entry" : ""}`
+                      : `Ngày ${n}${hasEntry ? ", có nhật ký" : ""}`
+                  }
                   accessibilityState={{ selected: day === n }}
                   feedback="selection"
                   onPress={() => setDay(day === n ? null : n)}
@@ -222,14 +232,14 @@ export default function JournalList() {
         <MoriPressable
           key={entry.id}
           accessibilityRole="button"
-          accessibilityLabel={`${entry.title}, ${new Date(entry.created_at).toLocaleDateString("vi-VN")}`}
+          accessibilityLabel={`${entry.title}, ${new Date(entry.created_at).toLocaleDateString(dateLocale)}`}
           guardMs={350}
           onPress={() => router.push(`/journal/${entry.id}`)}
           style={(pressed) => ({ opacity: pressed ? 0.82 : 1 })}
         >
           <MoriCard>
             <MoriText variant="small" muted>
-              {new Date(entry.created_at).toLocaleDateString("vi-VN", {
+              {new Date(entry.created_at).toLocaleDateString(dateLocale, {
                 day: "numeric",
                 month: "long",
                 year: "numeric",

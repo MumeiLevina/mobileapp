@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Journal, journalSchema } from "@mori/shared";
@@ -15,14 +15,20 @@ import { request, refresh } from "../../services/api";
 import { useDraft } from "../../hooks/useDraft";
 import { newId } from "../../lib/id";
 import { useT } from "../../i18n";
-type EntryDraft = {
-  title: string;
-  content: string;
-  source: Journal["source"];
-  client_id: string;
-};
+import { DraftStatus } from "../../components/DraftStatus";
+import { DraftRecovery } from "../../components/DraftRecovery";
+import {
+  EntryDraft,
+  readJournalDraft,
+} from "../../features/journal/journal-draft";
+import { useSession } from "../../store/session";
 export default function JournalEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const owner = useSession((s) => s.userId);
+  return <JournalEntry key={`${owner}:${id}`} id={id} />;
+}
+function JournalEntry({ id }: { id: string }) {
+  const owner = useSession((s) => s.userId);
   const draft = useDraft(`journal.${id}`);
   const copy = useT();
   const [entry, setEntry] = useState<EntryDraft>({
@@ -30,38 +36,43 @@ export default function JournalEditor() {
     content: "",
     source: "manual",
     client_id: newId(),
+    version: 1,
   });
-  const initialized = useRef(false);
+  const [initialized, setInitialized] = useState(false);
+  const [recovery, setRecovery] = useState<unknown>(null);
   const [confirm, setConfirm] = useState<"delete" | "discard" | null>(null);
   const existing = useQuery({
-    queryKey: ["journals"],
-    queryFn: () => request<Journal[]>("/journals"),
+    queryKey: ["journals", owner],
+    queryFn: () => request<Journal[]>("/journals", "GET", undefined, { owner }),
     enabled: id !== "new",
   });
   useEffect(() => {
-    if (!draft.ready || initialized.current) return;
+    if (!draft.ready || initialized) return;
     if (draft.text) {
       try {
-        const value = JSON.parse(draft.text) as EntryDraft;
-        setEntry(value);
-        initialized.current = true;
+        setEntry(readJournalDraft(draft.text));
+        setRecovery(null);
+        setInitialized(true);
         return;
-      } catch {
-        /* Leave corrupt draft in storage until explicit save/discard. */
+      } catch (error) {
+        setRecovery(error);
+        return;
       }
     }
     if (id === "new") {
-      initialized.current = true;
+      setInitialized(true);
       return;
     }
     if (existing.data) {
       const journal = existing.data.find((j) => j.id === id);
-      if (journal) setEntry(journal);
-      initialized.current = true;
+      if (journal) {
+        setEntry(journal);
+        setInitialized(true);
+      }
     }
-  }, [draft.ready, existing.data, id, draft.text]);
+  }, [draft.ready, existing.data, id, draft.text, initialized]);
   function update(patch: Partial<EntryDraft>) {
-    const value = { ...entry, ...patch };
+    const value = { ...entry, ...patch, version: 1 as const };
     setEntry(value);
     draft.setText(JSON.stringify(value));
   }
@@ -72,10 +83,12 @@ export default function JournalEditor() {
         throw new Error(
           "Bạn hãy thêm tiêu đề và vài dòng nội dung trước khi lưu.",
         );
+      await draft.persist(JSON.stringify(entry));
       return request(
         `/journals${id === "new" ? "" : `/${id}`}`,
         id === "new" ? "POST" : "PATCH",
         valid.data,
+        { owner },
       );
     },
     onSuccess: async () => {
@@ -85,7 +98,8 @@ export default function JournalEditor() {
     },
   });
   const remove = useMutation({
-    mutationFn: () => request(`/journals/${id}`, "DELETE"),
+    mutationFn: () =>
+      request(`/journals/${id}`, "DELETE", undefined, { owner }),
     onSuccess: async () => {
       await draft.clear();
       await refresh();
@@ -96,10 +110,33 @@ export default function JournalEditor() {
     mutationFn: draft.clear,
     onSuccess: () => router.replace("/(tabs)/journal"),
   });
-  if (!draft.ready || (id !== "new" && existing.isPending))
+  if (!draft.ready)
     return (
       <ScreenContainer back>
-        <Loading />
+        <DraftStatus draft={draft} />
+      </ScreenContainer>
+    );
+  if (recovery)
+    return (
+      <DraftRecovery
+        draft={draft}
+        error={recovery}
+        onDiscarded={() => {
+          setRecovery(null);
+        }}
+      />
+    );
+  if (!initialized)
+    return (
+      <ScreenContainer back>
+        <ErrorNote
+          error={existing.error}
+          retry={() => void existing.refetch()}
+        />
+        {existing.isPending && <Loading />}
+        {existing.isSuccess && (
+          <MoriText>Không tìm thấy trang viết này.</MoriText>
+        )}
       </ScreenContainer>
     );
   return (
@@ -135,10 +172,8 @@ export default function JournalEditor() {
         maxLength={20000}
         style={{ minHeight: 300, lineHeight: 27 }}
       />
-      <MoriText muted variant="small">
-        Bản nháp được giữ trên thiết bị khi bạn viết.
-      </MoriText>
-      <ErrorNote error={save.error ?? existing.error ?? draft.error} />
+      <DraftStatus draft={draft} />
+      <ErrorNote error={save.error} />
       <MoriButton
         loading={save.isPending}
         loadingLabel="Đang lưu trang viết…"

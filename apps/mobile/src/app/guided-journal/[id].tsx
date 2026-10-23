@@ -23,31 +23,51 @@ import { useDraft } from "../../hooks/useDraft";
 import { refresh, request } from "../../services/api";
 import { usePreferences } from "../../store/preferences";
 import { useTheme } from "../../theme";
+import { DraftStatus } from "../../components/DraftStatus";
+import { DraftRecovery } from "../../components/DraftRecovery";
+import { useSession } from "../../store/session";
 
 export default function GuidedJournalSession() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const owner = useSession((s) => s.userId);
+  return <GuidedSession key={`${owner}:${id}`} id={id} />;
+}
+function GuidedSession({ id }: { id: string }) {
+  const owner = useSession((s) => s.userId);
   const template = getGuidedJournalTemplate(id ?? "");
   const localDraft = useDraft(`guided-journal.${id}`);
   const locale = usePreferences((state) => state.locale);
   const theme = useTheme();
   const initialized = useRef(false);
   const [session, setSession] = useState<GuidedJournalDraft | null>(null);
+  const [recovery, setRecovery] = useState<unknown>(null);
 
   useEffect(() => {
     if (!template || !localDraft.ready || initialized.current) return;
-    initialized.current = true;
-    setSession(readGuidedJournalDraft(localDraft.text, template));
+    try {
+      setSession(readGuidedJournalDraft(localDraft.text, template));
+      setRecovery(null);
+      initialized.current = true;
+    } catch (error) {
+      setRecovery(error);
+    }
   }, [localDraft.ready, localDraft.text, template]);
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!template || !session) throw new Error("Bản nháp chưa sẵn sàng.");
-      return request("/journals", "POST", {
-        title: locale === "en" ? template.titleEn : template.titleVi,
-        content: buildGuidedJournalContent(template, session.answers, locale),
-        source: "guided",
-        client_id: session.clientId,
-      });
+      await localDraft.persist(JSON.stringify(session));
+      return request(
+        "/journals",
+        "POST",
+        {
+          title: locale === "en" ? template.titleEn : template.titleVi,
+          content: buildGuidedJournalContent(template, session.answers, locale),
+          source: "guided",
+          client_id: session.clientId,
+        },
+        { owner },
+      );
     },
     onSuccess: async () => {
       await localDraft.clear();
@@ -69,10 +89,21 @@ export default function GuidedJournalSession() {
     );
   }
 
+  if (localDraft.ready && recovery)
+    return (
+      <DraftRecovery
+        draft={localDraft}
+        error={recovery}
+        onDiscarded={() => {
+          setRecovery(null);
+        }}
+      />
+    );
   if (!localDraft.ready || !session) {
     return (
       <ScreenContainer back>
-        <Loading />
+        <DraftStatus draft={localDraft} />
+        {localDraft.ready && <Loading />}
       </ScreenContainer>
     );
   }
@@ -97,7 +128,13 @@ export default function GuidedJournalSession() {
         <MoriIconButton
           icon="arrow-back"
           accessibilityLabel={
-            session.step === 0 ? "Quay lại thư viện" : "Quay lại câu trước"
+            locale === "en"
+              ? session.step === 0
+                ? "Back to prompts"
+                : "Previous question"
+              : session.step === 0
+                ? "Quay lại thư viện"
+                : "Quay lại câu trước"
           }
           disabled={save.isPending}
           onPress={goBack}
@@ -106,9 +143,13 @@ export default function GuidedJournalSession() {
           accessible
           accessibilityRole="progressbar"
           accessibilityLabel={
-            reviewing
-              ? "Đang xem lại câu trả lời"
-              : `Câu ${session.step + 1} trên ${template.prompts.length}`
+            locale === "en"
+              ? reviewing
+                ? "Reviewing answers"
+                : `Question ${session.step + 1} of ${template.prompts.length}`
+              : reviewing
+                ? "Đang xem lại câu trả lời"
+                : `Câu ${session.step + 1} trên ${template.prompts.length}`
           }
           accessibilityValue={{
             min: 0,
@@ -164,7 +205,8 @@ export default function GuidedJournalSession() {
               </MoriButton>
             </MoriCard>
           ))}
-          <ErrorNote error={save.error ?? localDraft.error} />
+          <DraftStatus draft={localDraft} />
+          <ErrorNote error={save.error} />
           <MoriButton
             loading={save.isPending}
             loadingLabel="Đang lưu trang viết…"
@@ -191,7 +233,11 @@ export default function GuidedJournalSession() {
             Không cần viết thật hay. Viết vừa đủ với bạn.
           </MoriText>
           <MoriInput
-            accessibilityLabel={`Câu trả lời ${session.step + 1}`}
+            accessibilityLabel={
+              locale === "en"
+                ? `Answer ${session.step + 1}`
+                : `Câu trả lời ${session.step + 1}`
+            }
             value={session.answers[session.step]}
             onChangeText={(answer) => {
               const answers = [...session.answers];
@@ -203,7 +249,7 @@ export default function GuidedJournalSession() {
             placeholder="Mình đang nghĩ…"
             style={{ minHeight: 230, lineHeight: 27 }}
           />
-          <ErrorNote error={localDraft.error} />
+          <DraftStatus draft={localDraft} />
           <MoriButton
             disabled={!session.answers[session.step].trim()}
             onPress={() => persist({ ...session, step: session.step + 1 })}

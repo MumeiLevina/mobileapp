@@ -7,6 +7,9 @@ export function useTranslate() {
       ? (english[value] ?? english[value.replace(/\s+/g, " ").trim()] ?? value)
       : value;
 }
+export function useDateLocale() {
+  return usePreferences((s) => s.locale) === "en" ? "en-US" : "vi-VN";
+}
 const vi = {
   home: "Khu vườn",
   talk: "Tâm sự",
@@ -56,7 +59,8 @@ const vi = {
   stay: "Chỉ ngồi yên cùng mình",
   gardenNote: "Khu vườn lớn lên từ những lần bạn chăm sóc mình.",
   boundary: "Mori là AI, không phải bác sĩ hay nhà trị liệu.",
-  offline: "Bạn đang ngoại tuyến. Bản nháp vẫn ở đây.",
+  offline:
+    "Bạn đang ngoại tuyến. Kiểm tra trạng thái bản nháp trước khi rời màn hình.",
   end: "Khép lại cuộc trò chuyện",
   journalDraft: "Tạo bản nháp nhật ký",
   noPressure: "Không có chuỗi ngày cần giữ. Bạn luôn có thể bắt đầu lại.",
@@ -108,7 +112,8 @@ const en: typeof vi = {
   stay: "Just stay with me",
   gardenNote: "Your garden grows with moments of self-care.",
   boundary: "Mori is AI, not a doctor or therapist.",
-  offline: "You are offline. Your draft is still here.",
+  offline:
+    "You are offline. Check your draft status before leaving this screen.",
   end: "Close this conversation",
   journalDraft: "Create a journal draft",
   noPressure: "No streak to keep. You can always begin again.",

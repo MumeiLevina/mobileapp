@@ -21,6 +21,7 @@ import {
   readMorningRitualDraft,
 } from "../../features/rituals/morning-draft";
 import { useDraft } from "../../hooks/useDraft";
+import { DraftStatus } from "../../components/DraftStatus";
 import { refresh, request } from "../../services/api";
 import { interactionFeedback } from "../../services/interaction-feedback";
 import { useTheme } from "../../theme";
@@ -68,7 +69,8 @@ export default function MorningRitual() {
   if (!localDraft.ready || !draft) {
     return (
       <ScreenContainer back>
-        <Loading />
+        <DraftStatus draft={localDraft} />
+        {localDraft.ready && <Loading />}
       </ScreenContainer>
     );
   }
@@ -149,7 +151,8 @@ export default function MorningRitual() {
         />
       </View>
 
-      <ErrorNote error={save.error ?? localDraft.error} />
+      <DraftStatus draft={localDraft} />
+      <ErrorNote error={save.error} />
       <MoriButton
         disabled={!draft.desiredFeeling}
         loading={save.isPending}

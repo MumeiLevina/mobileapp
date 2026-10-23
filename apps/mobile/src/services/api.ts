@@ -5,11 +5,12 @@ import { demoRequest } from "./demo";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30000 },
-    mutations: { retry: 0 },
+    // Writes fail promptly offline; do not pause them for automatic replay.
+    mutations: { retry: 0, networkMode: "always" },
   },
 });
 
-async function accessToken(forceRefresh = false) {
+async function accessToken(forceRefresh = false, owner?: string | null) {
   if (!supabase) throw new Error("Vui lòng đăng nhập để tiếp tục.");
   const { data, error } = forceRefresh
     ? await supabase.auth.refreshSession()
@@ -18,8 +19,10 @@ async function accessToken(forceRefresh = false) {
     throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
   const session = data.session;
   if (!session) throw new Error("Vui lòng đăng nhập để tiếp tục.");
+  if (owner !== undefined && session.user.id !== owner)
+    throw new Error("Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.");
   const expiresSoon = (session.expires_at ?? 0) * 1000 <= Date.now() + 30_000;
-  if (expiresSoon && !forceRefresh) return accessToken(true);
+  if (expiresSoon && !forceRefresh) return accessToken(true, owner);
   return session.access_token;
 }
 
@@ -39,12 +42,23 @@ export async function request<T>(
   path: string,
   method = "GET",
   body?: unknown,
+  options?: { owner: string | null },
 ): Promise<T> {
   if (config.demo) return (await demoRequest(path, method, body)) as T;
   try {
-    let response = await apiFetch(path, method, body, await accessToken());
+    let response = await apiFetch(
+      path,
+      method,
+      body,
+      await accessToken(false, options?.owner),
+    );
     if (response.status === 401)
-      response = await apiFetch(path, method, body, await accessToken(true));
+      response = await apiFetch(
+        path,
+        method,
+        body,
+        await accessToken(true, options?.owner),
+      );
     if (!response.ok)
       throw new Error(
         response.status === 401
@@ -53,10 +67,19 @@ export async function request<T>(
       );
     return (await response.json()) as T;
   } catch (error) {
+    if (
+      error instanceof Error &&
+      ["AbortError", "TimeoutError"].includes(error.name)
+    )
+      throw new Error(
+        "Kết nối mất quá lâu. Chưa xác nhận được kết quả. Bạn có thể thử lại.",
+      );
     if (error instanceof TypeError)
       throw new Error(
-        "Chưa kết nối được. Nội dung bạn đang viết vẫn được giữ lại.",
+        "Chưa kết nối được. Chưa xác nhận được kết quả. Bạn có thể thử lại.",
       );
+    if (error instanceof SyntaxError)
+      throw new Error("Chưa đọc được phản hồi từ máy chủ. Bạn có thể thử lại.");
     throw error;
   }
 }

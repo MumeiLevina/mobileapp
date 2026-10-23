@@ -52,6 +52,20 @@ const app = {
 
 const betaProfiles = new Set(["preview", "production"]);
 
+function easProjectId() {
+  const value = (
+    process.env.EAS_PROJECT_ID ?? process.env.EAS_BUILD_PROJECT_ID
+  )?.trim();
+  if (!value) return undefined;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  )
+    throw new Error("EAS_PROJECT_ID must be a valid Expo project UUID.");
+  return value;
+}
+
 function requireRemoteUrl(name) {
   const value = process.env[name];
   if (!value)
@@ -65,7 +79,12 @@ function requireRemoteUrl(name) {
 
 module.exports = () => {
   const profile = process.env.EAS_BUILD_PROFILE ?? "local";
+  const projectId = easProjectId();
   if (betaProfiles.has(profile)) {
+    if (!projectId)
+      throw new Error(
+        "EAS_PROJECT_ID is required for preview/production builds. Link the intended Mori Expo project before building.",
+      );
     if (process.env.EXPO_PUBLIC_DEMO_MODE !== "false")
       throw new Error("Preview/production builds must disable demo mode.");
     requireRemoteUrl("EXPO_PUBLIC_API_URL");
@@ -80,6 +99,7 @@ module.exports = () => {
     extra: {
       ...app.extra,
       environment: profile,
+      ...(projectId ? { eas: { projectId } } : {}),
     },
   };
 };

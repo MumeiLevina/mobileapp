@@ -1,8 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  PersonalMilestone,
-  PersonalMilestoneKey,
-} from "@mori/shared";
+import { PersonalMilestone, PersonalMilestoneKey } from "@mori/shared";
 import {
   ErrorNote,
   Loading,
@@ -12,11 +9,9 @@ import {
   ScreenContainer,
 } from "../components/ui";
 import { refresh, request } from "../services/api";
+import { useDateLocale } from "../i18n";
 
-const copy: Record<
-  PersonalMilestoneKey,
-  { title: string; detail: string }
-> = {
+const copy: Record<PersonalMilestoneKey, { title: string; detail: string }> = {
   quiet_cottage_appeared: {
     title: "Nhà yên đã có mặt trong khu vườn.",
     detail: "Một góc nhỏ để trở về khi bạn muốn chậm lại.",
@@ -51,14 +46,15 @@ const copy: Record<
   },
 };
 
-const date = (value: string) =>
-  new Date(value).toLocaleDateString("vi-VN", {
+const date = (value: string, locale: string) =>
+  new Date(value).toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
 export default function PersonalMilestonesScreen() {
+  const dateLocale = useDateLocale();
   const milestones = useQuery({
     queryKey: ["personal-milestones"],
     queryFn: () => request<PersonalMilestone[]>("/personal-milestones"),
@@ -91,7 +87,7 @@ export default function PersonalMilestonesScreen() {
             <MoriText variant="subtitle">{words.title}</MoriText>
             <MoriText muted>{words.detail}</MoriText>
             <MoriText muted variant="small">
-              {date(milestone.created_at)}
+              {date(milestone.created_at, dateLocale)}
             </MoriText>
             {!milestone.acknowledged_at && (
               <MoriButton

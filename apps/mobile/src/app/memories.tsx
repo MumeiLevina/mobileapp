@@ -1,66 +1,52 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Memory, MemoryCategory, memorySchema } from "@mori/shared";
+import { Memory, MemoryCategory } from "@mori/shared";
 import {
   MoriButton,
-  MoriBottomSheet,
-  MoriInput,
   MoriConfirmSheet,
   MoriText,
   ScreenContainer,
-  Choice,
   ErrorNote,
   Loading,
   styles,
 } from "../components/ui";
 import { MemoryCard } from "../features/memories/MemoryCard";
 import { request, refresh } from "../services/api";
-const labels: Record<MemoryCategory, string> = {
-  preference: "Sở thích",
-  life_event: "Điều đang diễn ra",
-  relationship: "Mối quan hệ",
-  goal: "Điều bạn hướng tới",
-  self_care_preference: "Cách chăm sóc mình",
-  communication_preference: "Cách trò chuyện",
-};
+import { useSession } from "../store/session";
+import {
+  MemoryEditor,
+  memoryLabels as labels,
+} from "../features/memories/MemoryEditor";
 export default function Memories() {
+  const owner = useSession((s) => s.userId);
+  return <MemoryList key={owner} owner={owner} />;
+}
+function MemoryList({ owner }: { owner: string | null }) {
   const list = useQuery({
-    queryKey: ["memories"],
-    queryFn: () => request<Memory[]>("/memories"),
+    queryKey: ["memories", owner],
+    queryFn: () => request<Memory[]>("/memories", "GET", undefined, { owner }),
   });
-  const [editing, setEditing] = useState<string | null>(null);
-  const [content, setContent] = useState("");
-  const [category, setCategory] = useState<MemoryCategory>("preference");
+  const [editing, setEditing] = useState<{ memory: Memory | null } | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState<string | null>(null);
-  const save = useMutation({
-    mutationFn: async () => {
-      const value = memorySchema.safeParse({ content, category });
-      if (!value.success) throw new Error("Hãy nhập điều bạn muốn ghi nhớ.");
-      const result = await request(
-        `/memories${editing === "new" ? "" : `/${editing}`}`,
-        editing === "new" ? "POST" : "PATCH",
-        value.data,
-      );
-      if (editing !== "new")
-        await request(`/memories/${editing}/approve`, "POST");
-      return result;
-    },
-    onSuccess: () => {
-      setEditing(null);
-      void refresh();
-    },
-  });
   const remove = useMutation({
     mutationFn: () =>
-      request(`/memories${deleting === "all" ? "" : `/${deleting}`}`, "DELETE"),
+      request(
+        `/memories${deleting === "all" ? "" : `/${deleting}`}`,
+        "DELETE",
+        undefined,
+        { owner },
+      ),
     onSuccess: () => {
       setDeleting(null);
       void refresh();
     },
   });
   const approve = useMutation({
-    mutationFn: (id: string) => request(`/memories/${id}/approve`, "POST"),
+    mutationFn: (id: string) =>
+      request(`/memories/${id}/approve`, "POST", undefined, { owner }),
     onSuccess: () => {
       void refresh();
     },
@@ -73,19 +59,15 @@ export default function Memories() {
         trong những cuộc trò chuyện sau.
       </MoriText>
       <MoriButton
-        disabled={approve.isPending || remove.isPending}
+        disabled={approve.isPending || remove.isPending || !!editing}
         onPress={() => {
-          setContent("");
-          setCategory("preference");
-          setEditing("new");
+          setEditing({ memory: null });
         }}
       >
         Thêm một điều bạn muốn ghi nhớ
       </MoriButton>
-      <ErrorNote
-        error={list.error ?? approve.error}
-        retry={() => void list.refetch()}
-      />
+      <ErrorNote error={list.error} retry={() => void list.refetch()} />
+      <ErrorNote error={approve.error} />
       {list.isPending && <Loading />}
       {list.data?.length === 0 && (
         <MoriText muted>
@@ -102,13 +84,11 @@ export default function Memories() {
                 key={memory.id}
                 memory={memory}
                 onEdit={() => {
-                  setEditing(memory.id);
-                  setContent(memory.content);
-                  setCategory(memory.category);
+                  setEditing({ memory });
                 }}
                 onDelete={() => setDeleting(memory.id)}
                 onApprove={() => approve.mutate(memory.id)}
-                disabled={approve.isPending || remove.isPending}
+                disabled={approve.isPending || remove.isPending || !!editing}
               />
             ))}
           </View>
@@ -117,46 +97,22 @@ export default function Memories() {
       {!!list.data?.length && (
         <MoriButton
           variant="dangerGhost"
-          disabled={approve.isPending || remove.isPending}
+          disabled={approve.isPending || remove.isPending || !!editing}
           onPress={() => setDeleting("all")}
         >
           Xóa tất cả ký ức của Mori
         </MoriButton>
       )}
-      <MoriBottomSheet
-        visible={editing !== null}
-        onClose={save.isPending ? () => undefined : () => setEditing(null)}
-      >
-        <View style={styles.stack}>
-          <MoriText variant="title">Điều bạn muốn giữ lại.</MoriText>
-          <MoriInput
-            accessibilityLabel="Nội dung ký ức"
-            value={content}
-            onChangeText={setContent}
-            editable={!save.isPending}
-            multiline
-            maxLength={600}
-            placeholder="Ví dụ: Mình thích nghe tiếng mưa."
-          />
-          {MemoryCategory.options.map((cat) => (
-            <Choice
-              key={cat}
-              title={labels[cat]}
-              selected={cat === category}
-              disabled={save.isPending}
-              onPress={() => setCategory(cat)}
-            />
-          ))}
-          <ErrorNote error={save.error} />
-          <MoriButton
-            loading={save.isPending}
-            loadingLabel="Đang lưu ký ức…"
-            onPress={() => save.mutate()}
-          >
-            Lưu và cho phép ghi nhớ
-          </MoriButton>
-        </View>
-      </MoriBottomSheet>
+      {editing && (
+        <MemoryEditor
+          memory={editing.memory}
+          knownIds={list.data?.map((m) => m.id) ?? []}
+          onClose={() => {
+            setEditing(null);
+            void refresh();
+          }}
+        />
+      )}
       <MoriConfirmSheet
         visible={deleting !== null}
         title={deleting === "all" ? "Quên tất cả ký ức?" : "Quên điều này?"}

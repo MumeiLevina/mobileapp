@@ -9,6 +9,7 @@ import {
   SectionHeading,
 } from "../components/ui";
 import { request } from "../services/api";
+import { usePreferences } from "../store/preferences";
 
 const labels: Record<LifePatternsResponse["patterns"][number]["type"], string> =
   {
@@ -20,6 +21,7 @@ const labels: Record<LifePatternsResponse["patterns"][number]["type"], string> =
   };
 
 export default function PatternsScreen() {
+  const locale = usePreferences((s) => s.locale);
   const data = useQuery({
     queryKey: ["life-patterns"],
     queryFn: () => request<LifePatternsResponse>("/insights/patterns"),
@@ -55,15 +57,14 @@ export default function PatternsScreen() {
           <MoriText>{pattern.title}</MoriText>
           <MoriText translate={false}>{pattern.observation}</MoriText>
           <MoriText muted variant="small">
-            Dựa trên {pattern.evidenceCount} ghi chép liên quan
+            {locale === "en"
+              ? `Based on ${pattern.evidenceCount} related entries`
+              : `Dựa trên ${pattern.evidenceCount} ghi chép liên quan`}
           </MoriText>
         </MoriCard>
       ))}
       {data.data && (
         <MoriCard>
-          <MoriText variant="small" translate={false}>
-            {data.data.disclaimer}
-          </MoriText>
           <MoriText muted variant="small">
             Đây là một mẫu trong ghi chép của bạn, không phải bằng chứng về
             nguyên nhân hay chẩn đoán.

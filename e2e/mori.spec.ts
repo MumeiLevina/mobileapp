@@ -1,6 +1,67 @@
 import { expect, Page, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+test("calendar clears hidden date filters and mood sheets reopen repeatedly", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await completeOnboarding(page);
+  await page.goto("/journal");
+  await expect(page.getByText("NHẬT KÝ CỦA BẠN")).toBeVisible();
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("mori-demo")!);
+    const now = new Date();
+    state.journals = [1, 2].map((day) => ({
+      id: `calendar-${day}`,
+      user_id: "demo",
+      title: `Calendar entry ${day}`,
+      content: `Private calendar ${day}`,
+      source: "manual",
+      deleted_at: null,
+      created_at: new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        day,
+        12,
+      ).toISOString(),
+    }));
+    localStorage.setItem("mori-demo", JSON.stringify(state));
+  });
+  await page.reload();
+  await expect(
+    page.getByText("Calendar entry 2", { exact: true }),
+  ).toBeVisible();
+  for (let i = 0; i < 3; i++) {
+    await page.getByLabel("Lịch nhật ký").click();
+    await page.getByLabel("Ngày 1, có nhật ký", { exact: true }).click();
+    await expect(
+      page.getByText("Calendar entry 2", { exact: true }),
+    ).toBeHidden();
+    await page.getByLabel("Ngày 2, có nhật ký", { exact: true }).click();
+    await expect(
+      page.getByText("Calendar entry 1", { exact: true }),
+    ).toBeHidden();
+    await page.getByLabel("Lịch nhật ký").click();
+    await expect(
+      page.getByText("Calendar entry 1", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Calendar entry 2", { exact: true }),
+    ).toBeVisible();
+  }
+  await openGarden(page);
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole("radio", { name: "Chùng xuống", exact: true }).click();
+    await expect(page.getByLabel("Ghi chú cảm xúc")).toBeVisible();
+    await page
+      .getByLabel("Đóng", { exact: true })
+      .click({ position: { x: 10, y: 10 } });
+    await expect(page.getByLabel("Ghi chú cảm xúc")).toBeHidden();
+  }
+  expect(errors).toEqual([]);
+});
+
 async function completeOnboarding(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Bắt đầu", exact: true }).click();
@@ -15,6 +76,227 @@ async function completeOnboarding(page: Page) {
   await page.getByRole("button", { name: "Để sau, vào khu vườn" }).click();
   await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
 }
+
+test("Sprint 2 preserves incompatible drafts until explicit confirmed discard", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  for (const flow of [
+    {
+      route: "/journal/new",
+      key: "mori.demo.journal.new",
+      field: "Nội dung nhật ký",
+    },
+    {
+      route: "/letter/new",
+      key: "mori.demo.letter.new",
+      field: "Nội dung lá thư",
+    },
+    {
+      route: "/guided-journal/khi-minh-thay-mat-phuong-huong",
+      key: "mori.demo.guided-journal.khi-minh-thay-mat-phuong-huong",
+      field: "Câu trả lời 1",
+    },
+  ]) {
+    const raw = JSON.stringify({
+      version: 99,
+      title: "Bản gốc cần giữ",
+      content: "Nội dung riêng tư chưa tương thích 💚",
+    });
+    await page.evaluate(
+      ({ key, value }) => {
+        localStorage.setItem(key, value);
+        const index = JSON.parse(
+          localStorage.getItem("mori-drafts.demo") ?? "[]",
+        );
+        localStorage.setItem(
+          "mori-drafts.demo",
+          JSON.stringify([...new Set([...index, key])]),
+        );
+      },
+      { key: flow.key, value: raw },
+    );
+    await page.goto(flow.route);
+    await expect(page.getByText("Giữ lại những gì bạn đã viết.")).toBeVisible();
+    await page.getByRole("button", { name: "Xem bản gốc để sao chép" }).click();
+    await expect(page.getByText(raw, { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Đọc lại bản nháp" }).click();
+    expect(
+      await page.evaluate((key) => localStorage.getItem(key), flow.key),
+    ).toBe(raw);
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Bỏ bản nháp lỗi", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Giữ bản gốc", exact: true })
+      .click();
+    expect(
+      await page.evaluate((key) => localStorage.getItem(key), flow.key),
+    ).toBe(raw);
+    await page
+      .getByRole("button", { name: "Bỏ bản nháp lỗi", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Xóa bản nháp trên thiết bị", exact: true })
+      .click();
+    await expect(page.getByLabel(flow.field)).toHaveValue("");
+    expect(
+      await page.evaluate((key) => localStorage.getItem(key), flow.key),
+    ).toBeNull();
+  }
+});
+
+test("Sprint 2 memory editing keeps text through close and cancels only after explicit discard", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.goto("/memories");
+  await page
+    .getByRole("button", { name: "Thêm một điều bạn muốn ghi nhớ" })
+    .click();
+  await page.getByLabel("Nội dung ký ức").fill("Mình muốn giữ riêng câu này.");
+  await page.getByRole("button", { name: "Đóng trình chỉnh sửa" }).click();
+  await expect(page.getByText("Bạn còn thay đổi đang mở.")).toBeVisible();
+  await page.getByRole("button", { name: "Tiếp tục chỉnh sửa" }).click();
+  await expect(page.getByLabel("Nội dung ký ức")).toHaveValue(
+    "Mình muốn giữ riêng câu này.",
+  );
+  await page.getByRole("button", { name: "Đóng trình chỉnh sửa" }).click();
+  await page.getByRole("button", { name: "Bỏ chỉnh sửa", exact: true }).click();
+  await expect(page.getByLabel("Nội dung ký ức")).toBeHidden();
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(state.memories).toHaveLength(0);
+  expect(
+    await page.evaluate(() =>
+      Object.values(localStorage).some((value) =>
+        value.includes("Mình muốn giữ riêng câu này."),
+      ),
+    ),
+  ).toBe(false);
+});
+
+test("Sprint 2 local self-care finishes without a server session or Garden change", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  const before = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  await page.goto("/self-care");
+  await expect(
+    page.getByText(
+      "Các hướng dẫn có sẵn trong ứng dụng. Bạn có thể thực hành không lưu; chỉ ghi nhận lên tài khoản khi máy chủ xác nhận.",
+    ),
+  ).toBeVisible();
+  await page.goto("/activity/water");
+  await page
+    .getByRole("button", { name: "Thực hành không lưu", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Tạm dừng", exact: true }).click();
+  await page.getByRole("button", { name: "Tiếp tục", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Mình đã thực hiện xong", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Khoảng nghỉ này chỉ diễn ra trên thiết bị. Chưa gửi lên tài khoản hay ghi nhận tiến triển khu vườn.",
+    ),
+  ).toBeVisible();
+  const after = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mori-demo")!),
+  );
+  expect(after.sessions).toEqual(before.sessions);
+  expect(after.garden).toEqual(before.garden);
+});
+
+test("offline UX retains a journal draft through reload and protects it during a chat handoff", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.goto("/journal/new");
+  await page.getByLabel("Tiêu đề nhật ký").fill("Trang chưa hoàn thành");
+  await page
+    .getByLabel("Nội dung nhật ký")
+    .fill("Mình muốn giữ nguyên những dòng này.");
+  await expect(
+    page.getByText("Đã giữ bản nháp trên thiết bị. Chưa lưu lên tài khoản."),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Nội dung nhật ký")).toHaveValue(
+    "Mình muốn giữ nguyên những dòng này.",
+  );
+  await page.screenshot({
+    path: "artifacts/wave4-journal-draft.png",
+    fullPage: true,
+  });
+  await page.goto("/talk");
+  await page
+    .getByRole("button", { name: "Tâm sự cùng Mori", exact: true })
+    .click();
+  await page
+    .getByLabel("Nội dung tin nhắn")
+    .fill("Hôm nay mình muốn lắng nghe một chút.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(page.getByLabel("Nội dung tin nhắn")).toHaveValue("");
+  await page.getByLabel("Tùy chọn cuộc trò chuyện").click();
+  await page
+    .getByRole("button", { name: "Tạo bản nháp nhật ký", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Bạn còn một bản nháp nhật ký. Hãy mở và lưu hoặc bỏ bản nháp đó trước.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Mở bản nháp nhật ký hiện có" })
+    .click();
+  await expect(page.getByLabel("Tiêu đề nhật ký")).toHaveValue(
+    "Trang chưa hoàn thành",
+  );
+  await expect(page.getByLabel("Nội dung nhật ký")).toHaveValue(
+    "Mình muốn giữ nguyên những dòng này.",
+  );
+});
+
+test("private save explains unsent text and allows returning to it", async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await page.goto("/private-conversation");
+  await page.getByLabel("Nội dung riêng tư").fill("Mình muốn nói một câu.");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(page.getByLabel("Nội dung riêng tư")).toHaveValue("");
+  await page.getByLabel("Nội dung riêng tư").fill("Mình còn một câu chưa gửi.");
+  await page.getByLabel("Rời cuộc trò chuyện riêng tư").click();
+  await expect(
+    page.getByText(
+      "Bạn còn nội dung chưa gửi. Hãy tiếp tục trò chuyện để gửi hoặc xóa nội dung đó trước khi lưu.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Lưu", exact: true }),
+  ).toBeDisabled();
+  await page.screenshot({
+    path: "artifacts/wave4-private-unsent.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Tiếp tục trò chuyện", exact: true })
+    .click();
+  await expect(page.getByLabel("Nội dung riêng tư")).toHaveValue(
+    "Mình còn một câu chưa gửi.",
+  );
+  expect(
+    await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) =>
+        key.includes("private-conversation"),
+      ),
+    ),
+  ).toEqual([]);
+});
 
 async function openGarden(page: Page) {
   await page.evaluate(() => {
@@ -261,7 +543,7 @@ test("Wave 1 connects Ask Mori, Life Map, Memory evidence, Timeline and Patterns
   await expect(page.getByText("Chủ đề xuất hiện nhiều lần")).toBeVisible();
   await expect(
     page.getByText(
-      "This is a pattern in your entries, not proof of cause or a diagnosis.",
+      "Đây là một mẫu trong ghi chép của bạn, không phải bằng chứng về nguyên nhân hay chẩn đoán.",
     ),
   ).toBeVisible();
 
@@ -516,11 +798,14 @@ test("You creates and completes a gentle intention without pressure copy", async
     page.getByText("Bạn đã hoàn thành ý định nhỏ đầu tiên.", { exact: true }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() =>
-      JSON.parse(localStorage.getItem("mori-demo")!).personalMilestones.filter(
-        (item: { milestone_key: string }) =>
-          item.milestone_key === "first_soft_goal",
-      ).length,
+    await page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("mori-demo")!,
+        ).personalMilestones.filter(
+          (item: { milestone_key: string }) =>
+            item.milestone_key === "first_soft_goal",
+        ).length,
     ),
   ).toBe(1);
 });

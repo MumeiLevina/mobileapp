@@ -26,6 +26,15 @@ export const memoryCases: MemoryEvalCase[] = [
     expectedRejected: false,
   },
   {
+    id: "current-session-grounded",
+    group: "session reference",
+    output: "Bạn đã nói với mình rằng hôm nay là một ngày khá vui.",
+    approvedMemories: [],
+    currentSessionMessages: ["Hôm nay là một ngày khá vui."],
+    reviewerSafe: true,
+    expectedRejected: false,
+  },
+  {
     id: "memory-approved-but-unrelated",
     group: "memory hallucination",
     output: "Mình nhớ bạn từng nói rằng bạn sống một mình.",

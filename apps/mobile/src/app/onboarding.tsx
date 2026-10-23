@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
@@ -18,6 +18,9 @@ import { request, refresh } from "../services/api";
 import { useT } from "../i18n";
 import { usePreferences } from "../store/preferences";
 import { OnboardingScaffold } from "../components/OnboardingScaffold";
+import { useDraft } from "../hooks/useDraft";
+import { DraftStatus } from "../components/DraftStatus";
+import { readOnboardingDraft } from "../features/onboarding/onboarding-draft";
 const goals = [
   "Một nơi để tâm sự",
   "Nhẹ bớt căng thẳng",
@@ -27,12 +30,33 @@ const goals = [
   "Mình chưa biết nữa",
 ];
 export default function Onboarding() {
-  const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [style, setStyle] = useState<CompanionStyle>("gentle");
+  const draft = useDraft("onboarding");
+  if (!draft.ready) {
+    return (
+      <ScreenContainer>
+        <DraftStatus draft={draft} />
+      </ScreenContainer>
+    );
+  }
+  return <OnboardingContent draft={draft} />;
+}
+
+function OnboardingContent({ draft }: { draft: ReturnType<typeof useDraft> }) {
+  const [initial] = useState(() => readOnboardingDraft(draft.text));
+  const [step, setStep] = useState(initial.step);
+  const [name, setName] = useState(initial.name);
+  const [selected, setSelected] = useState<string[]>(
+    initial.selected.filter((goal) => goals.includes(goal)),
+  );
+  const [style, setStyle] = useState<CompanionStyle>(initial.style);
   const copy = useT();
   const locale = usePreferences((s) => s.locale);
+
+  useEffect(() => {
+    if (step > 5) return;
+    draft.setText(JSON.stringify({ version: 1, step, name, selected, style }));
+  }, [draft.setText, name, selected, step, style]);
+
   const save = useMutation({
     mutationFn: () =>
       request("/auth/profile", "POST", {
@@ -44,6 +68,7 @@ export default function Onboarding() {
         weekly_reflection_enabled: false,
       }),
     onSuccess: async () => {
+      await draft.clear().catch(() => undefined);
       await refresh();
       setStep(6);
     },
@@ -67,6 +92,7 @@ export default function Onboarding() {
           <MoriText muted style={{ textAlign: "center", marginBottom: 18 }}>
             {copy.welcomeBody}
           </MoriText>
+          <ErrorNote error={draft.error} />
           <MoriButton onPress={() => setStep(1)}>{copy.begin}</MoriButton>
         </>
       </ScreenContainer>
@@ -101,6 +127,7 @@ export default function Onboarding() {
       onBack={() => setStep((current) => Math.max(0, current - 1))}
       footer={footer}
     >
+      <ErrorNote error={draft.error} />
       {step === 1 ? (
         <>
           <MoriText muted variant="small">

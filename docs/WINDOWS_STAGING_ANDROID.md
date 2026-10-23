@@ -5,34 +5,64 @@ It does not authorize production deployment. Commands that create or mutate a
 hosted resource are marked **OWNER ACTION**. Never paste secret values into a
 ticket, commit, screenshot or command transcript.
 
+## 0. Required owner access and Windows tools
+
+Before starting, confirm the owner has access to each external service. Missing
+access is a `NOT RUN` result, not a reason to substitute a mock integration.
+
+| Requirement                               | Used for                                                               | Required owner action                                                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Git, Node.js 24 and npm                   | Repository checkout and all local gates                                | Install them and confirm `git --version`, `node --version` and `npm --version` work in PowerShell.                                         |
+| GitHub repository access                  | Protected staging secrets and manual verification workflow             | Be able to manage the repository `staging` environment and read Actions runs.                                                              |
+| Disposable Supabase project               | Auth, PostgreSQL, pgvector, RLS and destructive synthetic verification | Create a staging-only project and keep its URL, anon/publishable key, service-role/secret key and database password in a password manager. |
+| HTTPS Node.js host                        | NestJS staging API                                                     | Be able to configure secrets, build with npm, run the start command and inspect logs.                                                      |
+| OpenAI-compatible LLM provider            | Real text, structured output and embeddings                            | Provision a server-side key plus a text model and a model supporting exactly 1536 embedding dimensions.                                    |
+| Expo account with EAS access              | Internal Android APK                                                   | Be able to create or select the intended Mori Expo project and run EAS builds.                                                             |
+| Android Studio or Android SDK Build Tools | APK permission inspection and device QA                                | Install `apkanalyzer` and make an Android device available for the closed-beta pass.                                                       |
+
+Docker Desktop is needed only for an optional local Supabase stack. It is not
+required for the linked hosted-staging migration flow below.
+
 ## 1. Verified inputs
 
-Start from `develop/mobile` and confirm the candidate before configuring any
-service:
+Start from the exact review candidate. Before the integration PR is approved,
+that is its dedicated branch; after approval, use the resulting
+`develop/mobile` commit. Never validate a different commit from the one being
+considered for beta:
 
 ```powershell
 git fetch origin
-git switch develop/mobile
-git pull --ff-only origin develop/mobile
+git switch integration/android-closed-beta
+git pull --ff-only origin integration/android-closed-beta
 git status --short --branch
 git rev-parse HEAD
 npm ci
 npm run typecheck
 npm run lint
 npm test
+npm run eval:safety
+npm run test:mobile
+npm run test:database
+npm run build:api
+npm run export:web
+npm run export:native
+npm run test:e2e
 ```
 
 The working tree must be clean. Do not continue from `main` or
 `experiment/live2d-snow-neko`.
 
+If the integration PR has already been approved and merged, replace the two
+`integration/android-closed-beta` occurrences above with `develop/mobile`.
+
 ## 2. Ownership map
 
-| Scope | Values | Storage |
-| --- | --- | --- |
-| Hosted API | `NODE_ENV`, `MOCK_AI`, Supabase URL/anon/service-role keys, `CORS_ORIGIN`, LLM URL/key/models/timeouts | API host secret manager |
-| Local verification | `STAGING_*`, `SUPABASE_INTEGRATION_*`, `RUN_*`, LLM values and public mobile values | Current PowerShell process only |
-| GitHub verification | Same verification values | Protected `staging` environment secrets |
-| EAS preview | Four `EXPO_PUBLIC_*` values only | EAS `preview` environment |
+| Scope               | Values                                                                                                 | Storage                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| Hosted API          | `NODE_ENV`, `MOCK_AI`, Supabase URL/anon/service-role keys, `CORS_ORIGIN`, LLM URL/key/models/timeouts | API host secret manager                 |
+| Local verification  | `STAGING_*`, `SUPABASE_INTEGRATION_*`, `RUN_*`, LLM values and public mobile values                    | Current PowerShell process only         |
+| GitHub verification | Same verification values                                                                               | Protected `staging` environment secrets |
+| EAS preview         | Four `EXPO_PUBLIC_*` values only                                                                       | EAS `preview` environment               |
 
 `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_INTEGRATION_SERVICE_ROLE_KEY` and
 `LLM_API_KEY` are server-only. Every `EXPO_PUBLIC_*` value is embedded in the
@@ -265,3 +295,27 @@ API environment, tester and date. Run these first:
 Automated suites do not satisfy these device checks. Keep every unchecked item
 as `NOT RUN`; use `BLOCKED` only when a named prerequisite prevents execution.
 
+## 10. Owner completion checklist
+
+Record the exact commit and evidence links in `docs/REAL_VALIDATION.md`. The
+closed-beta candidate is not ready until every required item below is either
+`PASS` or explicitly accepted by the owner as a documented release risk.
+
+- [ ] The integration PR into `develop/mobile` is approved; neither source PR
+      was merged implicitly.
+- [ ] The disposable Supabase project contains every repository migration in
+      filename order and the linked migration list was reviewed.
+- [ ] The HTTPS NestJS deployment uses `NODE_ENV=production`, `MOCK_AI=false`,
+      server-only Supabase keys and server-only LLM credentials.
+- [ ] `preflight:staging`, `test:supabase`, `verify:staging` and
+      `eval:safety:staging` passed against the same staging environment.
+- [ ] The protected GitHub `Mori staging verification` run passed for the exact
+      candidate commit.
+- [ ] The Expo owner, project and generated `extra.eas.projectId` were reviewed
+      before committing EAS linkage.
+- [ ] The EAS `preview` environment contains only the four documented public
+      mobile values; no service-role, provider or database credential is present.
+- [ ] The Android preview APK completed, its build URL/ID and version code were
+      recorded, and its manifest permissions were inspected.
+- [ ] `docs/NATIVE_QA.md` was completed on a physical Android device, including
+      notification denied/allowed and process-kill recovery paths.

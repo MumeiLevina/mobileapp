@@ -12,20 +12,27 @@ import {
   SectionHeading,
 } from "../components/ui";
 import { request } from "../services/api";
+import { useDateLocale } from "../i18n";
 
-const date = (value: string) =>
-  new Date(value).toLocaleDateString("vi-VN", {
+const date = (value: string, locale: string) =>
+  new Date(value).toLocaleDateString(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-function LetterCard({ letter }: { letter: LetterSummary }) {
+function LetterCard({
+  letter,
+  dateLocale,
+}: {
+  letter: LetterSummary;
+  dateLocale: string;
+}) {
   const ready = letter.status !== "upcoming";
   return (
     <MoriPressable
       accessibilityRole="button"
-      accessibilityLabel={`${letter.title}, ${ready ? "có thể mở" : `mở vào ${date(letter.open_at)}`}`}
+      accessibilityLabel={`${letter.title}, ${ready ? "có thể mở" : `mở vào ${date(letter.open_at, dateLocale)}`}`}
       onPress={() =>
         router.push(
           (ready
@@ -40,11 +47,11 @@ function LetterCard({ letter }: { letter: LetterSummary }) {
           {letter.title}
         </MoriText>
         <MoriText muted variant="small">
-          Viết ngày {date(letter.created_at)}
+          Viết ngày {date(letter.created_at, dateLocale)}
         </MoriText>
         <MoriText>
           {letter.status === "upcoming"
-            ? `Mở vào ${date(letter.open_at)}`
+            ? `Mở vào ${date(letter.open_at, dateLocale)}`
             : letter.status === "ready"
               ? "Lá thư đã sẵn sàng để bạn mở."
               : "Bạn đã mở lá thư này."}
@@ -55,6 +62,7 @@ function LetterCard({ letter }: { letter: LetterSummary }) {
 }
 
 export default function LettersVault() {
+  const dateLocale = useDateLocale();
   const query = useQuery({
     queryKey: ["letters"],
     queryFn: () => request<LetterSummary[]>("/letters"),
@@ -83,21 +91,35 @@ export default function LettersVault() {
         <>
           <SectionHeading title="Sẵn sàng" />
           {ready.map((letter) => (
-            <LetterCard key={letter.id} letter={letter} />
+            <LetterCard
+              key={letter.id}
+              letter={letter}
+              dateLocale={dateLocale}
+            />
           ))}
         </>
       )}
       <SectionHeading title="Sắp tới" />
       {upcoming?.length
         ? upcoming.map((letter) => (
-            <LetterCard key={letter.id} letter={letter} />
+            <LetterCard
+              key={letter.id}
+              letter={letter}
+              dateLocale={dateLocale}
+            />
           ))
         : !query.isPending && (
             <MoriText muted>Chưa có lá thư nào đang chờ.</MoriText>
           )}
       <SectionHeading title="Đã mở" />
       {opened?.length
-        ? opened.map((letter) => <LetterCard key={letter.id} letter={letter} />)
+        ? opened.map((letter) => (
+            <LetterCard
+              key={letter.id}
+              letter={letter}
+              dateLocale={dateLocale}
+            />
+          ))
         : !query.isPending && (
             <MoriText muted>Những lá thư đã mở sẽ ở đây.</MoriText>
           )}

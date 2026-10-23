@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Animated,
   Modal,
   Platform,
@@ -272,6 +273,7 @@ export function MoriIconButton({
   feedback?: FeedbackType;
 }) {
   const t = useTheme();
+  const tr = useTranslate();
   const inactive = disabled || loading;
   const background = inactive
     ? t.line
@@ -290,7 +292,7 @@ export function MoriIconButton({
   return (
     <MoriPressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={tr(accessibilityLabel)}
       accessibilityState={{ disabled: inactive, busy: loading, selected }}
       disabled={inactive}
       feedback={
@@ -395,9 +397,15 @@ export function MoriBottomSheet({
   visible,
   onClose,
   children,
-}: PropsWithChildren<{ visible: boolean; onClose: () => void }>) {
+  avoidKeyboard = false,
+}: PropsWithChildren<{
+  visible: boolean;
+  onClose: () => void;
+  avoidKeyboard?: boolean;
+}>) {
   const t = useTheme();
   const reducedMotion = useReducedMotion();
+  const tr = useTranslate();
   return (
     <Modal
       visible={visible}
@@ -405,9 +413,13 @@ export function MoriBottomSheet({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        enabled={avoidKeyboard}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.overlay}
+      >
         <Pressable
-          accessibilityLabel="Đóng"
+          accessibilityLabel={tr("Đóng")}
           onPress={onClose}
           style={StyleSheet.absoluteFill}
         />
@@ -429,7 +441,7 @@ export function MoriBottomSheet({
             {children}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -616,10 +628,11 @@ export function MoriSegmentedControl<T extends string>({
   accessibilityLabel: string;
 }) {
   const t = useTheme();
+  const tr = useTranslate();
   return (
     <View
       accessibilityRole="radiogroup"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={tr(accessibilityLabel)}
       style={[styles.segmented, { backgroundColor: t.soft }]}
     >
       {options.map((option) => (
