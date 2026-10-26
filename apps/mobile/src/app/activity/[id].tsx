@@ -27,9 +27,15 @@ import { useSession } from "../../store/session";
 export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const owner = useSession((s) => s.userId);
-  return <ActivitySession key={`${owner}:${id}`} id={id} />;
+  return <ActivitySession key={`${owner}:${id}`} id={id} owner={owner} />;
 }
-function ActivitySession({ id }: { id: string }) {
+function ActivitySession({
+  id,
+  owner,
+}: {
+  id: string;
+  owner: string | null;
+}) {
   const t = useTheme();
   const reduced = useReducedMotion();
   const [session, setSession] = useState<string | null>(null);
@@ -40,10 +46,20 @@ function ActivitySession({ id }: { id: string }) {
   const lock = useRef(false);
   const scale = useSharedValue(1);
   const activity = activities.find((a) => a.id === id && a.enabled);
+  function assertOwner() {
+    if (!owner || useSession.getState().userId !== owner)
+      throw new Error("Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.");
+  }
   const start = useMutation({
     networkMode: "always",
-    mutationFn: () => request<{ id: string }>(`/self-care/${id}/start`, "POST"),
+    mutationFn: () => {
+      assertOwner();
+      return request<{ id: string }>(`/self-care/${id}/start`, "POST", undefined, {
+        owner,
+      });
+    },
     onSuccess: (result) => {
+      if (useSession.getState().userId !== owner) return;
       setSession(result.id);
       setRunning(true);
     },
@@ -53,9 +69,14 @@ function ActivitySession({ id }: { id: string }) {
   });
   const complete = useMutation({
     networkMode: "always",
-    mutationFn: () =>
-      request(`/self-care/${id}/complete`, "POST", { session_id: session }),
+    mutationFn: () => {
+      assertOwner();
+      return request(`/self-care/${id}/complete`, "POST", { session_id: session }, {
+        owner,
+      });
+    },
     onSuccess: () => {
+      if (useSession.getState().userId !== owner) return;
       setDone(true);
       setRunning(false);
       void refresh();
