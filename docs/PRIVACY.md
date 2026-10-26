@@ -41,6 +41,14 @@ Life Map suggestions are derived only from active memories the user already appr
 
 Each Memory records a short reason, source reference and approval time. Provenance does not copy the raw conversation, journal or mood into a second table. Source ownership is enforced by a composite database foreign key, and provenance follows the Memory through export and deletion.
 
+Manual Memory creation also retains an owner-scoped request UUID and SHA-256
+fingerprint in a server-only retry table. Forgetting a Memory removes its content,
+embedding and provenance and nulls the retry table's Memory reference. The
+remaining metadata prevents a delayed retry from restoring forgotten content;
+account deletion removes it. It is excluded from account exports and AI retrieval.
+The separate synthetic Demo store uses an exact payload snapshot for matching
+retries and clears that snapshot when its Memory is deleted.
+
 Reflection Timeline is assembled on request from the user's existing rows and is not a public feed or a second content store. Conversation moments expose the conversation title and date; they do not copy message text into timeline storage.
 
 ## Logs and operational data

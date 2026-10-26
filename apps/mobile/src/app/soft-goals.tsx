@@ -13,7 +13,8 @@ import {
   SectionHeading,
 } from "../components/ui";
 import { newId } from "../lib/id";
-import { refresh, request } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 
 function GoalCard({
   goal,
@@ -55,6 +56,7 @@ function GoalCard({
 }
 
 export default function SoftGoalsScreen() {
+  const { request } = useOwnerRequest();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");

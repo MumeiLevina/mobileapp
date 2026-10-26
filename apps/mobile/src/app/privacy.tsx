@@ -11,7 +11,8 @@ import {
   MoriText,
   ScreenContainer,
 } from "../components/ui";
-import { request, refresh } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { saveAccountExport } from "../services/data-export";
 import { deleteAccountAndLocalData } from "../services/account-deletion";
 import { useSession } from "../store/session";
@@ -47,6 +48,7 @@ const actionCopy: Record<
 };
 
 export default function PrivacyCenter() {
+  const { request } = useOwnerRequest();
   const user = useSession((state) => state.userId);
   const [confirming, setConfirming] = useState<DestructiveAction | null>(null);
   const [notice, setNotice] = useState("");
@@ -72,6 +74,8 @@ export default function PrivacyCenter() {
       return action;
     },
     onSuccess: (action) => {
+      const current = useSession.getState().userId;
+      if (current && current !== user) return;
       setConfirming(null);
       if (action === "account") {
         router.replace(config.demo ? "/" : "/auth");

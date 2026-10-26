@@ -106,7 +106,6 @@ function MemoryList({ owner }: { owner: string | null }) {
       {editing && (
         <MemoryEditor
           memory={editing.memory}
-          knownIds={list.data?.map((m) => m.id) ?? []}
           onClose={() => {
             setEditing(null);
             void refresh();

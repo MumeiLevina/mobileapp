@@ -29,7 +29,8 @@ import {
   styles,
 } from "../../components/ui";
 import { ConversationBubble } from "../../features/conversation/ConversationBubble";
-import { request, refresh } from "../../services/api";
+import { refresh } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { newId } from "../../lib/id";
 import { useDraft } from "../../hooks/useDraft";
 import { useT } from "../../i18n";
@@ -45,9 +46,11 @@ import { interactionFeedback } from "../../services/interaction-feedback";
 import { SelfCareCard } from "../../features/selfcare/SelfCareCard";
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <ConversationEditor key={id} id={id} />;
+  const owner = useSession((s) => s.userId);
+  return <ConversationEditor key={`${owner}:${id}`} id={id} />;
 }
 function ConversationEditor({ id }: { id: string }) {
+  const { request, isCurrent } = useOwnerRequest();
   const copy = useT();
   const draft = useDraft(`chat.${id}`);
   const user = useSession((s) => s.userId);
@@ -64,7 +67,7 @@ function ConversationEditor({ id }: { id: string }) {
   const [voiceNote, setVoiceNote] = useState(false);
   const scroll = useRef<ScrollView>(null);
   const data = useQuery({
-    queryKey: ["conversation", id],
+    queryKey: ["conversation", user, id],
     queryFn: () =>
       request<{ conversation: Conversation; messages: Message[] }>(
         `/conversations/${id}`,
@@ -101,6 +104,7 @@ function ConversationEditor({ id }: { id: string }) {
       setCrisisResources(result.crisisResources ?? []);
       // Refresh even if local cleanup fails, including safety responses.
       await refresh();
+      if (!isCurrent()) return;
       await draft.clear();
     },
   });
@@ -134,7 +138,7 @@ function ConversationEditor({ id }: { id: string }) {
     },
     onSuccess: () => {
       setEnd(false);
-      router.push("/journal/new");
+      if (isCurrent()) router.push("/journal/new");
     },
   });
   const remove = useMutation({
@@ -142,7 +146,7 @@ function ConversationEditor({ id }: { id: string }) {
     onSuccess: async () => {
       await draft.clear();
       await refresh();
-      router.replace("/(tabs)/talk");
+      if (isCurrent()) router.replace("/(tabs)/talk");
     },
   });
   return (
@@ -358,7 +362,7 @@ function ConversationEditor({ id }: { id: string }) {
               secondary
               onPress={() => {
                 setEnd(false);
-                router.push("/journal/new");
+                if (isCurrent()) router.push("/journal/new");
               }}
             >
               Mở bản nháp nhật ký hiện có

@@ -49,6 +49,27 @@ Export schema version 4 also includes active/deleted Life Map items, Memory sour
 
 Global throttle: 90 requests/minute/IP; message generation 12/minute/IP; journal generation 5/minute/IP. Single-process in-memory throttle is appropriate to this modular monolith; use shared storage before horizontal scaling.
 
+Sprint 3 creation contract: `POST /memories` requires `{content, category, client_id}`
+with a UUID `client_id`. The authenticated owner and this UUID identify one explicit
+manual creation. Retrying identical normalized fields returns the same Memory;
+reusing the UUID for different fields fails without changing the original. A
+retry also preserves any later edits. `PATCH /memories/:id` keeps its existing
+`{content, category}` shape. Manual creation still grants the permission named by
+the Save button; AI candidates remain unapproved until explicit approval.
+
+`202610260001_memory_creation_idempotency.sql` supplies a service-role-only RPC
+that commits approved Memory, provenance, Garden area and milestone in one
+transaction. Embedding failure precedes writes; a transaction failure leaves
+none of those new rows. A UUID/fingerprint tombstone prevents delayed creation
+retries from restoring deleted Memories. Fingerprints and retry metadata are
+server-only and omitted from account exports. Repeating a creation can repeat
+embedding work, but cannot duplicate persisted Memory or Garden awards.
+
+Rollout requires migration, API and client contract review together. The new
+API rejects older manual-create clients that omit the UUID. No hosted migration
+has been applied by this sprint. In-editor retries retain their UUID only while
+that editor is mounted; Memory drafts are not persisted or replayed on reconnect.
+
 Normal message response: `{message, memory?, safetyLevel, activity?, crisisResources?}`. Intent classification JSON and safety-classifier availability remain server-internal. Crisis/elevated states bypass companion, memory retrieval/candidate creation and self-care suggestion. A classifier failure returns conservative copy with public `safetyLevel: "elevated"`; it never continues to normal generation. `crisisResources` contains only enabled resources with verification metadata recorded server-side and is omitted when none match. Server persists a pair of messages atomically and returns the same assistant record when a client retries the same UUID.
 
 Hard deletion is used for explicit user deletion of private content. `deleted_at` columns additionally support operator recovery workflows; retrieval excludes soft-deleted data. No recovery interface is exposed to users in MVP.

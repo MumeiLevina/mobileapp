@@ -7,9 +7,11 @@ import {
   Loading,
   ErrorNote,
 } from "../components/ui";
-import { request, refresh } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { GardenScene } from "../features/garden/GardenScene";
 export default function Reflection() {
+  const { request } = useOwnerRequest();
   const complete = useMutation({
     mutationFn: () => request("/weekly-reflection/complete", "POST"),
     onSuccess: () => {

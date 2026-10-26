@@ -1,3 +1,4 @@
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -20,7 +21,7 @@ import {
   readGuidedJournalDraft,
 } from "../../features/journal/guided-draft";
 import { useDraft } from "../../hooks/useDraft";
-import { refresh, request } from "../../services/api";
+import { refresh } from "../../services/api";
 import { usePreferences } from "../../store/preferences";
 import { useTheme } from "../../theme";
 import { DraftStatus } from "../../components/DraftStatus";
@@ -33,7 +34,7 @@ export default function GuidedJournalSession() {
   return <GuidedSession key={`${owner}:${id}`} id={id} />;
 }
 function GuidedSession({ id }: { id: string }) {
-  const owner = useSession((s) => s.userId);
+  const { request, isCurrent } = useOwnerRequest();
   const template = getGuidedJournalTemplate(id ?? "");
   const localDraft = useDraft(`guided-journal.${id}`);
   const locale = usePreferences((state) => state.locale);
@@ -57,21 +58,18 @@ function GuidedSession({ id }: { id: string }) {
     mutationFn: async () => {
       if (!template || !session) throw new Error("Bản nháp chưa sẵn sàng.");
       await localDraft.persist(JSON.stringify(session));
-      return request(
-        "/journals",
-        "POST",
-        {
-          title: locale === "en" ? template.titleEn : template.titleVi,
-          content: buildGuidedJournalContent(template, session.answers, locale),
-          source: "guided",
-          client_id: session.clientId,
-        },
-        { owner },
-      );
+      return request("/journals", "POST", {
+        title: locale === "en" ? template.titleEn : template.titleVi,
+        content: buildGuidedJournalContent(template, session.answers, locale),
+        source: "guided",
+        client_id: session.clientId,
+      });
     },
     onSuccess: async () => {
+      if (!isCurrent()) return;
       await localDraft.clear();
       await refresh();
+      if (!isCurrent()) return;
       router.replace("/(tabs)/journal");
     },
   });

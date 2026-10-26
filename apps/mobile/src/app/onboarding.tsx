@@ -14,7 +14,8 @@ import {
 } from "../components/ui";
 import { GardenScene } from "../features/garden/GardenScene";
 import { MoodPicker } from "../features/mood/MoodPicker";
-import { request, refresh } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { useT } from "../i18n";
 import { usePreferences } from "../store/preferences";
 import { OnboardingScaffold } from "../components/OnboardingScaffold";
@@ -42,6 +43,7 @@ export default function Onboarding() {
 }
 
 function OnboardingContent({ draft }: { draft: ReturnType<typeof useDraft> }) {
+  const { request } = useOwnerRequest();
   const [initial] = useState(() => readOnboardingDraft(draft.text));
   const [step, setStep] = useState(initial.step);
   const [name, setName] = useState(initial.name);

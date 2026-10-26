@@ -80,6 +80,21 @@ function requireRemoteUrl(name) {
 module.exports = () => {
   const profile = process.env.EAS_BUILD_PROFILE ?? "local";
   const projectId = easProjectId();
+  const demoQa = profile === "demo-qa";
+  if (demoQa) {
+    if (process.env.EXPO_PUBLIC_DEMO_MODE !== "true")
+      throw new Error("Demo QA builds require explicit demo mode.");
+    if (
+      [
+        "EXPO_PUBLIC_API_URL",
+        "EXPO_PUBLIC_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+      ].some((key) => process.env[key]?.trim())
+    )
+      throw new Error(
+        "Demo QA builds must not contain Connected service configuration.",
+      );
+  }
   if (betaProfiles.has(profile)) {
     if (!projectId)
       throw new Error(
@@ -96,6 +111,14 @@ module.exports = () => {
   }
   return {
     ...app,
+    ...(demoQa
+      ? {
+          name: "Mori Demo QA",
+          scheme: "mori-demo-qa",
+          android: { ...app.android, package: "app.mori.companion.demoqa" },
+          ios: { ...app.ios, bundleIdentifier: "app.mori.companion.demoqa" },
+        }
+      : {}),
     extra: {
       ...app.extra,
       environment: profile,

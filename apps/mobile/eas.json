@@ -4,6 +4,19 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "demo-qa": {
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_DEMO_MODE": "true",
+        "EXPO_PUBLIC_API_URL": "",
+        "EXPO_PUBLIC_SUPABASE_URL": "",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": ""
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal",

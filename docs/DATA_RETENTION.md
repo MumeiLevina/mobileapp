@@ -9,6 +9,7 @@ This is the current technical behavior. It does not promise a backup-deletion de
 | Conversations and messages    | Until explicit conversation/all-conversation deletion or account deletion | Delete one/all conversations       |
 | Journals                      | Until explicit journal/all-journal deletion or account deletion           | Delete one/all journals            |
 | Memories and embeddings       | Until explicit memory/all-memory deletion or account deletion             | Edit, approve, delete one/all      |
+| Memory creation retry metadata | Owner UUID, request UUID and SHA-256 fingerprint remain until account deletion; memory reference becomes null when the Memory is deleted. No raw content or embedding is retained here | Account deletion; prevents delayed retries from restoring forgotten content |
 | Self-care sessions and garden | Until account deletion                                                    | Account deletion                   |
 | Weekly reflections            | Until account deletion                                                    | Account deletion                   |
 | Notification preferences      | Until account deletion                                                    | Disable/edit; account deletion     |

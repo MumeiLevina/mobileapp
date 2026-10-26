@@ -1,5 +1,18 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "Phòng yên.": "Quiet Room.",
+  "Vào phòng yên": "Enter Quiet Room",
+  "Khoảng nghỉ đã kết thúc.": "Your pause has ended.",
+  "Ở lại thêm": "Stay a little longer",
+  "Không hẹn giờ": "No timer",
+  "2 phút": "2 min",
+  "5 phút": "5 min",
+  "10 phút": "10 min",
+  "Rời phòng yên": "Leave Quiet Room",
+  "Chưa xác nhận được kết quả lưu. Nội dung vẫn ở đây. Chọn Lưu để thử lại cùng yêu cầu, không tạo thêm ký ức.":
+    "The save result is unconfirmed. Your words are still here. Choose Save to retry the same request without creating another memory.",
+  "Đã tạm dừng khi ứng dụng bị gián đoạn. Chọn Tiếp tục khi bạn sẵn sàng.":
+    "Paused when the app was interrupted. Choose Continue when you are ready.",
   "Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.":
     "The account changed. Reopen this screen to continue.",
   "Tiêu đề lá thư": "Letter title",

@@ -92,6 +92,11 @@ export const memorySchema = z.object({
   content: z.string().trim().min(1).max(600),
   category: MemoryCategory,
 });
+// Creation identity is separate from editable memory fields. A retry must use
+// the same UUID and payload; editing never replaces the creation identity.
+export const memoryCreateSchema = memorySchema.extend({
+  client_id: z.string().uuid(),
+});
 export const messageSchema = z.object({
   content: z.string().trim().min(1).max(6000),
   mode: ConversationMode,
@@ -258,6 +263,7 @@ export type Journal = Entity & z.infer<typeof journalSchema>;
 export type RitualEntry = Entity & z.infer<typeof ritualEntrySchema>;
 export type Memory = Entity &
   z.infer<typeof memorySchema> & {
+    client_id?: string | null;
     approved_by_user: boolean;
     approved_at?: string | null;
     confidence: number;

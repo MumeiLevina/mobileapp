@@ -15,9 +15,11 @@ import {
   SectionHeading,
 } from "../../components/ui";
 import { GardenScene } from "../../features/garden/GardenScene";
-import { request, refresh } from "../../services/api";
+import { refresh } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { useDateLocale, useT } from "../../i18n";
 export default function Talk() {
+  const { request } = useOwnerRequest();
   const [mode, setMode] = useState<ConversationMode>("listen");
   const copy = useT();
   const dateLocale = useDateLocale();

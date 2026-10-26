@@ -21,7 +21,8 @@ import {
   SectionHeading,
   styles,
 } from "../components/ui";
-import { refresh, request } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 
 const labels: Record<LifeMapType, string> = {
   people: "Những người quan trọng",
@@ -34,6 +35,7 @@ const labels: Record<LifeMapType, string> = {
 };
 
 export default function LifeMapScreen() {
+  const { request } = useOwnerRequest();
   const items = useQuery({
     queryKey: ["life-map"],
     queryFn: () => request<LifeMapItem[]>("/life-map"),

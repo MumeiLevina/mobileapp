@@ -55,7 +55,10 @@ export async function readDraft(key: string) {
   await queue.catch(() => undefined);
   return privateStorage.getItem(key);
 }
-export function clearUserDeviceData(user: string) {
+export function clearUserDeviceData(
+  user: string,
+  shouldCancelNotifications = () => true,
+) {
   draftGenerations.set(user, (draftGenerations.get(user) ?? 0) + 1);
   return enqueue(async () => {
     const index = `mori-drafts.${user}`;
@@ -64,6 +67,7 @@ export function clearUserDeviceData(user: string) {
     ) as string[];
     for (const key of keys) await privateStorage.removeItem(key);
     await AsyncStorage.removeItem(index);
-    await cancelAllMoriNotifications();
+    if (shouldCancelNotifications())
+      await cancelAllMoriNotifications(shouldCancelNotifications);
   });
 }

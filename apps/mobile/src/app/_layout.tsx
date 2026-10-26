@@ -14,6 +14,7 @@ import { useTheme } from "../theme";
 import { MoriText } from "../components/ui";
 import { useT } from "../i18n";
 import { useReducedMotion } from "react-native-reanimated";
+import { cancelAllMoriNotifications } from "../services/notifications";
 export default function RootLayout() {
   const t = useTheme();
   const reducedMotion = useReducedMotion();
@@ -23,11 +24,19 @@ export default function RootLayout() {
   const segments = useSegments();
   useEffect(() => {
     if (config.demo) return;
+    let authChanged = false;
     supabase?.auth
       .getSession()
-      .then(({ data }) => session.setSession(data.session?.user.id ?? null))
-      .catch(() => session.setSession(null));
+      .then(({ data }) => {
+        if (!authChanged) session.setSession(data.session?.user.id ?? null);
+      })
+      .catch(() => {
+        if (!authChanged) session.setSession(null);
+      });
     const subscription = supabase?.auth.onAuthStateChange((_event, value) => {
+      authChanged = true;
+      if (useSession.getState().userId !== (value?.user.id ?? null))
+        void cancelAllMoriNotifications().catch(() => undefined);
       queryClient.clear();
       session.setSession(value?.user.id ?? null);
     });
@@ -78,6 +87,7 @@ export default function RootLayout() {
               </MoriText>
             )}
             <Stack
+              key={session.userId ?? "signed-out"}
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: t.background },

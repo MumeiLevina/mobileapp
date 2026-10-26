@@ -44,6 +44,7 @@ test("quick mood save omits tags and note", async () => {
       tags: [],
       optional_note: "",
     }),
+    { owner: "demo" },
   );
   expect(router.push).not.toHaveBeenCalled();
   await waitFor(() =>

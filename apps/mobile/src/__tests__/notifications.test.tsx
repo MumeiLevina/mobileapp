@@ -59,6 +59,32 @@ test("morning and evening reminders keep independent local times", () => {
 describe("native notification permission boundaries", () => {
   beforeEach(() => jest.clearAllMocks());
 
+  test("a delayed permission result cannot schedule the previous owner's reminder", async () => {
+    let current = true;
+    let finish!: (
+      value: Awaited<ReturnType<typeof Notifications.getPermissionsAsync>>,
+    ) => void;
+    jest.mocked(Notifications.getPermissionsAsync).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const pending = scheduleReminder(
+      preference({ morning_enabled: true }),
+      () => current,
+    );
+    const rejected = expect(pending).rejects.toThrow("Tài khoản đã thay đổi");
+    // Let the native permission operation begin inside the scheduling queue.
+    while (!finish) await Promise.resolve();
+    current = false;
+    finish({ granted: true } as Awaited<
+      ReturnType<typeof Notifications.getPermissionsAsync>
+    >);
+    await rejected;
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
   test("does not request notification permission when saving a future letter", async () => {
     jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({
       granted: false,
@@ -85,11 +111,14 @@ describe("native notification permission boundaries", () => {
     await expect(
       scheduleReminder(preference({ morning_enabled: true })),
     ).rejects.toThrow("Chưa có quyền gửi lời nhắc");
-    expect(Notifications.cancelScheduledNotificationAsync).not.toHaveBeenCalled();
+    expect(
+      Notifications.cancelScheduledNotificationAsync,
+    ).not.toHaveBeenCalled();
   });
 
   test("turning reminders off cancels schedules without requesting permissions", async () => {
-    jest.mocked(Notifications.cancelScheduledNotificationAsync)
+    jest
+      .mocked(Notifications.cancelScheduledNotificationAsync)
       .mockResolvedValue(undefined);
 
     await scheduleReminder(preference());

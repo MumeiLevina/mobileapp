@@ -2,6 +2,19 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { NotificationPreference } from "@mori/shared";
 
+// Native scheduling and cleanup share one queue, so a late old-owner action
+// cannot overwrite or cancel a newer owner's schedule.
+let notificationQueue = Promise.resolve<unknown>(undefined);
+function enqueueNotification<T>(action: () => Promise<T>): Promise<T> {
+  const result = notificationQueue.catch(() => undefined).then(action);
+  notificationQueue = result;
+  return result;
+}
+function assertCurrent(isCurrent: () => boolean) {
+  if (!isCurrent())
+    throw new Error("Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.");
+}
+
 export type LetterNotification = {
   identifier: string;
   date: Date;
@@ -27,10 +40,21 @@ export function letterNotificationPlan(
   };
 }
 
-export async function scheduleLetterNotification(
+export function scheduleLetterNotification(
   letterId: string,
   openAt: string,
+  isCurrent = () => true,
+) {
+  return enqueueNotification(() =>
+    scheduleLetterNow(letterId, openAt, isCurrent),
+  );
+}
+async function scheduleLetterNow(
+  letterId: string,
+  openAt: string,
+  isCurrent: () => boolean,
 ): Promise<boolean> {
+  assertCurrent(isCurrent);
   if (Platform.OS === "web") return false;
   const plan = letterNotificationPlan(letterId, openAt);
   if (!plan) return false;
@@ -43,10 +67,12 @@ export async function scheduleLetterNotification(
   // Saving a private letter must not trigger an unsolicited OS permission prompt.
   // Only schedule it if the user has already granted notification permission.
   const permission = await Notifications.getPermissionsAsync();
+  assertCurrent(isCurrent);
   if (!permission.granted) return false;
   await Notifications.cancelScheduledNotificationAsync(plan.identifier).catch(
     () => undefined,
   );
+  assertCurrent(isCurrent);
   await Notifications.scheduleNotificationAsync({
     identifier: plan.identifier,
     content: {
@@ -61,17 +87,28 @@ export async function scheduleLetterNotification(
       channelId: "letters",
     },
   });
+  if (!isCurrent()) {
+    await Notifications.cancelScheduledNotificationAsync(plan.identifier);
+    assertCurrent(isCurrent);
+  }
   return true;
 }
 
-export async function cancelLetterNotification(letterId: string) {
-  if (Platform.OS === "web") return;
-  await Notifications.cancelScheduledNotificationAsync(`letter:${letterId}`);
+export function cancelLetterNotification(
+  letterId: string,
+  isCurrent = () => true,
+) {
+  return enqueueNotification(async () => {
+    if (Platform.OS === "web" || !isCurrent()) return;
+    await Notifications.cancelScheduledNotificationAsync(`letter:${letterId}`);
+  });
 }
 
-export async function cancelAllMoriNotifications() {
-  if (Platform.OS === "web") return;
-  await Notifications.cancelAllScheduledNotificationsAsync();
+export function cancelAllMoriNotifications(isCurrent = () => true) {
+  return enqueueNotification(async () => {
+    if (Platform.OS === "web" || !isCurrent()) return;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  });
 }
 
 export type RitualReminder = {
@@ -107,7 +144,17 @@ export function ritualReminderPlan(
   return plan;
 }
 
-export async function scheduleReminder(preference: NotificationPreference) {
+export function scheduleReminder(
+  preference: NotificationPreference,
+  isCurrent = () => true,
+) {
+  return enqueueNotification(() => scheduleReminderNow(preference, isCurrent));
+}
+async function scheduleReminderNow(
+  preference: NotificationPreference,
+  isCurrent: () => boolean,
+) {
+  assertCurrent(isCurrent);
   if (Platform.OS === "web") return;
 
   const plan = ritualReminderPlan(preference);
@@ -136,6 +183,7 @@ export async function scheduleReminder(preference: NotificationPreference) {
   const permission = current.granted
     ? current
     : await Notifications.requestPermissionsAsync();
+  assertCurrent(isCurrent);
   if (!permission.granted) {
     throw new Error(
       "Chưa có quyền gửi lời nhắc. Bạn có thể bật trong cài đặt thiết bị.",
@@ -145,6 +193,7 @@ export async function scheduleReminder(preference: NotificationPreference) {
   // Do not delete previously scheduled reminders if permission is denied.
   await cancelExisting();
   for (const reminder of plan) {
+    assertCurrent(isCurrent);
     await Notifications.scheduleNotificationAsync({
       identifier: `ritual:${reminder.id}`,
       content: {
@@ -160,5 +209,9 @@ export async function scheduleReminder(preference: NotificationPreference) {
         channelId: "self-care",
       },
     });
+    if (!isCurrent()) {
+      await cancelExisting();
+      assertCurrent(isCurrent);
+    }
   }
 }

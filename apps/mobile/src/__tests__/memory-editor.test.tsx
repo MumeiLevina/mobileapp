@@ -76,9 +76,7 @@ const saveButton = () =>
 
 test("dismissing dirty edits requires continue/discard choice and never writes a private draft", async () => {
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "Chỉnh sửa riêng tư",
@@ -112,9 +110,7 @@ test("a slow save blocks duplicate presses/dismissal and approval follows the ac
     )
     .mockResolvedValueOnce({});
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "Updated words",
@@ -147,9 +143,7 @@ test("a partial update/approval failure is explicit and retry submits only appro
     .mockRejectedValueOnce(new Error("Approval unavailable"))
     .mockResolvedValueOnce(memory);
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "Updated words",
@@ -179,9 +173,7 @@ test("a failed update retains edits, does not approve, and can be retried", asyn
     .mockRejectedValueOnce(new Error("Disconnected"))
     .mockResolvedValue({});
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "New words",
@@ -203,9 +195,7 @@ test("offline save fails visibly and reconnecting does not replay it", async () 
   onlineManager.setOnline(false);
   jest.mocked(request).mockRejectedValue(new Error("Offline now"));
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "Keep offline edits",
@@ -222,55 +212,45 @@ test("offline save fails visibly and reconnecting does not replay it", async () 
   await cleanup();
 });
 
-test("an ambiguous create cannot POST twice; checking and choosing a match resumes an existing memory", async () => {
-  const match = {
-    ...memory,
-    id: "created-1",
-    content: "New private words",
-    approved_by_user: true,
-  };
+test("an ambiguous create retries the frozen payload and UUID, with explicit consent and no fuzzy matching", async () => {
   jest
     .mocked(request)
     .mockRejectedValueOnce(new Error("Response lost"))
-    .mockResolvedValueOnce([match])
-    .mockResolvedValue({});
+    .mockResolvedValueOnce({ ...memory, id: "created-1" });
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={null} knownIds={[]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={null} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
-    match.content,
+    "New private words",
   );
   await fireEvent.press(saveButton());
   await screen.findByText("Response lost");
-  await fireEvent.press(saveButton());
+  expect(close).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Memory content").props.editable).toBe(false);
   expect(request).toHaveBeenCalledTimes(1);
-  await fireEvent.press(screen.getByText("Check save result"));
-  await fireEvent.press(await screen.findByText("Open matching memory"));
   await fireEvent.press(saveButton());
   await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
-  expect(
-    jest
-      .mocked(request)
-      .mock.calls.filter(
-        (call) => call[0] === "/memories" && call[1] === "POST",
-      ),
-  ).toHaveLength(1);
+  expect(request).toHaveBeenCalledTimes(2);
+  expect(jest.mocked(request).mock.calls[0]).toEqual(
+    jest.mocked(request).mock.calls[1],
+  );
   expect(request).toHaveBeenCalledWith(
-    "/memories/created-1/approve",
+    "/memories",
     "POST",
-    undefined,
+    {
+      content: "New private words",
+      category: "preference",
+      client_id: expect.any(String),
+    },
     { owner: "memory-owner" },
   );
+  expect(privateStorage.setItem).not.toHaveBeenCalled();
   await cleanup();
 });
 
 test("route removal waits for explicit discard; continuing cancels the queued navigation", async () => {
   const close = jest.fn();
-  const cleanup = await setup(
-    <MemoryEditor memory={memory} knownIds={[memory.id]} onClose={close} />,
-  );
+  const cleanup = await setup(<MemoryEditor memory={memory} onClose={close} />);
   await fireEvent.changeText(
     screen.getByLabelText("Memory content"),
     "Unsaved",

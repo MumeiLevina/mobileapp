@@ -22,7 +22,8 @@ import {
 } from "../../features/rituals/morning-draft";
 import { useDraft } from "../../hooks/useDraft";
 import { DraftStatus } from "../../components/DraftStatus";
-import { refresh, request } from "../../services/api";
+import { refresh } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { interactionFeedback } from "../../services/interaction-feedback";
 import { useTheme } from "../../theme";
 
@@ -34,6 +35,7 @@ const feelings: { value: DesiredFeeling; label: string }[] = [
 ];
 
 export default function MorningRitual() {
+  const { request, isCurrent } = useOwnerRequest();
   const theme = useTheme();
   const localDraft = useDraft("ritual.morning");
   const initialized = useRef(false);
@@ -62,7 +64,7 @@ export default function MorningRitual() {
       await localDraft.clear();
       await refresh();
       await interactionFeedback.success();
-      router.replace("/(tabs)");
+      if (isCurrent()) router.replace("/(tabs)");
     },
   });
 

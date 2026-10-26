@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { Memory, memorySchema } from "@mori/shared";
+import { Memory, memoryCreateSchema, memorySchema } from "@mori/shared";
 import { z } from "zod";
 import { DatabaseService } from "../../database/database.service";
 import { GardenService } from "../garden/garden.service";
@@ -13,6 +13,19 @@ export class MemoriesService {
   ) {}
   list(user: string) {
     return this.db.listMemoriesWithSources<Memory>(user);
+  }
+  async createManual(user: string, value: z.infer<typeof memoryCreateSchema>) {
+    // Embed before the transaction: failure leaves no approved row. The RPC
+    // atomically commits memory, provenance, Garden area and milestone. Replays
+    // return the original row, never a second memory or a repeated award.
+    const embedding = await this.provider.embed(value.content);
+    return this.db.rpc<Memory>("create_manual_memory", {
+      p_user: user,
+      p_client_id: value.client_id,
+      p_content: value.content,
+      p_category: value.category,
+      p_embedding: embedding,
+    });
   }
   async retrieveMemories(user: string, input: string): Promise<Memory[]> {
     const embedding = await this.provider.embed(input);

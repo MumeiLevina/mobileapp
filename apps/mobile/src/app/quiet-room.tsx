@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -12,11 +12,12 @@ import {
 } from "../components/ui";
 import {
   formatQuietTimer,
-  nextQuietTimer,
   quietTimerOptions,
   soundscapes,
 } from "../features/quiet/soundscapes";
 import { useTheme } from "../theme";
+
+import { useActivityTimer } from "../hooks/useActivityTimer";
 
 type QuietMode = "sit" | "breathe" | "write";
 
@@ -26,25 +27,20 @@ export default function QuietRoom() {
   const [mode, setMode] = useState<QuietMode>("sit");
   const [duration, setDuration] =
     useState<(typeof quietTimerOptions)[number]>(0);
-  const [remaining, setRemaining] = useState(0);
+  const timer = useActivityTimer(duration);
+  const remaining = Math.max(0, duration - timer.elapsed);
   const [active, setActive] = useState(false);
   const done = active && duration > 0 && remaining === 0;
 
-  useEffect(() => {
-    if (!active || duration === 0 || remaining === 0) return;
-    const timer = setInterval(() => setRemaining(nextQuietTimer), 1000);
-    return () => clearInterval(timer);
-  }, [active, duration, remaining]);
-
   const start = () => {
     if (mode === "write") return router.push("/journal/new");
-    setRemaining(duration);
+    timer.start();
     setActive(true);
   };
 
   if (active) {
     return (
-      <ScreenContainer scroll={false}>
+      <ScreenContainer>
         <View
           style={{
             flex: 1,
@@ -83,12 +79,26 @@ export default function QuietRoom() {
                 : formatQuietTimer(remaining)}
             </MoriText>
           )}
+          {timer.interrupted && !done && (
+            <MoriText muted accessibilityLiveRegion="polite">
+              Đã tạm dừng khi ứng dụng bị gián đoạn. Chọn Tiếp tục khi bạn sẵn
+              sàng.
+            </MoriText>
+          )}
+          {!done && duration > 0 && (
+            <MoriButton
+              secondary
+              onPress={timer.running ? timer.pause : timer.start}
+            >
+              {timer.running ? "Tạm dừng" : "Tiếp tục"}
+            </MoriButton>
+          )}
           {done ? (
             <View style={[styles.stack, { alignSelf: "stretch" }]}>
               <MoriButton
                 onPress={() => {
                   setDuration(0);
-                  setRemaining(0);
+                  timer.pause();
                 }}
               >
                 Ở lại thêm

@@ -34,6 +34,7 @@ import {
   lifeMapSchema,
   lifeMapSuggestionSchema,
   memorySchema,
+  memoryCreateSchema,
   messageSchema,
   moodSchema,
   notificationSchema,
@@ -51,6 +52,10 @@ type DemoData = {
   moods: Mood[];
   journals: Journal[];
   memories: Memory[];
+  memoryCreations?: Record<
+    string,
+    { memoryId: string; payload: string | null }
+  >;
   memorySources: (MemorySource & { memory_id: string; user_id: string })[];
   conversations: Conversation[];
   messages: Message[];
@@ -360,6 +365,9 @@ export async function demoRequest(
       const removed = id
         ? new Set([id])
         : new Set(db.memories.map((memory) => memory.id));
+      for (const creation of Object.values(db.memoryCreations ?? {})) {
+        if (removed.has(creation.memoryId)) creation.payload = null;
+      }
       db.memories = id ? db.memories.filter((m) => m.id !== id) : [];
       db.memorySources = db.memorySources.filter(
         (source) => !removed.has(source.memory_id),
@@ -378,14 +386,25 @@ export async function demoRequest(
       Object.assign(memory, memorySchema.parse(body));
       result = memory;
     } else {
+      const value = memoryCreateSchema.parse(body);
+      db.memoryCreations ??= {};
+      const payload = JSON.stringify([value.content, value.category]);
+      const previous = db.memoryCreations[value.client_id];
+      if (previous) {
+        const saved = db.memories.find((item) => item.id === previous.memoryId);
+        if (!saved || previous.payload !== payload)
+          throw new Error("Yêu cầu tạo ký ức đã được sử dụng.");
+        return saved;
+      }
       const memory: Memory = {
         ...entity(),
-        ...memorySchema.parse(body),
+        ...value,
         approved_by_user: true,
         approved_at: new Date().toISOString(),
         confidence: 1,
       };
       db.memories.unshift(memory);
+      db.memoryCreations[value.client_id] = { memoryId: memory.id, payload };
       db.memorySources.unshift({
         ...entity(),
         memory_id: memory.id,
