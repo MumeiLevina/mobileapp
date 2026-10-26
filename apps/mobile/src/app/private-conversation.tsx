@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { router } from "expo-router";
+import { usePreventRemove } from "expo-router/react-navigation";
 import { useMutation } from "@tanstack/react-query";
 import {
   Conversation,
@@ -21,17 +22,28 @@ import {
 } from "../components/ui";
 import { ConversationBubble } from "../features/conversation/ConversationBubble";
 import { newId } from "../lib/id";
-import { refresh, request } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { useT } from "../i18n";
 
+import { useSession } from "../store/session";
+
 export default function PrivateConversation() {
+  const owner = useSession((s) => s.userId);
+  return <PrivateSession key={owner} />;
+}
+function PrivateSession() {
+  const { request, isCurrent } = useOwnerRequest();
   const copy = useT();
   const sessionId = useRef(newId());
+  const ended = useRef(false);
+  const lock = useRef(false);
   const [mode, setMode] = useState<ConversationMode>("listen");
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<EphemeralMessage[]>([]);
   const [end, setEnd] = useState(false);
   const [crisis, setCrisis] = useState(false);
+  const [destination, setDestination] = useState<string | null>(null);
   const scroll = useRef<ScrollView>(null);
   const send = useMutation({
     mutationFn: async () => {
@@ -53,7 +65,11 @@ export default function PrivateConversation() {
       );
       return { input, result };
     },
+    onSettled: () => {
+      lock.current = false;
+    },
     onSuccess: ({ input, result }) => {
+      if (!isCurrent() || ended.current) return;
       setMessages((current) => [...current, input, result.message]);
       setText("");
       setCrisis(["elevated", "crisis"].includes(result.safetyLevel));
@@ -66,15 +82,41 @@ export default function PrivateConversation() {
         mode,
         messages,
       }),
+    onSettled: () => {
+      lock.current = false;
+    },
     onSuccess: async (conversation) => {
       await refresh();
-      router.replace(`/conversation/${conversation.id}`);
+      if (isCurrent() && !ended.current)
+        setDestination(`/conversation/${conversation.id}`);
     },
   });
+  usePreventRemove(
+    !destination &&
+      (!!text.trim() ||
+        messages.length > 0 ||
+        send.isPending ||
+        save.isPending),
+    () => {
+      if (!save.isPending) setEnd(true);
+    },
+  );
+  useEffect(() => {
+    // Release the navigation guard before the explicit Save/Discard action.
+    if (destination) router.replace(destination as "/(tabs)/talk");
+  }, [destination]);
   const leave = () => {
+    if (save.isPending) return;
+    ended.current = true;
     setMessages([]);
     setText("");
-    router.replace("/(tabs)/talk");
+    setDestination("/(tabs)/talk");
+  };
+  const submit = (kind: "send" | "save") => {
+    if (lock.current || ended.current) return;
+    lock.current = true;
+    if (kind === "send") send.mutate();
+    else save.mutate();
   };
   return (
     <ScreenContainer scroll={false}>
@@ -153,7 +195,7 @@ export default function PrivateConversation() {
           error={send.error}
           retry={
             send.isError && !send.isPending && !save.isPending
-              ? () => send.mutate()
+              ? () => submit("send")
               : undefined
           }
         />
@@ -174,7 +216,7 @@ export default function PrivateConversation() {
             variant="primary"
             loading={send.isPending}
             disabled={!text.trim() || send.isPending || save.isPending}
-            onPress={() => send.mutate()}
+            onPress={() => submit("send")}
           />
         </View>
       </KeyboardAvoidingView>
@@ -201,7 +243,7 @@ export default function PrivateConversation() {
             loading={save.isPending}
             loadingLabel="Đang lưu cuộc trò chuyện…"
             disabled={messages.length < 2 || send.isPending || !!text.trim()}
-            onPress={() => save.mutate()}
+            onPress={() => submit("save")}
           >
             Lưu
           </MoriButton>

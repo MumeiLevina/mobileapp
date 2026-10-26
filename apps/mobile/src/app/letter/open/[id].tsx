@@ -9,11 +9,13 @@ import {
   MoriText,
   ScreenContainer,
 } from "../../../components/ui";
-import { refresh, request } from "../../../services/api";
+import { refresh } from "../../../services/api";
+import { useOwnerRequest } from "../../../hooks/useOwnerRequest";
 import { cancelLetterNotification } from "../../../services/notifications";
 import { useDateLocale } from "../../../i18n";
 
 export default function OpenLetter() {
+  const { request } = useOwnerRequest();
   const { id } = useLocalSearchParams<{ id: string }>();
   const dateLocale = useDateLocale();
   const [letter, setLetter] = useState<Letter | null>(null);

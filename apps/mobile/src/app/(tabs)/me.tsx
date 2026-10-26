@@ -16,7 +16,8 @@ import {
   styles,
 } from "../../components/ui";
 import { usePreferences } from "../../store/preferences";
-import { request, refresh, queryClient } from "../../services/api";
+import { refresh, queryClient } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { useSession } from "../../store/session";
 import { config } from "../../lib/config";
 import { loadDemoSamples } from "../../services/demo";
@@ -24,6 +25,7 @@ import { signOutAndClearLocalData } from "../../services/sign-out";
 import { useT } from "../../i18n";
 import { useTheme } from "../../theme";
 export default function Me() {
+  const { request, isCurrent } = useOwnerRequest();
   const t = useTheme();
   const copy = useT();
   const preferences = usePreferences();
@@ -39,6 +41,7 @@ export default function Me() {
       request<Profile>("/profile", "PATCH", value),
     onMutate: async (value) => {
       await queryClient.cancelQueries({ queryKey: ["profile"] });
+      if (!isCurrent()) return;
       const previous = queryClient.getQueryData<Profile>(["profile"]);
       if (previous) {
         queryClient.setQueryData<Profile>(["profile"], {
@@ -49,7 +52,7 @@ export default function Me() {
       return { previous };
     },
     onError: (_error, _value, context) => {
-      if (context?.previous) {
+      if (isCurrent() && context?.previous) {
         queryClient.setQueryData(["profile"], context.previous);
       }
     },

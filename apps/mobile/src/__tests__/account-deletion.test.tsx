@@ -69,3 +69,24 @@ test("local cleanup failure still logs out and clears session", async () => {
   expect(dependencies.clearQueries).toHaveBeenCalledTimes(1);
   expect(dependencies.setSession).toHaveBeenCalledWith(null);
 });
+
+test("a deletion acknowledgement for the previous owner cannot sign out the next owner", async () => {
+  let current = "owner";
+  const dependencies: AccountDeletionDependencies = {
+    deleteRemote: jest.fn(async () => {
+      current = "next-owner";
+    }),
+    clearLocal: jest.fn().mockResolvedValue(undefined),
+    signOutLocal: jest.fn(),
+    clearQueries: jest.fn(),
+    setSession: jest.fn(),
+    demo: false,
+    isCurrent: (user) => current === user,
+  };
+  await deleteAccountAndLocalData("owner", dependencies);
+  expect(dependencies.deleteRemote).toHaveBeenCalledWith("owner");
+  expect(dependencies.clearLocal).toHaveBeenCalledWith("owner");
+  expect(dependencies.signOutLocal).not.toHaveBeenCalled();
+  expect(dependencies.clearQueries).not.toHaveBeenCalled();
+  expect(dependencies.setSession).not.toHaveBeenCalled();
+});

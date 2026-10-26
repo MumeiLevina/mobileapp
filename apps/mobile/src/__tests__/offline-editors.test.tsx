@@ -55,6 +55,60 @@ jest.mock("../lib/storage", () => ({
 }));
 
 const clientId = "77777777-7777-4777-a777-777777777777";
+
+test("a late conversation send cannot publish a reply or clear the next owner's draft", async () => {
+  mockRouteId = "conversation-1";
+  mockStored.set("mori.next-owner.chat.conversation-1", "Next owner's draft");
+  let finish!: (value: unknown) => void;
+  jest.mocked(request).mockImplementation(async (_path, method) => {
+    if (method === "POST")
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    return {
+      conversation: { id: mockRouteId, mode: "listen" },
+      messages: [],
+    } as never;
+  });
+  const cleanup = await setup(<ConversationScreen />);
+  await waitFor(() =>
+    expect(screen.getByLabelText("Message").props.editable).toBe(true),
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText("Message"),
+    "Synthetic old message",
+  );
+  await fireEvent.press(screen.getByLabelText("Send"));
+  await waitFor(() => expect(finish).toBeDefined());
+  expect(request).toHaveBeenCalledWith(
+    "/conversations/conversation-1/messages",
+    "POST",
+    expect.objectContaining({ content: "Synthetic old message" }),
+    { owner: "offline-user" },
+  );
+  await act(async () => useSession.setState({ userId: "next-owner" }));
+  await waitFor(() =>
+    expect(screen.getByLabelText("Message").props.value).toBe(
+      "Next owner's draft",
+    ),
+  );
+  await act(async () =>
+    finish({
+      message: { content: "Late reply" },
+      safetyLevel: "crisis",
+      memory: { id: "old-memory", content: "Old private candidate" },
+    }),
+  );
+  expect(screen.getByLabelText("Message").props.value).toBe(
+    "Next owner's draft",
+  );
+  expect(screen.queryByText("Old private candidate")).toBeNull();
+  expect(mockStored.get("mori.next-owner.chat.conversation-1")).toBe(
+    "Next owner's draft",
+  );
+  expect(router.push).not.toHaveBeenCalled();
+  await cleanup();
+});
 beforeEach(() => {
   jest.clearAllMocks();
   mockStored.clear();

@@ -1,3 +1,4 @@
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -21,7 +22,7 @@ import {
   readLetterDraft,
 } from "../../features/letters/letter-draft";
 import { useDraft } from "../../hooks/useDraft";
-import { refresh, request } from "../../services/api";
+import { refresh } from "../../services/api";
 import {
   cancelLetterNotification,
   scheduleLetterNotification,
@@ -45,6 +46,7 @@ export default function LetterEditor() {
   return <LetterEntry key={`${owner}:${id}`} id={id} />;
 }
 function LetterEntry({ id }: { id: string }) {
+  const { request, isCurrent } = useOwnerRequest();
   const owner = useSession((s) => s.userId);
   const local = useDraft(`letter.${id}`);
   const theme = useTheme();
@@ -55,8 +57,7 @@ function LetterEntry({ id }: { id: string }) {
   const [ready, setReady] = useState(false);
   const existing = useQuery({
     queryKey: ["letter-edit", owner, id],
-    queryFn: () =>
-      request<Letter>(`/letters/${id}/edit`, "GET", undefined, { owner }),
+    queryFn: () => request<Letter>(`/letters/${id}/edit`, "GET", undefined),
     enabled: id !== "new",
   });
 
@@ -111,24 +112,30 @@ function LetterEntry({ id }: { id: string }) {
               content: payload.content,
               open_at: payload.open_at,
             },
-        { owner },
       );
     },
     onSuccess: async (letter) => {
+      if (!isCurrent()) return;
       await local.clear();
-      await scheduleLetterNotification(letter.id, letter.open_at).catch(
-        () => false,
-      );
+      if (!isCurrent()) return;
+      await scheduleLetterNotification(
+        letter.id,
+        letter.open_at,
+        isCurrent,
+      ).catch(() => false);
       await refresh();
+      if (!isCurrent()) return;
       router.replace("/letters" as "/timeline");
     },
   });
   const remove = useMutation({
-    mutationFn: () => request(`/letters/${id}`, "DELETE", undefined, { owner }),
+    mutationFn: () => request(`/letters/${id}`, "DELETE", undefined),
     onSuccess: async () => {
+      if (!isCurrent()) return;
       await local.clear();
-      await cancelLetterNotification(id).catch(() => undefined);
+      await cancelLetterNotification(id, isCurrent).catch(() => undefined);
       await refresh();
+      if (!isCurrent()) return;
       router.replace("/letters" as "/timeline");
     },
   });

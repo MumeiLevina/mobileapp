@@ -21,31 +21,50 @@ import {
   ErrorNote,
 } from "../../components/ui";
 import { GardenScene } from "../../features/garden/GardenScene";
-import { request, refresh } from "../../services/api";
+import { refresh } from "../../services/api";
 import { useTheme } from "../../theme";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
+import { useActivityTimer } from "../../hooks/useActivityTimer";
 import { useSession } from "../../store/session";
 export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const owner = useSession((s) => s.userId);
-  return <ActivitySession key={`${owner}:${id}`} id={id} />;
+  return <ActivitySession key={`${owner}:${id}`} id={id} owner={owner} />;
 }
-function ActivitySession({ id }: { id: string }) {
+function ActivitySession({ id, owner }: { id: string; owner: string | null }) {
+  const { request, isCurrent } = useOwnerRequest();
   const t = useTheme();
   const reduced = useReducedMotion();
   const [session, setSession] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [localSession, setLocalSession] = useState(false);
   const lock = useRef(false);
   const scale = useSharedValue(1);
   const activity = activities.find((a) => a.id === id && a.enabled);
+  const timer = useActivityTimer(activity?.duration ?? 0);
+  const { elapsed, running } = timer;
+  function assertOwner() {
+    if (!owner || useSession.getState().userId !== owner)
+      throw new Error(
+        "Tài khoản đã thay đổi. Hãy mở lại màn hình để tiếp tục.",
+      );
+  }
   const start = useMutation({
     networkMode: "always",
-    mutationFn: () => request<{ id: string }>(`/self-care/${id}/start`, "POST"),
+    mutationFn: async () => {
+      assertOwner();
+      const resume = timer.prepareStart();
+      const result = await request<{ id: string }>(
+        `/self-care/${id}/start`,
+        "POST",
+        undefined,
+      );
+      return { ...result, resume };
+    },
     onSuccess: (result) => {
+      if (!isCurrent()) return;
       setSession(result.id);
-      setRunning(true);
+      result.resume();
     },
     onSettled: () => {
       lock.current = false;
@@ -53,32 +72,22 @@ function ActivitySession({ id }: { id: string }) {
   });
   const complete = useMutation({
     networkMode: "always",
-    mutationFn: () =>
-      request(`/self-care/${id}/complete`, "POST", { session_id: session }),
+    mutationFn: () => {
+      assertOwner();
+      return request(`/self-care/${id}/complete`, "POST", {
+        session_id: session,
+      });
+    },
     onSuccess: () => {
+      if (!isCurrent()) return;
       setDone(true);
-      setRunning(false);
+      timer.pause();
       void refresh();
     },
     onSettled: () => {
       lock.current = false;
     },
   });
-  useEffect(() => {
-    if (!running || !activity) return;
-    const interval = setInterval(
-      () =>
-        setElapsed((n) => {
-          if (n + 1 >= activity.duration) {
-            setRunning(false);
-            return activity.duration;
-          }
-          return n + 1;
-        }),
-      1000,
-    );
-    return () => clearInterval(interval);
-  }, [running, activity]);
   useEffect(() => {
     if (running && !reduced)
       scale.value = withRepeat(
@@ -130,6 +139,11 @@ function ActivitySession({ id }: { id: string }) {
       {localSession && !done && (
         <MoriText muted variant="small" accessibilityLiveRegion="polite">
           Đang thực hành trên thiết bị. Không gửi dữ liệu lên tài khoản.
+        </MoriText>
+      )}
+      {timer.interrupted && !done && (
+        <MoriText muted accessibilityLiveRegion="polite">
+          Đã tạm dừng khi ứng dụng bị gián đoạn. Chọn Tiếp tục khi bạn sẵn sàng.
         </MoriText>
       )}
       {activity.category === "breathing" ? (
@@ -204,7 +218,7 @@ function ActivitySession({ id }: { id: string }) {
                 disabled={start.isPending}
                 onPress={() => {
                   setLocalSession(true);
-                  setRunning(true);
+                  timer.start();
                   start.reset();
                 }}
               >
@@ -223,7 +237,7 @@ function ActivitySession({ id }: { id: string }) {
                   if (lock.current) return;
                   if (localSession) {
                     setDone(true);
-                    setRunning(false);
+                    timer.pause();
                   } else {
                     lock.current = true;
                     complete.mutate();
@@ -236,7 +250,7 @@ function ActivitySession({ id }: { id: string }) {
                 <MoriButton
                   secondary
                   disabled={complete.isPending}
-                  onPress={() => setRunning(!running)}
+                  onPress={running ? timer.pause : timer.start}
                 >
                   {running ? "Tạm dừng" : "Tiếp tục"}
                 </MoriButton>

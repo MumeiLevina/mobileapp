@@ -7,7 +7,7 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import { memorySchema } from "@mori/shared";
+import { memoryCreateSchema, memorySchema } from "@mori/shared";
 import { MemoriesService } from "./memories.service";
 import { UserId } from "../../common/auth.guard";
 import { parse, uuid } from "../../common/validation";
@@ -18,7 +18,7 @@ export class MemoriesController {
     return this.memories.list(user);
   }
   @Post() create(@UserId() user: string, @Body() body: unknown) {
-    return this.memories.add(user, parse(memorySchema, body));
+    return this.memories.createManual(user, parse(memoryCreateSchema, body));
   }
   @Post(":id/approve") approve(
     @UserId() user: string,

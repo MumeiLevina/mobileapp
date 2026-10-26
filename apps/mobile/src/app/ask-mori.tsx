@@ -12,10 +12,11 @@ import {
   SectionHeading,
   styles,
 } from "../components/ui";
-import { request } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { useDateLocale } from "../i18n";
 
 export default function AskMoriScreen() {
+  const { request } = useOwnerRequest();
   const [question, setQuestion] = useState("");
   const dateLocale = useDateLocale();
   const ask = useMutation({

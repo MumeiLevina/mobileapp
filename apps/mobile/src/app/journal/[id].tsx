@@ -1,3 +1,4 @@
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import {
   ErrorNote,
   Loading,
 } from "../../components/ui";
-import { request, refresh } from "../../services/api";
+import { refresh } from "../../services/api";
 import { useDraft } from "../../hooks/useDraft";
 import { newId } from "../../lib/id";
 import { useT } from "../../i18n";
@@ -28,6 +29,7 @@ export default function JournalEditor() {
   return <JournalEntry key={`${owner}:${id}`} id={id} />;
 }
 function JournalEntry({ id }: { id: string }) {
+  const { request, isCurrent } = useOwnerRequest();
   const owner = useSession((s) => s.userId);
   const draft = useDraft(`journal.${id}`);
   const copy = useT();
@@ -43,7 +45,7 @@ function JournalEntry({ id }: { id: string }) {
   const [confirm, setConfirm] = useState<"delete" | "discard" | null>(null);
   const existing = useQuery({
     queryKey: ["journals", owner],
-    queryFn: () => request<Journal[]>("/journals", "GET", undefined, { owner }),
+    queryFn: () => request<Journal[]>("/journals", "GET", undefined),
     enabled: id !== "new",
   });
   useEffect(() => {
@@ -88,21 +90,23 @@ function JournalEntry({ id }: { id: string }) {
         `/journals${id === "new" ? "" : `/${id}`}`,
         id === "new" ? "POST" : "PATCH",
         valid.data,
-        { owner },
       );
     },
     onSuccess: async () => {
+      if (!isCurrent()) return;
       await draft.clear();
       await refresh();
+      if (!isCurrent()) return;
       router.replace("/(tabs)/journal");
     },
   });
   const remove = useMutation({
-    mutationFn: () =>
-      request(`/journals/${id}`, "DELETE", undefined, { owner }),
+    mutationFn: () => request(`/journals/${id}`, "DELETE", undefined),
     onSuccess: async () => {
+      if (!isCurrent()) return;
       await draft.clear();
       await refresh();
+      if (!isCurrent()) return;
       router.replace("/(tabs)/journal");
     },
   });

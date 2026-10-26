@@ -12,7 +12,8 @@ import {
   ScreenContainer,
   styles,
 } from "../components/ui";
-import { request, refresh } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { scheduleReminder } from "../services/notifications";
 import { useTheme } from "../theme";
 
@@ -34,6 +35,7 @@ function readTime(value: string, label: string) {
 }
 
 export default function NotificationSettings() {
+  const { request, isCurrent } = useOwnerRequest();
   const theme = useTheme();
   const existing = useQuery({
     queryKey: ["notification-preferences"],
@@ -72,13 +74,15 @@ export default function NotificationSettings() {
         evening_hour: evening.hour,
         evening_minute: evening.minute,
       });
-      await scheduleReminder(value);
+      await scheduleReminder(value, isCurrent);
       try {
         await request("/notification-preferences", "PATCH", value);
       } catch (error) {
-        await scheduleReminder(
-          notificationSchema.parse(existing.data ?? defaults),
-        );
+        if (isCurrent())
+          await scheduleReminder(
+            notificationSchema.parse(existing.data ?? defaults),
+            isCurrent,
+          );
         throw error;
       }
     },

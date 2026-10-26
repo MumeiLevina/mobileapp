@@ -8,7 +8,8 @@ import {
   MoriText,
   ScreenContainer,
 } from "../components/ui";
-import { refresh, request } from "../services/api";
+import { refresh } from "../services/api";
+import { useOwnerRequest } from "../hooks/useOwnerRequest";
 import { useDateLocale } from "../i18n";
 
 const copy: Record<PersonalMilestoneKey, { title: string; detail: string }> = {
@@ -54,6 +55,7 @@ const date = (value: string, locale: string) =>
   });
 
 export default function PersonalMilestonesScreen() {
+  const { request } = useOwnerRequest();
   const dateLocale = useDateLocale();
   const milestones = useQuery({
     queryKey: ["personal-milestones"],

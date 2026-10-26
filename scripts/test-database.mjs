@@ -1,3 +1,4 @@
+import { testMemoryCreation } from "./test-memory-creation.mjs";
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite-pgvector";
 import { readFile } from "node:fs/promises";
@@ -81,6 +82,12 @@ try {
   await pg.exec(
     await readFile(
       "supabase/migrations/202610080002_private_save_idempotency.sql",
+      "utf8",
+    ),
+  );
+  await pg.exec(
+    await readFile(
+      "supabase/migrations/202610260001_memory_creation_idempotency.sql",
       "utf8",
     ),
   );
@@ -500,6 +507,7 @@ try {
     2,
   );
   console.log("PASS private conversation save retry is atomic and idempotent");
+  await testMemoryCreation(pg, a, b, embedding);
   await pg.query("delete from auth.users where id=$1", [a]);
   for (const table of [
     "profiles",
@@ -515,6 +523,7 @@ try {
     "letters",
     "soft_goals",
     "personal_milestones",
+    "memory_creation_requests",
   ])
     assert.equal(
       (await pg.query(`select * from ${table} where user_id=$1`, [a])).rows

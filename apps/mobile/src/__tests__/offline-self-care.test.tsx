@@ -10,6 +10,7 @@ import {
   QueryClientProvider,
   onlineManager,
 } from "@tanstack/react-query";
+import { AppState } from "react-native";
 import ActivityScreen from "../app/activity/[id]";
 import SelfCare from "../app/self-care";
 import { request } from "../services/api";
@@ -41,6 +42,7 @@ jest.mock("react-native-reanimated", () => ({
   cancelAnimation: jest.fn(),
 }));
 beforeEach(() => {
+  AppState.currentState = "active";
   jest.clearAllMocks();
   jest.mocked(request).mockReset();
   mockId = "water";
@@ -101,7 +103,12 @@ test("a failed server start remains explicit; choosing local practice does not r
   expect(screen.queryByText("Disconnected")).toBeNull();
   await fireEvent.press(screen.getByText("I have finished"));
   expect(request).toHaveBeenCalledTimes(1);
-  expect(request).toHaveBeenCalledWith("/self-care/water/start", "POST");
+  expect(request).toHaveBeenCalledWith(
+    "/self-care/water/start",
+    "POST",
+    undefined,
+    { owner: "connected-offline-owner" },
+  );
   expect(
     screen.queryByText(
       "The server confirmed completion. You can return to your day.",
@@ -151,5 +158,58 @@ test("an unknown local activity has a clear error without fetching a substitute"
   const cleanup = await setup(<ActivityScreen />);
   expect(screen.getByText("Activity not found.")).toBeTruthy();
   expect(request).not.toHaveBeenCalled();
+  await cleanup();
+});
+
+test("self-care start uses the initiating owner and ignores a late response after account switch", async () => {
+  let resolveStart!: (value: { id: string }) => void;
+  jest.mocked(request).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveStart = resolve;
+      }),
+  );
+  const cleanup = await setup(<ActivityScreen />);
+  await fireEvent.press(screen.getByText("Begin when you are ready"));
+  expect(request).toHaveBeenCalledWith(
+    "/self-care/water/start",
+    "POST",
+    undefined,
+    { owner: "connected-offline-owner" },
+  );
+  useSession.setState({ userId: "second-account" });
+  await act(async () => resolveStart({ id: "previous-owner-session" }));
+  expect(screen.queryByText("I have finished")).toBeNull();
+  expect(request).toHaveBeenCalledTimes(1);
+  await cleanup();
+});
+
+test("self-care completion retains its owner even when the session changes before acknowledgement", async () => {
+  let resolveComplete!: (value: unknown) => void;
+  jest
+    .mocked(request)
+    .mockResolvedValueOnce({ id: "first-owner-session" })
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveComplete = resolve;
+        }),
+    );
+  const cleanup = await setup(<ActivityScreen />);
+  await fireEvent.press(screen.getByText("Begin when you are ready"));
+  await fireEvent.press(await screen.findByText("I have finished"));
+  expect(jest.mocked(request).mock.calls[1]).toEqual([
+    "/self-care/water/complete",
+    "POST",
+    { session_id: "first-owner-session" },
+    { owner: "connected-offline-owner" },
+  ]);
+  useSession.setState({ userId: "second-account" });
+  await act(async () => resolveComplete({ ok: true }));
+  expect(
+    screen.queryByText(
+      "The server confirmed completion. You can return to your day.",
+    ),
+  ).toBeNull();
   await cleanup();
 });

@@ -16,7 +16,8 @@ import {
 import { useTheme } from "../../theme";
 import { useT } from "../../i18n";
 import { newId } from "../../lib/id";
-import { request, refresh } from "../../services/api";
+import { refresh } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
 import { interactionFeedback } from "../../services/interaction-feedback";
 import { momentDestination, MomentAction } from "../moments/moment-actions";
 import Svg, { Circle, Path } from "react-native-svg";
@@ -134,6 +135,7 @@ const tags = [
   ["Other", "Khác"],
 ] as const;
 export function MoodPicker({ onComplete }: { onComplete?: () => void }) {
+  const { request } = useOwnerRequest();
   const [mood, setMood] = useState<MoodType | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [note, setNote] = useState("");

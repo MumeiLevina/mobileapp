@@ -13,8 +13,9 @@ import {
   MoriText,
   styles,
 } from "../../components/ui";
-import { request, refresh } from "../../services/api";
-import { useSession } from "../../store/session";
+import { refresh } from "../../services/api";
+import { useOwnerRequest } from "../../hooks/useOwnerRequest";
+import { newId } from "../../lib/id";
 
 export const memoryLabels: Record<MemoryCategory, string> = {
   preference: "Sở thích",
@@ -27,16 +28,14 @@ export const memoryLabels: Record<MemoryCategory, string> = {
 
 export function MemoryEditor({
   memory,
-  knownIds,
   onClose,
 }: {
   memory: Memory | null;
-  knownIds: string[];
   onClose: () => void;
 }) {
-  const owner = useSession((s) => s.userId);
+  const { request, isCurrent } = useOwnerRequest();
   const navigation = useNavigation();
-  const [targetId, setTargetId] = useState(memory?.id ?? "new");
+  const [targetId] = useState(memory?.id ?? "new");
   const [content, setContent] = useState(memory?.content ?? "");
   const [category, setCategory] = useState<MemoryCategory>(
     memory?.category ?? "preference",
@@ -44,14 +43,16 @@ export function MemoryEditor({
   const [baseline, setBaseline] = useState({ content, category });
   const [confirmedUpdate, setConfirmedUpdate] = useState<string | null>(null);
   const [uncertainCreate, setUncertainCreate] = useState(false);
-  const [candidates, setCandidates] = useState<Memory[] | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [closing, setClosing] = useState(false);
   const lock = useRef(false);
   const alive = useRef(true);
   const pendingNavigation = useRef<(() => void) | null>(null);
-  const attempted = useRef({ content, category });
-  const initialIds = useRef(new Set(knownIds));
+  const attempted = useRef<{
+    content: string;
+    category: MemoryCategory;
+    client_id: string;
+  } | null>(null);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -59,7 +60,7 @@ export function MemoryEditor({
     };
   }, []);
   function assertCurrent() {
-    if (!alive.current || useSession.getState().userId !== owner)
+    if (!alive.current || !isCurrent())
       throw new Error("Phiên chỉnh sửa đã kết thúc.");
   }
   const save = useMutation({
@@ -70,13 +71,11 @@ export function MemoryEditor({
       assertCurrent();
       const value = parsed.data;
       if (targetId === "new") {
-        if (uncertainCreate)
-          throw new Error("Hãy kiểm tra kết quả lưu trước khi tạo lại ký ức.");
-        attempted.current = value;
+        attempted.current ??= { ...value, client_id: newId() };
         try {
-          await request("/memories", "POST", value, { owner });
+          await request("/memories", "POST", attempted.current);
         } catch (error) {
-          if (alive.current) setUncertainCreate(true);
+          if (alive.current && isCurrent()) setUncertainCreate(true);
           throw error;
         }
         assertCurrent();
@@ -84,16 +83,14 @@ export function MemoryEditor({
       }
       const snapshot = JSON.stringify(value);
       if (confirmedUpdate !== snapshot) {
-        await request(`/memories/${targetId}`, "PATCH", value, { owner });
+        await request(`/memories/${targetId}`, "PATCH", value);
         assertCurrent();
         setConfirmedUpdate(snapshot);
         setBaseline(value);
       }
       // An acknowledged update is not an acknowledged approval. Retrying this
       // phase does not submit the same edit a second time.
-      await request(`/memories/${targetId}/approve`, "POST", undefined, {
-        owner,
-      });
+      await request(`/memories/${targetId}/approve`, "POST", undefined);
       assertCurrent();
     },
     onSuccess: () => {
@@ -102,22 +99,6 @@ export function MemoryEditor({
     },
     onSettled: () => {
       lock.current = false;
-    },
-  });
-  const check = useMutation({
-    networkMode: "always",
-    mutationFn: () =>
-      request<Memory[]>("/memories", "GET", undefined, { owner }),
-    onSuccess: (items) => {
-      if (alive.current && useSession.getState().userId === owner)
-        setCandidates(
-          items.filter(
-            (item) =>
-              !initialIds.current.has(item.id) &&
-              item.content === attempted.current.content &&
-              item.category === attempted.current.category,
-          ),
-        );
     },
   });
   const dirty = content !== baseline.content || category !== baseline.category;
@@ -146,16 +127,16 @@ export function MemoryEditor({
     onClose();
   }, [closing, onClose]);
   function close() {
-    if (lock.current || check.isPending) return;
+    if (lock.current) return;
     if (blocked) setConfirmLeave(true);
     else onClose();
   }
   function submit() {
-    if (lock.current || uncertainCreate || check.isPending) return;
+    if (lock.current) return;
     lock.current = true;
     save.mutate();
   }
-  const busy = save.isPending || check.isPending;
+  const busy = save.isPending;
   return (
     <MoriBottomSheet visible onClose={close} avoidKeyboard>
       <View style={styles.stack}>
@@ -176,8 +157,8 @@ export function MemoryEditor({
         )}
         {uncertainCreate && (
           <MoriText accessibilityLiveRegion="polite">
-            Chưa xác nhận được ký ức đã tạo hay chưa. Để tránh tạo trùng, hãy
-            kiểm tra danh sách; nội dung đang nhập vẫn ở đây.
+            Chưa xác nhận được kết quả lưu. Nội dung vẫn ở đây. Chọn Lưu để thử
+            lại cùng yêu cầu, không tạo thêm ký ức.
           </MoriText>
         )}
         {confirmLeave && (
@@ -212,52 +193,10 @@ export function MemoryEditor({
             ))}
           </>
         )}
-        <ErrorNote error={save.error ?? check.error} />
-        {uncertainCreate && (
-          <>
-            <MoriButton
-              secondary
-              loading={check.isPending}
-              disabled={save.isPending}
-              onPress={() => check.mutate()}
-            >
-              Kiểm tra kết quả lưu
-            </MoriButton>
-            {candidates?.length === 0 && (
-              <MoriText muted>
-                Chưa tìm thấy ký ức khớp. Bạn có thể kiểm tra lại; chưa có yêu
-                cầu tạo mới nào được gửi thêm.
-              </MoriText>
-            )}
-            {candidates?.map((item) => (
-              <MoriButton
-                key={item.id}
-                secondary
-                disabled={busy}
-                onPress={() => {
-                  setTargetId(item.id);
-                  setContent(item.content);
-                  setCategory(item.category);
-                  setBaseline({
-                    content: item.content,
-                    category: item.category,
-                  });
-                  setUncertainCreate(false);
-                  setCandidates(null);
-                  setConfirmLeave(false);
-                  pendingNavigation.current = null;
-                  save.reset();
-                }}
-              >
-                Mở ký ức tìm thấy
-              </MoriButton>
-            ))}
-          </>
-        )}
+        <ErrorNote error={save.error} />
         <MoriButton
           loading={save.isPending}
           loadingLabel="Đang lưu ký ức…"
-          disabled={uncertainCreate || check.isPending}
           onPress={submit}
         >
           Lưu và cho phép ghi nhớ
