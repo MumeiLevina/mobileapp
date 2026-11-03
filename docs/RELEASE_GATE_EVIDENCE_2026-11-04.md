@@ -70,7 +70,7 @@ Restoration, build and device procedure: [recovery runbook in PR #18](https://gi
 - Old staging probe omitted `memory_creation_requests` and `memories.client_id`; recovery checks table/identity columns and fails closed on the old schema. Hosted RPC grants/concurrency still need direct checks.
 - Typecheck **PASS**, lint **PASS**, final root Jest **280 PASS / 85 intentionally SKIP** (27 passing suites, 2 skipped), mobile **129/129**, offline safety **79/79**, SQL/PGlite **23 checks**, API build **PASS**, browser E2E **21/21** (40.1 s, explicit Demo web only).
 - Compiled local API with uncalled synthetic dependencies returned `/health` **200** `{"status":"ok"}` and `/profile` **401** unauthenticated. This does not validate hosted dependencies.
-- Historical #16 exact-head CI remains successful. Recovery code CI was in progress when recorded; check exact-head run before review/merge. Complete regression must run again on the final reviewed integration commit.
+- Historical #16 exact-head CI remains successful. Recovery code `b9772aa` exact-head CI **PASS**: [Mori checks #119](https://github.com/MumeiLevina/mobileapp/actions/runs/41723929969). The later documentation-only head `fd11198` has a separate CI run; its full result was still pending at this snapshot. Complete regression must run again on the final reviewed integration commit.
 
 ### Supabase / Render
 

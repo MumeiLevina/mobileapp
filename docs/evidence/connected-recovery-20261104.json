@@ -4,6 +4,11 @@
   "decision": "NO-GO",
   "baselineSourceSha": "291ff86fcce0a7780ee332d0210c58d28bd3f2da",
   "recoveryCodeSha": "b9772aae23c8183f61c337dd5b5fc7f897b8b7b6",
+  "recoveryCodeCI": {
+    "status": "completed",
+    "conclusion": "success",
+    "runUrl": "https://github.com/MumeiLevina/mobileapp/actions/runs/41723929969"
+  },
   "finalReleaseSourceSha": null,
   "recoveryPR": "https://github.com/MumeiLevina/mobileapp/pull/18",
   "provider": {
