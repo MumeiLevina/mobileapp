@@ -1,0 +1,191 @@
+{
+  "date": "2026-11-04",
+  "timezone": "Asia/Saigon",
+  "decision": "NO-GO",
+  "baselineSourceSha": "291ff86fcce0a7780ee332d0210c58d28bd3f2da",
+  "recoveryCodeSha": "b9772aae23c8183f61c337dd5b5fc7f897b8b7b6",
+  "finalReleaseSourceSha": null,
+  "recoveryPR": "https://github.com/MumeiLevina/mobileapp/pull/18",
+  "provider": {
+    "enabled": true,
+    "startedUtc": "2026-11-03T21:38:42.477Z",
+    "completedUtc": "2026-11-03T21:39:54.064Z",
+    "processExitCode": 0,
+    "passed": true,
+    "complete": true,
+    "tests": {
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0
+    },
+    "providerHost": "api.openai.com",
+    "model": "gpt-4o-mini",
+    "embeddingModel": "text-embedding-3-small",
+    "raw": {
+      "total": 22,
+      "passed": 22,
+      "failed": 0,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "criticalFalseNegative": 0
+    },
+    "service": {
+      "total": 22,
+      "passed": 22,
+      "failed": 0,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "criticalFalseNegative": 0
+    },
+    "behavior": {
+      "total": 13,
+      "passed": 13,
+      "fallback": 7,
+      "fallbackRate": 0.5384615384615384,
+      "natural": 6,
+      "policyRejections": 0
+    },
+    "calls": {
+      "successful": 68,
+      "nonSuccess": 0,
+      "timeouts": 0,
+      "malformedOutputs": 0,
+      "rateLimits": 0,
+      "warningOrErrorEvents": 0
+    },
+    "trackedChanges": true,
+    "trackedChangesExplanation": "E2E screenshot changes only at evaluation time; no pending source changes"
+  },
+  "regression": {
+    "typecheckExit": 0,
+    "lintExit": 0,
+    "rootExit": 0,
+    "rootPassed": 280,
+    "rootSkipped": 85,
+    "mobileExit": 0,
+    "mobilePassed": 129,
+    "offlineSafetyExit": 0,
+    "offlineSafetyPassed": 79,
+    "localDatabaseExit": 0,
+    "localDatabaseChecks": 23,
+    "apiBuildExit": 0,
+    "browserExit": 0,
+    "browserPassed": 21,
+    "browserMode": "explicit Demo web only"
+  },
+  "network": {
+    "timestampUtc": "2026-11-03T21:25:44.912Z",
+    "checks": [
+      {
+        "label": "google-dns",
+        "status": 200,
+        "server": "HTTP server (unknown)",
+        "requestId": null,
+        "dnsStatus": 3
+      },
+      {
+        "label": "cloudflare-dns",
+        "status": 200,
+        "server": "cloudflare",
+        "requestId": null,
+        "dnsStatus": 3
+      },
+      {
+        "label": "auth-health",
+        "error": "ENOTFOUND"
+      },
+      {
+        "label": "render/",
+        "status": 404,
+        "server": "cloudflare",
+        "requestId": "cd679fba-a977-4b06-8c69-eb7c4594aa45"
+      },
+      {
+        "label": "render/health",
+        "status": 404,
+        "server": "cloudflare",
+        "requestId": "b9263b3d-bc64-47af-91a1-74ac4f0ba7a1",
+        "expectedHealth": false
+      },
+      {
+        "label": "render/api/health",
+        "status": 404,
+        "server": "cloudflare",
+        "requestId": "6c935b76-fbe7-4013-af05-69a992a758ac"
+      },
+      {
+        "label": "render/profile",
+        "status": 401,
+        "server": "cloudflare",
+        "requestId": "914b7484-2dc3-4c79-ac68-874e54f3ff38"
+      },
+      {
+        "label": "render/moods",
+        "status": 401,
+        "server": "cloudflare",
+        "requestId": "f168e209-16ef-4bdf-8e4c-e627a7286e04"
+      },
+      {
+        "label": "render/journals",
+        "status": 401,
+        "server": "cloudflare",
+        "requestId": "be68aa1e-ba20-40de-aa1a-8af455cc098c"
+      },
+      {
+        "label": "render/memories",
+        "status": 401,
+        "server": "cloudflare",
+        "requestId": "669a8489-878c-4cab-903f-927608b13377"
+      },
+      {
+        "label": "render/conversations",
+        "status": 401,
+        "server": "cloudflare",
+        "requestId": "1d779ab9-da88-498e-a81e-cba3c7f3fe81"
+      }
+    ]
+  },
+  "localHealth": {
+    "source": "recovery checkout",
+    "dependencyCalls": "none; synthetic uncalled configuration",
+    "healthStatus": 200,
+    "health": {
+      "status": "ok"
+    },
+    "unauthenticatedProfileStatus": 401
+  },
+  "android": {
+    "apkBuilt": false,
+    "apkSha256": null,
+    "installedDevice": null,
+    "coldStart": "NOT RUN",
+    "nativeQA": "NOT RUN",
+    "fixtureOnly": {
+      "prebuildExit": 0,
+      "gradleDryRunExit": 0,
+      "signingReportExit": 0,
+      "releaseSigningConfig": "moriConnectedRelease",
+      "alias": "fixture-only",
+      "gradle": "9.3.1",
+      "java": "17.0.20.101",
+      "minSdk": 24,
+      "compileSdk": 36,
+      "targetSdk": 36,
+      "buildTools": "36.0.0",
+      "ndk": "27.1.12297006"
+    },
+    "emulator": {
+      "avd": "test",
+      "bootConfirmed": false,
+      "adbDevices": [],
+      "acceleration": "WHPX usable",
+      "blocker": "Existing Windows profile/AVD lock permissions"
+    }
+  },
+  "limitations": [
+    "Hosted provider/model parity unverified",
+    "PGlite does not prove hosted multi-connection behavior",
+    "No Connected APK, owner signing certificate, manifest or native QA",
+    "Actual Supabase project state and Render deploy SHA unavailable"
+  ]
+}
