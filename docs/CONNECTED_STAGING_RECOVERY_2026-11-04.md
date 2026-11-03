@@ -53,6 +53,12 @@ also ignores `.env.*.local` and signing keystores. No evidence of external
 disclosure was observed; this is not proof that no local principal read it.
 Private logs and credential files must never be attached to a PR.
 
+After the successful repeat below, the temporary provider env was confirmed to
+duplicate the four provider values in the existing ignored API env. The
+temporary file was removed without printing its content; retained API env files
+were restricted to the current Windows user, SYSTEM and Administrators. No
+credential value changed. Provider configuration remains available locally.
+
 ## Supabase diagnosis and owner decision
 
 Mobile URLs in the staging/main worktrees, decoded public anon JWT `ref`,
@@ -318,3 +324,43 @@ All rows below are **NOT RUN** until a verified Connected APK/device exists:
 
 Physical Android QA, Connected APK installation, cold start, and every flow
 above remain unverified. Browser E2E does not substitute for these results.
+
+## Completed recovery verification
+
+Recovery code commit: `b9772aae23c8183f61c337dd5b5fc7f897b8b7b6`,
+[Draft PR #18](https://github.com/MumeiLevina/mobileapp/pull/18), targeting #16's
+feature branch. Later evidence-only commits do not alter application code.
+The evaluation checkout had only tracked E2E screenshots modified; no source
+changes were pending. Screenshots were preserved and excluded from commits.
+
+- Typecheck and lint: exit 0.
+- Final root Jest: **280 passed / 85 intentionally skipped**, 27 passing suites,
+  2 skipped suites. New tests cover key leakage/project mismatch, stale staging
+  schema and provider-runner false success/disabled/skipped/error behavior.
+- Mobile Jest: **129/129**, 34 suites; offline safety **79/79**; local
+  SQL/PGlite **23 checks**; API build exit 0.
+- Browser E2E: **21/21**, 40.1 seconds, explicit Demo web configuration with
+  empty Connected values. This verifies browser regressions only.
+- Real provider repeat through the new runner at recovery code commit: **57/57,
+  no fail/skip**, actual Jest exit 0, complete metrics, 68 successful provider
+  request events, no provider errors/timeouts/malformed output/rate limits.
+  Classification and guard totals matched the first corrected run above,
+  including **7/13 fallback** and **0/13 accepted policy violations**.
+- Compiled local API: `/health` 200 `{"status":"ok"}`; `/profile` 401 without
+  credentials. Synthetic dependency configuration was not contacted.
+- Fresh fixture-only Expo Android prebuild: exit 0. Gradle 9.3.1 with JDK
+  17.0.20.101 and isolated writable cache: `:app:assembleRelease --dry-run`
+  exit 0 after switching the init script to Android's `finalizeDsl` hook.
+  A separate actual `:app:signingReport` exited 0 and showed release config
+  `moriConnectedRelease`, alias `fixture-only`, not the debug config. No APK
+  compilation occurred; the short-lived fixture certificate is not the owner's
+  release signing identity. Generated min/compile/target SDK: **24/36/36**,
+  Build Tools **36.0.0**, NDK **27.1.12297006**. Final APK values remain unverified.
+- The default existing Gradle wrapper cache also had access-denied lock errors;
+  using a separate cache resolved that prerequisite without changing its ACLs.
+- Staged diff whitespace and credential-value scans passed before commit.
+
+Sanitized counts and current P0 decisions are attached to the
+[release evidence tracker in PR #17](https://github.com/MumeiLevina/mobileapp/pull/17).
+Full clean-integration regression, hosted-schema/provider parity, release
+signing, actual APK and device QA remain required before final RC sign-off.
