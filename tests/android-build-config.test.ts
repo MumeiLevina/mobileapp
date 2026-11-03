@@ -14,6 +14,7 @@ const keys = [
   "EXPO_PUBLIC_API_URL",
   "EXPO_PUBLIC_SUPABASE_URL",
   "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+  "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY",
 ] as const;
 const original = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -66,7 +67,7 @@ describe("isolated Demo QA configuration", () => {
       process.env.EXPO_PUBLIC_DEMO_MODE = "false";
       process.env.EXPO_PUBLIC_API_URL = "https://api.example.com";
       process.env.EXPO_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "synthetic-public-key";
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_synthetic";
       expect(mobileConfig()).toMatchObject({
         name: "Mori",
         scheme: "mori",
@@ -89,7 +90,7 @@ describe("Android preview configuration", () => {
     process.env.EXPO_PUBLIC_DEMO_MODE = "false";
     process.env.EXPO_PUBLIC_API_URL = "https://api-staging.example.com";
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://staging.supabase.co";
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_synthetic";
 
     const config = mobileConfig();
     expect(config.extra).toEqual({
@@ -107,10 +108,53 @@ describe("Android preview configuration", () => {
     process.env.EXPO_PUBLIC_DEMO_MODE = "false";
     process.env.EXPO_PUBLIC_API_URL = "https://api-staging.example.com";
     process.env.EXPO_PUBLIC_SUPABASE_URL = "https://staging.supabase.co";
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key";
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_synthetic";
 
     expect(mobileConfig().extra?.eas?.projectId).toBe(
       process.env.EAS_BUILD_PROJECT_ID,
     );
+  });
+});
+
+describe("Connected credential boundaries", () => {
+  const token = (claims: object) =>
+    `e30.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.synthetic`;
+  beforeEach(() => {
+    for (const key of keys) delete process.env[key];
+    Object.assign(process.env, {
+      EAS_BUILD_PROFILE: "preview",
+      EAS_PROJECT_ID: "123e4567-e89b-42d3-a456-426614174000",
+      EXPO_PUBLIC_DEMO_MODE: "false",
+      EXPO_PUBLIC_API_URL: "https://api-staging.example.com",
+      EXPO_PUBLIC_SUPABASE_URL: "https://staging.supabase.co",
+    });
+  });
+  it("accepts matching anon metadata without embedding the token in config", () => {
+    const key = token({ role: "anon", ref: "staging", exp: 4102444800 });
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = key;
+    expect(JSON.stringify(mobileConfig())).not.toContain(key);
+  });
+  it.each([
+    token({ role: "service_role", ref: "staging" }),
+    token({ role: "anon", ref: "another-project" }),
+    token({ role: "anon", ref: "staging", exp: 1 }),
+    "sb_secret_synthetic",
+    "malformed-private-key",
+  ])(
+    "rejects private, mismatched, expired or malformed key %# without echoing it",
+    (key) => {
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = key;
+      expect(() => mobileConfig()).toThrow();
+      try {
+        mobileConfig();
+      } catch (error) {
+        expect(String(error)).not.toContain(key);
+      }
+    },
+  );
+  it("rejects an additional Expo public service-role variable", () => {
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_synthetic";
+    process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY = "private-synthetic";
+    expect(() => mobileConfig()).toThrow("server secrets");
   });
 });

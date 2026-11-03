@@ -1,0 +1,41 @@
+// Apply to a freshly generated Connected preview project. Never sign with debug.
+if (System.getenv('EAS_BUILD_PROFILE') != 'preview' ||
+    System.getenv('EXPO_PUBLIC_DEMO_MODE') != 'false') {
+    throw new GradleException('Connected local APK requires preview and Demo Mode disabled.')
+}
+def required = ['MORI_ANDROID_KEYSTORE', 'MORI_ANDROID_KEY_ALIAS',
+                'MORI_ANDROID_STORE_PASSWORD', 'MORI_ANDROID_KEY_PASSWORD']
+required.each { key ->
+    if (!System.getenv(key)?.trim()) throw new GradleException('Missing signing variable: ' + key)
+}
+def keystore = new File(System.getenv('MORI_ANDROID_KEYSTORE'))
+if (!keystore.isAbsolute() || !keystore.isFile()) {
+    throw new GradleException('MORI_ANDROID_KEYSTORE must be an existing absolute keystore path.')
+}
+if (keystore.name.equalsIgnoreCase('debug.keystore') ||
+    System.getenv('MORI_ANDROID_KEY_ALIAS').equalsIgnoreCase('androiddebugkey')) {
+    throw new GradleException('Connected release refuses the Android debug signing identity.')
+}
+gradle.beforeProject { project ->
+    if (project.path == ':app') {
+        project.plugins.withId('com.android.application') {
+            def android = project.extensions.getByName('android')
+            def signing = android.signingConfigs.create('moriConnectedRelease') {
+                storeFile keystore
+                storePassword System.getenv('MORI_ANDROID_STORE_PASSWORD')
+                keyAlias System.getenv('MORI_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('MORI_ANDROID_KEY_PASSWORD')
+            }
+            project.extensions.getByName('androidComponents').finalizeDsl { dsl ->
+                if (dsl.defaultConfig.applicationId != 'app.mori.companion') {
+                    throw new GradleException('Regenerate the Connected native project before building.')
+                }
+                dsl.buildTypes.getByName('release').with {
+                    debuggable false
+                    jniDebuggable false
+                    signingConfig signing
+                }
+            }
+        }
+    }
+}

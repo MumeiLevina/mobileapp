@@ -1,4 +1,4 @@
-export const STAGING_SCHEMA_LABEL = "Wave 3 compatible";
+export const STAGING_SCHEMA_LABEL = "Sprint 3 memory-idempotency compatible";
 
 export const STAGING_REQUIRED_TABLES = [
   "users",
@@ -8,6 +8,7 @@ export const STAGING_REQUIRED_TABLES = [
   "mood_entries",
   "journals",
   "memories",
+  "memory_creation_requests",
   "self_care_activities",
   "self_care_sessions",
   "garden_states",
@@ -27,6 +28,8 @@ export const STAGING_REQUIRED_TABLES = [
 
 const requiredSelections = {
   conversations: "id,user_id,client_id,mode",
+  memories: "id,user_id,client_id",
+  memory_creation_requests: "user_id,client_id,fingerprint,memory_id",
 };
 
 const missingRelation = (error) =>

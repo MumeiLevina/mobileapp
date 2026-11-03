@@ -1,5 +1,11 @@
 # Android beta build handoff
 
+Updated recovery status, verified provider results, staging restoration order,
+Windows local signing procedure and native checklist are in
+[Connected recovery — 4 November 2026](CONNECTED_STAGING_RECOVERY_2026-11-04.md).
+The older observations below are historical; they do not certify the current
+Connected candidate or authorize a hosted change/cloud build.
+
 This is the focused handoff for the Android closed-beta candidate. The broader
 manual QA campaign is intentionally deferred; no physical-device result is
 claimed here.
