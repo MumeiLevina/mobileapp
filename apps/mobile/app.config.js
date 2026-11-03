@@ -1,4 +1,5 @@
 const { URL } = require("node:url");
+const { Buffer } = require("node:buffer");
 
 const app = {
   name: "Mori",
@@ -77,6 +78,37 @@ function requireRemoteUrl(name) {
     throw new Error(`${name} cannot point to localhost in preview/production.`);
 }
 
+function requirePublicSupabaseKey() {
+  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!key)
+    throw new Error(
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY is required for preview/production builds.",
+    );
+  if (key.startsWith("sb_publishable_")) return;
+  // Decode metadata only: this is a leakage/identity check, not JWT verification.
+  let claims;
+  try {
+    claims = JSON.parse(
+      Buffer.from(key.split(".")[1], "base64url").toString("utf8"),
+    );
+  } catch {
+    throw new Error(
+      "Connected builds require a Supabase public anon or publishable key.",
+    );
+  }
+  if (claims.role !== "anon")
+    throw new Error(
+      "Connected builds refuse server credentials in the public Supabase key.",
+    );
+  const host = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL).hostname;
+  if (host.endsWith(".supabase.co") && claims.ref !== host.split(".")[0])
+    throw new Error(
+      "The public Supabase key must match the configured project.",
+    );
+  if (typeof claims.exp === "number" && claims.exp * 1000 <= Date.now())
+    throw new Error("The public Supabase key has expired.");
+}
+
 module.exports = () => {
   const profile = process.env.EAS_BUILD_PROFILE ?? "local";
   const projectId = easProjectId();
@@ -104,9 +136,17 @@ module.exports = () => {
       throw new Error("Preview/production builds must disable demo mode.");
     requireRemoteUrl("EXPO_PUBLIC_API_URL");
     requireRemoteUrl("EXPO_PUBLIC_SUPABASE_URL");
-    if (!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
+    requirePublicSupabaseKey();
+    if (
+      Object.keys(process.env).some(
+        (key) =>
+          key.startsWith("EXPO_PUBLIC_") &&
+          /SERVICE_ROLE|SECRET|PRIVATE|PASSWORD|DATABASE|LLM.*KEY/.test(key) &&
+          process.env[key]?.trim(),
+      )
+    )
       throw new Error(
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY is required for preview/production builds.",
+        "Connected builds refuse server secrets in EXPO_PUBLIC variables.",
       );
   }
   return {
