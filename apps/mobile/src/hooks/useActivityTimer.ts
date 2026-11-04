@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 
 // Count foreground practice time, not interval callbacks. Backgrounding and
 // Android focus loss (e.g. notification shade) pause explicitly; returning never
@@ -71,20 +71,41 @@ export function useActivityTimer(duration: number) {
     const stateSubscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") interrupt();
     });
-    const blurSubscription = AppState.addEventListener("blur", () => {
-      focused.current = false;
-      interrupt();
-    });
-    const focusSubscription = AppState.addEventListener("focus", () => {
-      // Focus returning is not permission to resume the timer.
-      focused.current = true;
-    });
+    const focusSubscriptions: { remove: () => void }[] = [];
+    // Android focus/blur events are native-only. react-native-web rejects any
+    // event type other than "change"/"memoryWarning" and throws on "blur"/
+    // "focus", which would break every screen that mounts this timer (quiet
+    // room, breathing activity) on web. On web, visibility changes already
+    // arrive via "change", so focus tracking is redundant there. Subscribe to
+    // each event individually and guard each: a platform that lacks one keeps
+    // the other instead of crashing the screen.
+    if (Platform.OS !== "web") {
+      try {
+        focusSubscriptions.push(
+          AppState.addEventListener("blur", () => {
+            focused.current = false;
+            interrupt();
+          }),
+        );
+      } catch {
+        // A platform without blur events keeps the AppState-only behaviour.
+      }
+      try {
+        focusSubscriptions.push(
+          AppState.addEventListener("focus", () => {
+            // Focus returning is not permission to resume the timer.
+            focused.current = true;
+          }),
+        );
+      } catch {
+        // A platform without focus events keeps the AppState-only behaviour.
+      }
+    }
     return () => {
       alive.current = false;
       started.current = null;
       stateSubscription.remove();
-      blurSubscription.remove();
-      focusSubscription.remove();
+      for (const subscription of focusSubscriptions) subscription.remove();
     };
   }, [limit]);
   useEffect(() => {

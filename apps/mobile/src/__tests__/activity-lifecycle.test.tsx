@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react-native";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { useActivityTimer } from "../hooks/useActivityTimer";
 
 let change: (state: AppStateStatus) => void;
@@ -7,14 +7,24 @@ let blur: () => void;
 let focus: () => void;
 let now = 0;
 const remove = jest.fn();
+let subscribedEvents: string[] = [];
+const originalPlatform = Platform.OS;
 beforeEach(() => {
+  Platform.OS = "android";
   AppState.currentState = "active";
   jest.useFakeTimers();
   now = 0;
+  subscribedEvents = [];
   jest.spyOn(performance, "now").mockImplementation(() => now);
   jest
     .spyOn(AppState, "addEventListener")
     .mockImplementation((event, listener) => {
+      subscribedEvents.push(event);
+      // react-native-web only accepts "change"/"memoryWarning" and throws for
+      // any other type. Mirror that so the web path is exercised for real.
+      if (Platform.OS === "web" && event !== "change") {
+        throw new Error(`Trying to subscribe to unknown event: "${event}"`);
+      }
       if (event === "change") change = listener as (state: AppStateStatus) => void;
       if (event === "blur") blur = listener as () => void;
       if (event === "focus") focus = listener as () => void;
@@ -23,6 +33,7 @@ beforeEach(() => {
   remove.mockClear();
 });
 afterEach(() => {
+  Platform.OS = originalPlatform;
   jest.restoreAllMocks();
   jest.useRealTimers();
 });
@@ -133,6 +144,30 @@ test("Android blur pauses the timer even while AppState remains active; focus ne
     interrupted: false,
   });
   await view.unmount();
+});
+
+test("web never subscribes to blur/focus and cannot crash on unknown events", async () => {
+  Platform.OS = "web";
+  const view = await renderHook(() => useActivityTimer(120));
+  await act(() => view.result.current.start());
+  expect(view.result.current.running).toBe(true);
+  now = 2600;
+  await act(() => jest.advanceTimersByTime(250));
+  expect(view.result.current.elapsed).toBe(2);
+  await act(() => change("background"));
+  expect(view.result.current).toMatchObject({ running: false, interrupted: true });
+  await act(() => change("active"));
+  await act(() => view.result.current.start());
+  expect(view.result.current.running).toBe(true);
+  expect(subscribedEvents).toEqual(["change"]);
+  await view.unmount();
+});
+
+test("native platforms still subscribe to blur and focus", async () => {
+  const view = await renderHook(() => useActivityTimer(120));
+  expect(subscribedEvents).toEqual(["change", "blur", "focus"]);
+  await view.unmount();
+  expect(remove).toHaveBeenCalledTimes(3);
 });
 
 test("Android blur prevents starting until focus returns and invalidates delayed starts", async () => {

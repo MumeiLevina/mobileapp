@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import QuietRoom from "../app/quiet-room";
 import { usePreferences } from "../store/preferences";
 import { request } from "../services/api";
@@ -10,7 +10,9 @@ let blur: () => void;
 let focus: () => void;
 let now = 0;
 const remove = jest.fn();
+const originalPlatform = Platform.OS;
 beforeEach(() => {
+  Platform.OS = "android";
   jest.useFakeTimers();
   now = 0;
   AppState.currentState = "active";
@@ -27,6 +29,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 afterEach(() => {
+  Platform.OS = originalPlatform;
   jest.restoreAllMocks();
   jest.useRealTimers();
   usePreferences.setState({ locale: "vi" });
