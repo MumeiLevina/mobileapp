@@ -77,6 +77,81 @@ async function completeOnboarding(page: Page) {
   await page.getByRole("button", { name: "Mình muốn khám phá trước" }).click();
 }
 
+test("Sprint 3 Garden destinations stay separate at 320px with doubled web text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await completeOnboarding(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("mori-demo")!);
+    state.garden.sanctuary_areas = [
+      "letter_tree",
+      "quiet_cottage",
+      "reflection_lake",
+      "memory_garden",
+      "path_stones",
+      "wind_chimes",
+    ];
+    localStorage.setItem("mori-demo", JSON.stringify(state));
+    localStorage.setItem(
+      "mori-preferences",
+      JSON.stringify({ state: { locale: "en", theme: "dark" }, version: 0 }),
+    );
+  });
+  await openGarden(page);
+  const buttons = page.locator('[data-testid^="garden-hotspot-"]');
+  await expect(buttons).toHaveCount(6);
+  // This is a browser layout stress case, not Android system font scaling.
+  await page.evaluate(() => {
+    document
+      .querySelectorAll('[data-testid^="garden-hotspot-"] [dir="auto"]')
+      .forEach((node) => {
+        const element = node as HTMLElement;
+        const style = getComputedStyle(element);
+        element.style.fontSize = `${parseFloat(style.fontSize) * 2}px`;
+        element.style.lineHeight = `${parseFloat(style.lineHeight) * 2}px`;
+      });
+  });
+  const boxes = await buttons.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const r = node.getBoundingClientRect();
+      return {
+        left: r.left,
+        right: r.right,
+        top: r.top,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+        label: node.getAttribute("aria-label"),
+      };
+    }),
+  );
+  for (let i = 0; i < boxes.length; i++) {
+    expect(boxes[i].width).toBeGreaterThanOrEqual(48);
+    expect(boxes[i].height).toBeGreaterThanOrEqual(48);
+    expect(boxes[i].left).toBeGreaterThanOrEqual(0);
+    expect(boxes[i].right).toBeLessThanOrEqual(320);
+    expect.soft(boxes[i].label).toMatch(/, Open area$/);
+    for (let j = i + 1; j < boxes.length; j++) {
+      const overlap =
+        boxes[i].left < boxes[j].right &&
+        boxes[i].right > boxes[j].left &&
+        boxes[i].top < boxes[j].bottom &&
+        boxes[i].bottom > boxes[j].top;
+      expect(overlap, `${boxes[i].label} overlaps ${boxes[j].label}`).toBe(
+        false,
+      );
+    }
+  }
+  await page.getByTestId("garden-hotspot-soft-goals").scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "test-results/sprint3-garden-320-double-text.png",
+    fullPage: true,
+  });
+  await page.getByTestId("garden-hotspot-soft-goals").click();
+  await expect(page).toHaveURL(/\/soft-goals$/);
+});
+
 test("Sprint 2 preserves incompatible drafts until explicit confirmed discard", async ({
   page,
 }) => {
