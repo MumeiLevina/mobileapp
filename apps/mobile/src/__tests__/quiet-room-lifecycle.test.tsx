@@ -6,6 +6,8 @@ import { request } from "../services/api";
 
 jest.mock("../services/api", () => ({ request: jest.fn() }));
 let change: (state: AppStateStatus) => void;
+let blur: () => void;
+let focus: () => void;
 let now = 0;
 const remove = jest.fn();
 beforeEach(() => {
@@ -16,8 +18,10 @@ beforeEach(() => {
   jest.spyOn(performance, "now").mockImplementation(() => now);
   jest
     .spyOn(AppState, "addEventListener")
-    .mockImplementation((_event, listener) => {
-      change = listener;
+    .mockImplementation((event, listener) => {
+      if (event === "change") change = listener as (state: AppStateStatus) => void;
+      if (event === "blur") blur = listener as () => void;
+      if (event === "focus") focus = listener as () => void;
       return { remove };
     });
   jest.clearAllMocks();
@@ -66,5 +70,27 @@ test("untimed Quiet Room has no countdown or automatic completion", async () => 
   expect(screen.queryByText("Your pause has ended.")).toBeNull();
   expect(interval).not.toHaveBeenCalled();
   expect(request).not.toHaveBeenCalled();
+  await view.unmount();
+});
+
+test("notification shade blur pauses Quiet Room and focus does not resume it", async () => {
+  const view = await render(<QuietRoom />);
+  await fireEvent.press(screen.getByText("2 min"));
+  await fireEvent.press(screen.getByText("Enter Quiet Room"));
+  now = 5600;
+  await act(() => jest.advanceTimersByTime(250));
+  expect(screen.getByText("01:55")).toBeTruthy();
+  await act(() => blur());
+  now = 300000;
+  await act(() => {
+    focus();
+    jest.advanceTimersByTime(1000);
+  });
+  expect(screen.getByText("01:55")).toBeTruthy();
+  expect(screen.getByText("Continue")).toBeTruthy();
+  await fireEvent.press(screen.getByText("Continue"));
+  now += 500;
+  await act(() => jest.advanceTimersByTime(250));
+  expect(screen.getByText("01:54")).toBeTruthy();
   await view.unmount();
 });
