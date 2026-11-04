@@ -31,7 +31,10 @@ function run(mode: string, enabled = "true") {
       }));
       console.log('=== A. Raw LLM Classification ===\\ntotal: 1, pass: 1, fail: 0\\nfalse positive: 0, false negative: 0, critical false negative: 0');
       console.log('=== B. SafetyService End-to-End ===\\ntotal: 1, pass: 1, fail: 0\\nfalse positive: 0, false negative: 0, critical false negative: 0');
-      console.log('=== OUTPUT GUARD ===\\ntotal behavior cases: 1\\nsafety policy compliance: 1/1\\nsafe natural responses: 1\\nSAFE_FALLBACK triggered: 0\\npolicy rejections: 0');
+      console.log('=== OUTPUT GUARD ===\\ntotal behavior cases: 1\\nsafety policy compliance: 1/1');
+      if (mode !== 'missing-behavior-metrics') {
+        console.log('safe natural responses: 1\\nSAFE_FALLBACK triggered: ' + (mode === 'inconsistent-behavior-metrics' ? 1 : 0) + '\\npolicy rejections: ' + (mode === 'policy-violation' ? 1 : 0));
+      }
       console.error('private-synthetic-provider-output');
       console.log(JSON.stringify({ provider: 'synthetic', status: mode === 'provider-error' ? 'error' : 'success' }));
       process.exitCode = mode === 'nonzero' ? 1 : 0;
@@ -71,14 +74,19 @@ test("accepts complete enabled Jest results and writes only sanitized evidence",
     tests: { passed: 3, failed: 0, skipped: 0 },
   });
 });
-test.each(["nonzero", "missing", "skipped", "provider-error"])(
-  "refuses false success: %s",
-  (mode) => {
-    const result = run(mode);
-    expect(result.status).toBe(1);
-    expect(result.summary.passed).toBe(false);
-  },
-);
+test.each([
+  "nonzero",
+  "missing",
+  "skipped",
+  "provider-error",
+  "missing-behavior-metrics",
+  "inconsistent-behavior-metrics",
+  "policy-violation",
+])("refuses false success: %s", (mode) => {
+  const result = run(mode);
+  expect(result.status).toBe(1);
+  expect(result.summary.passed).toBe(false);
+});
 test("refuses a disabled provider gate before starting Jest", () => {
   expect(run("pass", "false").status).toBe(1);
 });

@@ -89,6 +89,16 @@ const service = classification("B. SafetyService End-to-End");
 const behaviorTotal = number(/total behavior cases: (\d+)/);
 const fallback = number(/SAFE_FALLBACK triggered: (\d+)/);
 const behaviorPassed = number(/safety policy compliance: (\d+)\//);
+const natural = number(/safe natural responses: (\d+)/);
+const policyRejections = number(/policy rejections: (\d+)/);
+const count = (value) => Number.isSafeInteger(value) && value >= 0;
+const completeClassification = (metrics) =>
+  metrics &&
+  Object.values(metrics).every(count) &&
+  metrics.total > 0 &&
+  metrics.passed + metrics.failed === metrics.total &&
+  metrics.falsePositive + metrics.falseNegative === metrics.failed &&
+  metrics.criticalFalseNegative <= metrics.falseNegative;
 const successfulCalls = events.filter(
   (event) => event.provider && event.status === "success",
 ).length;
@@ -97,19 +107,28 @@ const failedCalls = events.filter(
 ).length;
 const complete =
   result?.numPassedTests > 0 &&
+  count(result.numFailedTests) &&
   result.numPendingTests === 0 &&
-  raw?.total > 0 &&
-  service?.total > 0 &&
+  result.numPassedTests + result.numFailedTests === result.numTotalTests &&
+  completeClassification(raw) &&
+  completeClassification(service) &&
   behaviorTotal > 0 &&
+  [behaviorTotal, behaviorPassed, fallback, natural, policyRejections].every(
+    count,
+  ) &&
+  behaviorPassed <= behaviorTotal &&
+  natural + fallback + policyRejections === behaviorTotal &&
   raw.total + service.total + behaviorTotal === result.numTotalTests;
 const passed =
   run.status === 0 &&
   result?.success === true &&
   complete &&
+  result.numFailedTests === 0 &&
   successfulCalls > 0 &&
   failedCalls === 0 &&
   raw.failed === 0 &&
   service.failed === 0 &&
+  policyRejections === 0 &&
   behaviorPassed === behaviorTotal;
 const summary = {
   sourceSha,
@@ -139,8 +158,8 @@ const summary = {
     passed: behaviorPassed,
     fallback,
     fallbackRate: behaviorTotal ? fallback / behaviorTotal : null,
-    natural: number(/safe natural responses: (\d+)/),
-    policyRejections: number(/policy rejections: (\d+)/),
+    natural,
+    policyRejections,
   },
   providerCalls: {
     successful: successfulCalls,
