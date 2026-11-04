@@ -1,0 +1,102 @@
+{
+  "sourceSha": "46dda0e1c483b2fc511846ac1bed86b4ab8a864f",
+  "hashScope": "Canonical Git blob bytes, not Windows checkout line endings",
+  "migrations": [
+    {
+      "version": "202610010001",
+      "path": "supabase/migrations/202610010001_initial.sql",
+      "gitBlob": "f7c9a47a2f69081fcc1ed108741ae824808baf7d",
+      "sha256": "5751c18650417b8bd2cb81e6e93081ef9d7a9075ee244a77f4b294b946fdeebd"
+    },
+    {
+      "version": "202610060001",
+      "path": "supabase/migrations/202610060001_auth_rls_hardening.sql",
+      "gitBlob": "a1e24e90be664e191ff95f74b4a47af6fe0e3670",
+      "sha256": "eea061268283dc9d8eb72e2e53cb5313a5a5965f540a2ee94620a028bd533146"
+    },
+    {
+      "version": "202610060002",
+      "path": "supabase/migrations/202610060002_crisis_resources.sql",
+      "gitBlob": "44001fd6e25600aa7587a20448f929a4ec85a409",
+      "sha256": "93d23fd575882c00e0c9ebbdb8c56ad91572c73266213d42e60ffbb90ee1febc"
+    },
+    {
+      "version": "202610060003",
+      "path": "supabase/migrations/202610060003_data_export_audits.sql",
+      "gitBlob": "019b77aeefb790b9e134216f4607a4aae5ad085c",
+      "sha256": "1467f78d9e038819136e3ee108bcefb74f5e08bcea9041701ecc3e604280dbad"
+    },
+    {
+      "version": "202610070001",
+      "path": "supabase/migrations/202610070001_life_map.sql",
+      "gitBlob": "37f5101f6cb39c4b358e84b5a512f5d84693ca8a",
+      "sha256": "b473bc19f8544d23b534245e7e900763e318292ea797c305b725543363a06356"
+    },
+    {
+      "version": "202610070002",
+      "path": "supabase/migrations/202610070002_memory_provenance.sql",
+      "gitBlob": "6552bd281ae350e8d58458ea04571229624e655d",
+      "sha256": "18eaf75a4ff34daad8f0375b0ebdee3e9adfcd2dd9924bbc423fe040f7e44c47"
+    },
+    {
+      "version": "202610070003",
+      "path": "supabase/migrations/202610070003_guided_journals.sql",
+      "gitBlob": "d3f4a66b31f61c0c7024e2df57563d65da6287c0",
+      "sha256": "664036949f01b615ecd1111e48c4079f340e8f7ae574f51088d6dafb18a7ec1d"
+    },
+    {
+      "version": "202610070004",
+      "path": "supabase/migrations/202610070004_rituals.sql",
+      "gitBlob": "20717f6d59fe6a0341b2a08361790bf870c3cf76",
+      "sha256": "adf249cbdf0369a570ed9fc168971699f82ed8e5421c9a9634134d985f9b1087"
+    },
+    {
+      "version": "202610070005",
+      "path": "supabase/migrations/202610070005_ritual_notifications.sql",
+      "gitBlob": "3dbb55baf677861cb457f83c235339a5bc303497",
+      "sha256": "b56b9ddc882c9cd1b31b07796611c431411623821a13f37fc6d10ef74ecb4cbc"
+    },
+    {
+      "version": "202610070006",
+      "path": "supabase/migrations/202610070006_letters.sql",
+      "gitBlob": "6e34cfa883255792221d2f6f40c48c9082d8dff1",
+      "sha256": "5df300c5831a3ebe0c7d43f979f09252157fed7473aac07466830afdd73ecc80"
+    },
+    {
+      "version": "202610070007",
+      "path": "supabase/migrations/202610070007_soft_goals.sql",
+      "gitBlob": "735322ee8fb74f8c08a4686d16b095603aad1551",
+      "sha256": "33eb0a7794af1d1482019ebb1e12c42df0e23a31b4400a09bdd057f2f0b3c9eb"
+    },
+    {
+      "version": "202610070008",
+      "path": "supabase/migrations/202610070008_garden_sanctuary.sql",
+      "gitBlob": "4b4fe98a3a2438243240d4ffc1cd26758a937248",
+      "sha256": "a7d5087974300cd53838715671e4efecf736624e15bba8b6bd7435c896dc5226"
+    },
+    {
+      "version": "202610070009",
+      "path": "supabase/migrations/202610070009_personal_milestones.sql",
+      "gitBlob": "398984e0ab899b0e77bd62b57c20fc62696b794c",
+      "sha256": "31871270cbe54ddfdf76fae2499954bbd9e1990ede9aca88bb0eab77acd6683a"
+    },
+    {
+      "version": "202610080001",
+      "path": "supabase/migrations/202610080001_safety_events_server_only.sql",
+      "gitBlob": "40fb5704e5d7c88ba7e95dee9783342c5f35997f",
+      "sha256": "5a655f5c1168eca5ed1b064a39fb27545aae611e9391772b8038d58832b7b6c6"
+    },
+    {
+      "version": "202610080002",
+      "path": "supabase/migrations/202610080002_private_save_idempotency.sql",
+      "gitBlob": "f6d015088bd4bb1ed8aaf1dd1b57a6129a4390da",
+      "sha256": "730c51f89394ccaaa6368735d464325d8e0c10c1da15c3922c76a8ddef11515d"
+    },
+    {
+      "version": "202610260001",
+      "path": "supabase/migrations/202610260001_memory_creation_idempotency.sql",
+      "gitBlob": "8d659a42c24c4b101c02657fed071c8986f2cf95",
+      "sha256": "b36c22ea9ab7916ea078489c3d92d5c0636236770328237915625976a3409629"
+    }
+  ]
+}

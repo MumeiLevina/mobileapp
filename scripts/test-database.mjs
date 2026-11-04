@@ -531,6 +531,43 @@ try {
       0,
     );
   console.log("PASS account deletion cascades through private data");
+  const metadata = (
+    await pg.exec(await readFile("scripts/staging-memory-audit.sql", "utf8"))
+  ).flatMap((result) => result.rows);
+  assert.ok(
+    metadata.some(
+      (row) =>
+        row.table_name === "memory_creation_requests" &&
+        row.rls_enabled === true,
+    ),
+  );
+  const requestGrants = metadata.filter(
+    (row) =>
+      row.table_name === "memory_creation_requests" && "can_select" in row,
+  );
+  assert.equal(requestGrants.length, 3);
+  for (const row of requestGrants) {
+    const allowed = row.rolname === "service_role";
+    for (const permission of [
+      "can_select",
+      "can_insert",
+      "can_update",
+      "can_delete",
+    ])
+      assert.equal(row[permission], allowed);
+  }
+  const rpcGrants = metadata.filter(
+    (row) => row.proname === "create_manual_memory",
+  );
+  assert.equal(rpcGrants.length, 3);
+  for (const row of rpcGrants) {
+    assert.equal(row.security_definer, true);
+    assert.equal(row.can_execute, row.rolname === "service_role");
+    assert.ok(row.function_settings.includes('search_path=""'));
+  }
+  console.log(
+    "PASS read-only hosted-audit SQL reports Memory RLS and effective service-only grants",
+  );
 } finally {
   await pg.close();
 }
