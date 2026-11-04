@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 
-// Count foreground practice time, not interval callbacks. Backgrounding pauses
-// explicitly; returning never resumes practice or submits a completion request.
+// Count foreground practice time, not interval callbacks. Backgrounding and
+// Android focus loss (e.g. notification shade) pause explicitly; returning never
+// resumes practice or submits a completion request.
 export function useActivityTimer(duration: number) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
@@ -11,6 +12,8 @@ export function useActivityTimer(duration: number) {
   const started = useRef<number | null>(null);
   const interruptions = useRef(0);
   const alive = useRef(true);
+  // Android can emit blur without changing AppState.currentState from "active".
+  const focused = useRef(true);
   const limit = Math.max(0, duration * 1000);
   function read() {
     return Math.min(
@@ -34,7 +37,10 @@ export function useActivityTimer(duration: number) {
       accumulated.current >= limit
     )
       return;
-    if (AppState.currentState && AppState.currentState !== "active") {
+    if (
+      !focused.current ||
+      (AppState.currentState && AppState.currentState !== "active")
+    ) {
       setInterrupted(true);
       return;
     }
@@ -55,17 +61,51 @@ export function useActivityTimer(duration: number) {
   }
   useEffect(() => {
     alive.current = true;
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state !== "active") interruptions.current += 1;
-      if (state !== "active" && started.current !== null) {
+    const interrupt = () => {
+      interruptions.current += 1;
+      if (started.current !== null) {
         pause();
         setInterrupted(true);
       }
+    };
+    const stateSubscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") interrupt();
     });
+    const focusSubscriptions: { remove: () => void }[] = [];
+    // Android focus/blur events are native-only. react-native-web rejects any
+    // event type other than "change"/"memoryWarning" and throws on "blur"/
+    // "focus", which would break every screen that mounts this timer (quiet
+    // room, breathing activity) on web. On web, visibility changes already
+    // arrive via "change", so focus tracking is redundant there. Subscribe to
+    // each event individually and guard each: a platform that lacks one keeps
+    // the other instead of crashing the screen.
+    if (Platform.OS !== "web") {
+      try {
+        focusSubscriptions.push(
+          AppState.addEventListener("blur", () => {
+            focused.current = false;
+            interrupt();
+          }),
+        );
+      } catch {
+        // A platform without blur events keeps the AppState-only behaviour.
+      }
+      try {
+        focusSubscriptions.push(
+          AppState.addEventListener("focus", () => {
+            // Focus returning is not permission to resume the timer.
+            focused.current = true;
+          }),
+        );
+      } catch {
+        // A platform without focus events keeps the AppState-only behaviour.
+      }
+    }
     return () => {
       alive.current = false;
       started.current = null;
-      subscription.remove();
+      stateSubscription.remove();
+      for (const subscription of focusSubscriptions) subscription.remove();
     };
   }, [limit]);
   useEffect(() => {
