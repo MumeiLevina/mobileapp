@@ -1,5 +1,13 @@
 // Literal-key catalog for feature copy. Private user content opts out of translation.
 export const english: Record<string, string> = {
+  "Cây thư": "Letter Tree",
+  "Nhà yên": "Quiet Cottage",
+  "Mặt hồ": "Reflection Lake",
+  "Ký ức": "Memories",
+  "Lối nhỏ": "Path Stones",
+  "Chuông gió": "Wind Chimes",
+  "Mở khu vực": "Open area",
+  "Khu vườn yên bình. Giai đoạn cây:": "A peaceful garden. Tree stage:",
   "Phòng yên.": "Quiet Room.",
   "Vào phòng yên": "Enter Quiet Room",
   "Khoảng nghỉ đã kết thúc.": "Your pause has ended.",

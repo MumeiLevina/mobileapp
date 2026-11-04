@@ -1,30 +1,29 @@
 import { router } from "expo-router";
-import { ViewStyle } from "react-native";
 import { MoriPressable, MoriText } from "../../components/ui";
 import { useTheme } from "../../theme";
+import { useTranslate } from "../../i18n";
 
 export function GardenHotspot({
   label,
   icon,
   to,
-  style,
 }: {
   label: string;
   icon: string;
   to: string;
-  style: ViewStyle;
 }) {
   const theme = useTheme();
+  const tr = useTranslate();
   return (
     <MoriPressable
       testID={`garden-hotspot-${to.slice(1).replaceAll("/", "-")}`}
       accessibilityRole="button"
-      accessibilityLabel={`${label}, mở khu vực`}
+      accessibilityLabel={`${tr(label)}, ${tr("Mở khu vực")}`}
       onPress={() => router.push(to as "/timeline")}
-      wrapperStyle={{ position: "absolute", ...style }}
+      wrapperStyle={{ flexBasis: "45%", flexGrow: 1, minWidth: 0 }}
       style={(pressed) => ({
         minWidth: 48,
-        minHeight: 44,
+        minHeight: 48,
         paddingHorizontal: 8,
         paddingVertical: 5,
         borderRadius: 14,
@@ -39,7 +38,7 @@ export function GardenHotspot({
       <MoriText translate={false} style={{ fontSize: 16, lineHeight: 18 }}>
         {icon}
       </MoriText>
-      <MoriText variant="small" style={{ fontSize: 9, lineHeight: 12 }}>
+      <MoriText variant="small" style={{ textAlign: "center" }}>
         {label}
       </MoriText>
     </MoriPressable>
