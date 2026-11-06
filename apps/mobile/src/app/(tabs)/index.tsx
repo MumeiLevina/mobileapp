@@ -74,6 +74,12 @@ export default function Home() {
       <SectionHeading title="Cho khoảnh khắc này" />
       <View style={{ marginTop: -16 }}>
         <SelfCareCard
+          title="Trang trại"
+          subtitle="Gieo hạt · chăm cây · thu hoạch"
+          icon="leaf-outline"
+          to="/farming-game"
+        />
+        <SelfCareCard
           title="Phòng yên"
           subtitle="Không cần nói gì"
           icon="rainy-outline"

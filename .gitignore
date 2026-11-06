@@ -23,3 +23,7 @@ apps/mobile/android/
 artifacts/android-*.png
 artifacts/live2d-*.json
 artifacts/live2d-*.png
+
+# IDE config
+.idea/
+.vscode/
