@@ -30,6 +30,7 @@ export default function TabLayout() {
             icon: "chatbubble-ellipses-outline",
           },
           { name: "journal", label: copy.journal, icon: "book-outline" },
+          { name: "farming", label: copy.farm, icon: "storefront-outline" },
           { name: "me", label: copy.me, icon: "person-outline" },
         ] as const
       ).map((tab) => (

@@ -9,8 +9,10 @@ server đếm giờ.
 
 - Code: [`apps/mobile/src/features/farming/`](../apps/mobile/src/features/farming/)
 - Route: [`apps/mobile/src/app/farming-game/`](../apps/mobile/src/app/farming-game/)
-- Entry point: card **"Trang trại"** trong section "Cho khoảnh khắc này" của Home
-  ([`apps/mobile/src/app/(tabs)/index.tsx`](../apps/mobile/src/app/(tabs)/index.tsx)).
+- Entry point: tab **"Nông trại"** trong dashboard và card **"Trang trại"**
+  trong section "Cho khoảnh khắc này" của Home
+  ([`apps/mobile/src/app/(tabs)/_layout.tsx`](../apps/mobile/src/app/(tabs)/_layout.tsx),
+  [`apps/mobile/src/app/(tabs)/index.tsx`](../apps/mobile/src/app/(tabs)/index.tsx)).
 
 ## Kiến trúc
 
