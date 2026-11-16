@@ -33,4 +33,13 @@ export default ts.config(
     },
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
+  {
+    files: ["apps/mobile/jest.setup.cjs"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^React$" },
+      ],
+    },
+  },
 );
